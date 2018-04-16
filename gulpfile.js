@@ -4,6 +4,7 @@ var request = require("request");
 var unzip = require("gulp-unzip");
 var ogr2ogr = require("ogr2ogr");
 var topojson = require("topojson");
+var geojson_bbox = require("geojson-bbox");
 gl.gulp.task("cbpp_shared_lib", function(cb) {
   gl.get_cbpp_shared_libs(["CBPP_Figure"], cb);
 });
@@ -97,6 +98,9 @@ gl.gulp.task("ogr2ogr", ["geojson_dir","unzip_shapefiles"], function(cb) {
       }
     }));
   });
+  Promise.all(requests).then(function() {
+    cb();
+  });
 });
 function makeDirectory(d, cb) {
   fs.mkdir(d, function(e) {
@@ -114,12 +118,92 @@ gl.gulp.task("geojson_dir", function(cb) {
 gl.gulp.task("topojson_dir", function(cb) {
   makeDirectory("./topojson", cb);
 });
-gl.gulp.task("topojson", ["topojson_dir","geojson"], function(cb) {
-  /*var geocounties = require("./geojson/alaska.json");
-  var topocounties = topojson.topology({districts:geocounties});
-  topocounties = topojson.quantize(topocounties, 40000);
-  topocounties = topojson.presimplify(topocounties);
-  topocounties = topojson.simplify(topocounties,0.003);
-  fs.writeFileSync("topojson/alaska.json", JSON.stringify(topocounties));
-  cb();*/
+gl.gulp.task("topojson", ["topojson_dir","ogr2ogr","buildDirectory"], function(done) {
+  var files = fs.readdirSync("./geojson");
+  var sizes = [];
+  sizes.push(new Promise(function(resolve) {
+    topojson_out({
+      quantize:4000,
+      simplify:0.01,
+      dest:"./topojson/low/"
+    }, resolve);
+  }));
+  sizes.push(new Promise(function(resolve) {
+    topojson_out({
+      quantize:40000,
+      simplify:0.003,
+      dest:"./topojson/medium/"
+    }, resolve);
+  }));
+  sizes.push(new Promise(function(resolve) {
+    topojson_out({
+      quantize:400000,
+      simplify:0.0001,
+      dest:"./topojson/high/"
+    }, resolve);
+  }));
+  Promise.all(sizes).then(function() {
+    done();
+  });
+  function topojson_out(settings, _cb) {
+    var converts = [];
+    files.forEach(function(f) {
+      converts.push(new Promise(function(resolve) {
+        gl.makeDirectory(settings.dest, function() {
+          if (fs.existsSync(settings.dest + f)) {
+            resolve();
+          } else {
+            var geo = JSON.parse(fs.readFileSync("./geojson/" + f, {
+              encoding: "utf-8"
+            }));
+            var topo = topojson.topology({districts:geo});
+            topo = topojson.quantize(topo, settings.quantize);
+            topo = topojson.presimplify(topo);
+            topo = topojson.simplify(topo, settings.simplify);
+            fs.writeFileSync(settings.dest + f, JSON.stringify(topo));
+            resolve();
+          }
+        });
+      }));
+    });
+    Promise.all(converts).then(function() {
+      _cb();
+    });
+  }
+});
+
+gl.gulp.task("topojson_grid", ["topojson"], function() {
+  var gridSize = {
+    "high":0.2,
+    "medium":2,
+    "low":20
+  };
+  gl.makeDirectory("./grid", function() {
+    var sizes = fs.readdirSync("./topojson");
+    sizes.forEach(function(f) {
+      if (typeof(gridSize[f])==="undefined") {
+        console.log("no grid size defined for " + f + ", ignoring");
+      } else {
+        topoGrids(gridSize[f], f);
+      }
+    });
+  });
+  function topoGrids(tileSize, file) {
+    var files = fs.readdirSync("./topojson/" + file);
+    files.forEach(function(f) {
+      gl.makeDirectory("./grid/" + f.split(".")[0], function() {
+        topoGrid(tileSize, file, f);
+      });
+    });
+  }
+  function topoGrid(tileSize, dir, file) {
+    var topo = JSON.parse(fs.readFileSync("./topojson/" + dir + "/" + file, {
+      encoding: "utf-8"
+    }));
+    var geo = topojson.feature(topo, topo.objects.districts);
+    geo.features.forEach(function(f) {
+      var bbox = geojson_bbox(f);
+      console.log(bbox);
+    });
+  }
 });

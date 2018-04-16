@@ -10,4 +10,5 @@ intermediate/
 topojson/
 download/
 shp/
+grid/
 .DS_Store
