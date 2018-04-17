@@ -1,0 +1,20 @@
+{
+  "low": {
+    "quantize":400,
+    "simplify":0.1,
+    "dest":"./topojson/low/",
+    "gridSize": 60
+  },
+  "medium": {
+    "quantize":4000,
+    "simplify":0.01,
+    "dest":"./topojson/medium/",
+    "gridSize": 5
+  },
+  "high": {
+    "quantize":400000,
+    "simplify":0.0001,
+    "dest":"./topojson/high/",
+    "gridSize":0.5
+  }
+}

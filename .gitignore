@@ -3,6 +3,7 @@ CBPP_*/
 counties/
 geojson/
 node_modules/
+fileIndex.json
 app.css
 counties.zip
 package-lock.json
