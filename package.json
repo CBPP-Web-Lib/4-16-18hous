@@ -35,6 +35,7 @@
     "sassr": "^0.1.2",
     "text-encoding": "^0.6.4",
     "topojson": "^3.0.2",
+    "turf": "^3.0.14",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",
     "watchify": "^3.9.0"

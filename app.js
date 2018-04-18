@@ -55,6 +55,8 @@ var Interactive = function(sel) {
             var GEOID = geo.features[i].properties.GEOID || geo.features[i].properties.GEOID10;
             if (typeof(GEOID_tracker[GEOID])==="undefined") {
               geo_data[file].low.features.push(geo.features[i]);
+            } else if (typeof(GEOID)==="undefined") {
+              geo_data[file].low.features.push(geo.features[i]);
             }
             GEOID_tracker[GEOID] = true;
           }
@@ -64,9 +66,12 @@ var Interactive = function(sel) {
     };
     for (var file in indexes) {
       if (indexes.hasOwnProperty(file)) {
-        for (var i = 0, ii = indexes[file].low.length; i<ii; i++) {
-          var d = indexes[file].low[i];
-          requests.push(PromiseMaker(file, d[0], d[1]));
+        if (file==="tl_2015_us_cbsa" ||
+            file==="cb_2015_us_state_500k") {
+          for (var i = 0, ii = indexes[file].low.length; i<ii; i++) {
+            var d = indexes[file].low[i];
+            requests.push(PromiseMaker(file, d[0], d[1]));
+          }
         }
       }
     }
@@ -74,6 +79,7 @@ var Interactive = function(sel) {
   }
 
   function DrawInitialMap() {
+    console.log(geo_data);
     svg = d3.select(sel + " .mapwrap").append("svg")
       .attr("viewBox","0 0 940 600")
       .attr("preserveAspectRatio","xMinYMin");
@@ -104,8 +110,24 @@ var Interactive = function(sel) {
         .enter()
         .append("path")
         .attr("d", path)
-        .attr("stroke-width",0.1)
-        .attr("stroke","#000")
+        .attr("stroke-width",function() {
+          if (layer.indexOf("coastline")!==-1) {
+            return 1;
+          }
+          if (layer.indexOf("state")!==-1) {
+            return 0.8;
+          }
+          return 0.5;
+        })
+        .attr("stroke",function() {
+          if (layer.indexOf("coastline")!==-1) {
+            return "#0C61A4";
+          }
+          if (layer.indexOf("state")!==-1) {
+            return "#666";
+          }
+          return "#B9292F";
+        })
         .attr("fill","none");
     });
   }
@@ -122,6 +144,10 @@ function getIndexes() {
         }
         indexes[folder][gridSize] = d;
         resolve();
+        console.log(requests.length);
+      }).fail(function() {
+        console.log("bad" + file);
+        reject();
       });
     });
   };

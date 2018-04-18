@@ -1,13 +1,13 @@
 {
   "low": {
     "quantize":400,
-    "simplify":0.1,
+    "simplify":0.01,
     "dest":"./topojson/low/",
     "gridSize": 60
   },
   "medium": {
     "quantize":4000,
-    "simplify":0.01,
+    "simplify":0.001,
     "dest":"./topojson/medium/",
     "gridSize": 5
   },

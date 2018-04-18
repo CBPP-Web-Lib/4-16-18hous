@@ -12,4 +12,5 @@ topojson/
 download/
 shp/
 grid/
+filtered/
 .DS_Store
