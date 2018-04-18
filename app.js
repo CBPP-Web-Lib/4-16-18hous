@@ -31,7 +31,7 @@ require("./app.css");
 var indexes = {};
 var Interactive = function(sel) {
   new Figure.Figure(sel, {
-    rows: [6/9.4]
+    rows: [0.61]
   });
   $(sel).find(".grid00").empty().addClass("mapwrap");
   URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
@@ -79,10 +79,18 @@ var Interactive = function(sel) {
   }
 
   function DrawInitialMap() {
-    console.log(geo_data);
     svg = d3.select(sel + " .mapwrap").append("svg")
-      .attr("viewBox","0 0 940 600")
+      .attr("viewBox","50 5 820 100")
       .attr("preserveAspectRatio","xMinYMin");
+    geo_data.national = {};
+    geo_data.national.low = (function() {
+      var topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k.low});
+      var merged = topojson.merge(topo, topo.objects.districts.geometries);
+      return {
+        type: "FeatureCollection",
+        features: [merged]
+      };
+    })();
     svg.selectAll("g")
       .data((function(g) {
         var r = [];
@@ -97,7 +105,7 @@ var Interactive = function(sel) {
       .append("g")
       .attr("class", function(d) {return "size " + d;});
     svg.selectAll("g.size").selectAll("g")
-      .data(FileIndex)
+      .data(FileIndex.concat("national"))
       .enter()
       .append("g")
       .attr("class", function(d) {
@@ -111,24 +119,36 @@ var Interactive = function(sel) {
         .append("path")
         .attr("d", path)
         .attr("stroke-width",function() {
-          if (layer.indexOf("coastline")!==-1) {
-            return 1;
-          }
           if (layer.indexOf("state")!==-1) {
             return 0.8;
           }
           return 0.5;
         })
+        .attr("fill", function() {
+          if (layer.indexOf("state")!==-1) {
+            return "#D6E4F0";
+          }
+          if (layer==="national") {
+            return "none";
+          }
+          return "#EB9123";
+        })
+        .attr("fill-opacity", function() {
+          if (layer.indexOf("state")!==-1) {
+            return 1;
+          }
+
+          return 0.5;
+        })
         .attr("stroke",function() {
-          if (layer.indexOf("coastline")!==-1) {
+          if (layer.indexOf("state")!==-1) {
+            return "#fff";
+          }
+          if (layer==="national") {
             return "#0C61A4";
           }
-          if (layer.indexOf("state")!==-1) {
-            return "#666";
-          }
-          return "#B9292F";
-        })
-        .attr("fill","none");
+          return "#EB9123";
+        });
     });
   }
 
