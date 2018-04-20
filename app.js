@@ -105,7 +105,7 @@ var Interactive = function(sel) {
       .append("g")
       .attr("class", function(d) {return "size " + d;});
     svg.selectAll("g.size").selectAll("g")
-      .data(FileIndex.concat("national"))
+      .data(FileIndex.concat(["national"]))
       .enter()
       .append("g")
       .attr("class", function(d) {
