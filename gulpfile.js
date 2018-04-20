@@ -162,6 +162,7 @@ gl.gulp.task("filter_geojson", ["ogr2ogr","split_data"], function(cb) {
             try {
               intersect = turf.intersect(d.features[i], cbsa.features[j]);
             } catch (ex) {
+              /*should maybe distinguish between undefined GEOIDs here and other errors?*/
               console.log("error with " + d.features[i].properties.GEOID10);
               console.log(ex);
               intersect = d.features[i];
