@@ -1,7 +1,7 @@
 /*globals require, Promise*/
 var gl = require("./CBPP_shared_gulp/gulplib.js")(), gulp = gl.gulp, fs = gl.fs;
 var request = require("request");
-var unzip = require("gulp-unzip");
+var decompress = require("gulp-decompress");
 var ogr2ogr = require("ogr2ogr");
 var topojson = require("topojson");
 var geojson_bbox = require("geojson-bbox");
@@ -69,29 +69,35 @@ gl.gulp.task("unzip_shapefiles", ["download_shapefiles"], function(cb) {
       var name = f.split(".")[0];
       index.push(name);
       requests.push(new Promise(function(resolve, reject) {
-        gl.makeDirectory("./shp/" + name, function() {
-          try {
+        try {
+          gl.makeDirectory("./shp/" + name, function() {
             if (fs.readdirSync("./shp/" + name ).length > 0) {
+
               resolve();
             } else {
+
+              console.log(f);
               gulp.src("./download/" + f)
-                .pipe(unzip())
-                .on("error", reject)
+                .pipe(decompress())
                 .pipe(gulp.dest("./shp/" + name))
+                .on("error", function(err) {
+                  resolve();
+                })
                 .on("finish", function() {
                   console.log("finished unzipping " + name);
                   resolve();
                 });
             }
-          } catch (ex) {
-            console.log(ex);
-            reject(ex);
-          }
-        });
+          });
+        } catch (ex) {
+          console.log(ex);
+          resolve();
+        }
       }));
     });
     fs.writeFileSync("./fileIndex.json", JSON.stringify(index));
     Promise.all(requests).then(function() {
+      console.log(requests);
       cb();
     });
   });
@@ -167,8 +173,9 @@ gl.gulp.task("filter_geojson", ["ogr2ogr","split_data"], function(cb) {
       cbsa.features.push(cbsa_org.features[i]);
     }
   }
-  fs.writeFileSync("./filtered/tl_2015_us_cbsa.json", JSON.stringify(cbsa));
+
   gl.makeDirectory("./filtered", function() {
+    fs.writeFileSync("./filtered/tl_2015_us_cbsa.json", JSON.stringify(cbsa));
     var files = fs.readdirSync("./geojson");
     var filterTasks = [];
     files.forEach(function(f) {
@@ -192,12 +199,15 @@ gl.gulp.task("ogr2ogr", ["geojson_dir","unzip_shapefiles"], function(cb) {
         } else {
           var geojson = ogr2ogr('./shp/' + f + "/" + f + ".shp")
             .format('GeoJSON')
-            .timeout(600000)
-            .stream();
-          geojson.pipe(fs.createWriteStream('./geojson/' + f + ".json"))
-            .on("finish", function() {
+            .timeout(600000);
+          geojson.exec(function(err, data) {
+            if (err) {
+              console.log(err);
+            } else {
               console.log("finished ogr2ogr for " + f);
+              gl.fs.writeFileSync('./geojson/' + f + ".json", JSON.stringify(data));
               resolve();
+            }
           });
         }
       } catch (ex) {
