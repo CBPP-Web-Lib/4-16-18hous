@@ -10,6 +10,9 @@ var topojson = require("topojson");
 var Figure = require("./CBPP_Figure")($);
 var GridConfig = require("./gridConfig.json");
 var FileIndex = require("./fileIndex.json");
+var localforage = require("localforage");
+localforage.clear();
+var geoStore = {};
 var GEOID_tracker = {};
 var geo_data = (function() {
   var r = {};
@@ -29,7 +32,26 @@ var geo_data = (function() {
 var URL_BASE;
 require("./app.css");
 var indexes = {};
+var geoid_to_file = {};
+var grid_to_geoid = {};
+var getJSONAndSave = function(f, cb) {
+  localforage.getItem(f, function(err, locald) {
+    if (locald===null) {
+      $.getJSON(f, function(d) {
+        localforage.setItem(f, d);
+        cb(null, d);
+      }).fail(function() {
+        cb(err);
+      });
+    } else {
+      cb(null, locald);
+    }
+  });
+
+};
 var Interactive = function(sel) {
+  var m = this;
+  m.requests = [];
   new Figure.Figure(sel, {
     rows: [0.61]
   });
@@ -46,7 +68,7 @@ var Interactive = function(sel) {
     var requests = [];
     var PromiseMaker = function(file,x,y) {
       return new Promise(function(resolve, reject) {
-        $.getJSON(URL_BASE + "/grid/" + file + "/low/" + x + "_" + y + ".json", function(d) {
+        getJSONAndSave(URL_BASE + "/grid/" + file + "/low/" + x + "_" + y + ".json", function(err, d) {
           var geo = topojson.feature(d, d.objects.districts);
           if (typeof(geo_data[file])==="undefined") {
             geo_data[file] = {};
@@ -80,11 +102,11 @@ var Interactive = function(sel) {
 
   function DrawInitialMap() {
     svg = d3.select(sel + " .mapwrap").append("svg")
-      .attr("viewBox","50 5 820 100")
-      .attr("preserveAspectRatio","xMinYMin");
+      .attr("viewBox", [50, 5, 820, 820*$(sel + " .mapwrap").height()/$(sel + " .mapwrap").width()].join(" "))
+      .attr("preserveAspectRatio", "xMinYMin slice");
     geo_data.national = {};
     geo_data.national.low = (function() {
-      var topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k.low});
+      var topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k.low}, 50000);
       var merged = topojson.merge(topo, topo.objects.districts.geometries);
       return {
         type: "FeatureCollection",
@@ -150,24 +172,96 @@ var Interactive = function(sel) {
           return "#EB9123";
         });
     });
+    require("./js/zoom.js")(sel + " .mapwrap", m, $, d3);
+    require("./js/drag.js")(sel + " .mapwrap", m, $, d3);
+    m.onZoom(checkForDownloads);
+  }
+
+  function checkForDownloads() {
+    var viewBox = svg.attr("viewBox").split(" ");
+    for (var i = 0, ii = viewBox.length; i<ii; i++) {
+      viewBox[i]*=1;
+    }
+    var range = "low";
+    if (viewBox[2]*1 < 400) {
+      range = "medium";
+    }
+    if (viewBox[2]*1 < 100) {
+      range = "high";
+    }
+    if (range!=="low") {
+      var samplePoints = [];
+      for (var x = viewBox[0]; x<viewBox[0] + viewBox[2]*(51/50); x+= viewBox[2]/50) {
+        for (var y = viewBox[1]; y<viewBox[1] + viewBox[3]*(51/50); y+= viewBox[3]/50) {
+          samplePoints.push(projection.invert([x,y]));
+        }
+      }
+
+      var pointsobj = {};
+      for (i = 0, ii = samplePoints.length; i<ii; i++) {
+        var g = GridConfig[range].gridSize;
+        pointsobj[Math.floor(samplePoints[i][0]/g)*g + "_" + Math.floor(samplePoints[i][1]/g)*g] = 1;
+      }
+      var fileList = [];
+      for (var c in pointsobj) {
+        if (pointsobj.hasOwnProperty(c)) {
+          fileList.push(c);
+        }
+      }
+      var toDownload = [];
+      var downloadPromiseMaker = function(file, cb) {
+        toDownload.push(new Promise(function(resolve, reject) {
+          getJSONAndSave(file, function(err, d) {
+            cb(file, d);
+            resolve();
+          });
+        }));
+      };
+
+      var grid_to_geoid_cb = function(file, d) {
+        grid_to_geoid[file] = d;
+      };
+
+      var geoid_to_file_cb = function(file, d) {
+        geoid_to_file[file] = d;
+      };
+
+      for (var file in indexes) {
+        if (indexes.hasOwnProperty(file)) {
+          toDownload.push(downloadPromiseMaker(URL_BASE + "/grid/" + file + "/" + range + "/grid_to_geoid.json", grid_to_geoid_cb));
+          toDownload.push(downloadPromiseMaker(URL_BASE + "/grid/" + file + "/" + range + "/geoid_to_file.json", geoid_to_file_cb));
+        }
+      }
+
+      Promise.all(toDownload).then(function() {
+        console.log(grid_to_geoid);
+        console.log(geoid_to_file);
+      });
+
+      //var coordsmin = projection.invert([viewBox[0], viewBox[1]]);
+      //var coordsmax = projection.invert([viewBox[0] + viewBox[2], viewBox[1]+viewBox[3]]);
+    //  console.log(coordsmin, coordsmax);
+    }
   }
 
 };
+
+
 
 function getIndexes() {
   var PromiseMaker = function(folder, gridSize) {
     var file = URL_BASE + "/grid/" + folder + "/" + gridSize + "/index.json";
     return new Promise(function(resolve, reject) {
-      $.getJSON(file, function(d) {
+      getJSONAndSave(file, function(err, d) {
+        if (err) {
+          console.log("bad" + file);
+          reject();
+        }
         if (typeof(indexes[folder])==="undefined") {
           indexes[folder] = {};
         }
         indexes[folder][gridSize] = d;
         resolve();
-        console.log(requests.length);
-      }).fail(function() {
-        console.log("bad" + file);
-        reject();
       });
     });
   };
@@ -176,7 +270,14 @@ function getIndexes() {
     var folder = FileIndex[i];
     for (var gridSize in GridConfig) {
       if (GridConfig.hasOwnProperty(gridSize)) {
-        requests.push(PromiseMaker(folder, gridSize));
+        var use = true;
+        if (!GridConfig[gridSize].exclude) GridConfig[gridSize].exclude = [];
+        for (var j = 0, jj= GridConfig[gridSize].exclude.length; j<jj; j++) {
+          if (FileIndex[i].indexOf(GridConfig[gridSize].exclude[j])!==-1) {
+            use = false;
+          }
+        }
+        if (use) {requests.push(PromiseMaker(folder, gridSize));}
       }
     }
   }

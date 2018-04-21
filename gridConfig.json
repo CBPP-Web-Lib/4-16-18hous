@@ -1,19 +1,22 @@
 {
   "low": {
-    "quantize":400,
-    "simplify":0.01,
+    "quantize":0.001,
+    "simplify":0.001,
     "dest":"./topojson/low/",
-    "gridSize": 60
+    "gridSize": 60,
+    "exclude" : [
+      "tl_2010"
+    ]
   },
   "medium": {
-    "quantize":4000,
-    "simplify":0.001,
+    "quantize":0.0001,
+    "simplify":0.0001,
     "dest":"./topojson/medium/",
     "gridSize": 5
   },
   "high": {
-    "quantize":400000,
-    "simplify":0.0001,
+    "quantize":0.00001,
+    "simplify":0.00001,
     "dest":"./topojson/high/",
     "gridSize":0.5
   }

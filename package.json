@@ -8,6 +8,7 @@
     "d3": "^4.8.0",
     "fs": "0.0.1-security",
     "jquery": "^1.12.4",
+    "localforage": "^1.7.1",
     "promise-polyfill": "^7.1.2",
     "stringify": "^5.1.0"
   },
