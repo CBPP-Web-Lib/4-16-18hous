@@ -360,6 +360,7 @@ gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], fun
   }
 });
 gl.gulp.task("topojson_grid", ["topojson"], function(cb) {
+  var layer_bboxes = {};
   if (fs.existsSync("./build/grid")) {
     cb();
   } else {
@@ -378,6 +379,11 @@ gl.gulp.task("topojson_grid", ["topojson"], function(cb) {
       });
       Promise.all(tasks).then(function() {
         console.log("finished grid");
+        for (var size in layer_bboxes) {
+          if (layer_bboxes.hasOwnProperty(size)) {
+            fs.writeFileSync("./intermediate/layerbbox_" + size + ".json", JSON.stringify(layer_bboxes[size]));
+          }
+        }
         cb();
       });
     });
@@ -465,6 +471,8 @@ gl.gulp.task("topojson_grid", ["topojson"], function(cb) {
         }
       }
     });
+    if (!layer_bboxes[dir]) layer_bboxes[dir] = {};
+    layer_bboxes[dir][file] = [g_xmin, g_ymin, g_xmax, g_ymax];
     var settings = gridConfig[dir];
     function indexFlatten(index) {
       var r = [];
