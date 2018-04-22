@@ -11,6 +11,11 @@ var Figure = require("./CBPP_Figure")($);
 var GridConfig = require("./gridConfig.json");
 var FileIndex = require("./fileIndex.json");
 var localforage = require("localforage");
+var LayerIndex = {
+  "high": require("./intermediate/layerbbox_high.json"),
+  "medium": require("./intermediate/layerbbox_medium.json"),
+  "low": require("./intermediate/layerbbox_low.json")
+};
 localforage.clear();
 var geoStore = {};
 var GEOID_tracker = {};
@@ -196,10 +201,21 @@ var Interactive = function(sel) {
           samplePoints.push(projection.invert([x,y]));
         }
       }
-
       var pointsobj = {};
+      var layerObj = {};
       for (i = 0, ii = samplePoints.length; i<ii; i++) {
         var g = GridConfig[range].gridSize;
+        for (var layer in LayerIndex[range]) {
+          if (LayerIndex[range].hasOwnProperty(layer)) {
+            var p = samplePoints[i];
+            if (p[0] >= LayerIndex[range][layer][0] &&
+                p[0] <= LayerIndex[range][layer][2] &&
+                p[1] >= LayerIndex[range][layer][1] &&
+                p[1] <= LayerIndex[range][layer][3]) {
+              layerObj[layer] = 1;
+            }
+          }
+        }
         pointsobj[Math.floor(samplePoints[i][0]/g)*g + "_" + Math.floor(samplePoints[i][1]/g)*g] = 1;
       }
       var fileList = [];
@@ -228,8 +244,10 @@ var Interactive = function(sel) {
 
       for (var file in indexes) {
         if (indexes.hasOwnProperty(file)) {
-          toDownload.push(downloadPromiseMaker(URL_BASE + "/grid/" + file + "/" + range + "/grid_to_geoid.json", grid_to_geoid_cb));
-          toDownload.push(downloadPromiseMaker(URL_BASE + "/grid/" + file + "/" + range + "/geoid_to_file.json", geoid_to_file_cb));
+          if (layerObj[file]) {
+            toDownload.push(downloadPromiseMaker(URL_BASE + "/grid/" + file + "/" + range + "/grid_to_geoid.json", grid_to_geoid_cb));
+            toDownload.push(downloadPromiseMaker(URL_BASE + "/grid/" + file + "/" + range + "/geoid_to_file.json", geoid_to_file_cb));
+          }
         }
       }
 
