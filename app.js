@@ -11,6 +11,7 @@ var Figure = require("./CBPP_Figure")($);
 var GridConfig = require("./gridConfig.json");
 var FileIndex = require("./fileIndex.json");
 var localforage = require("localforage");
+var localmemory = {};
 var LayerIndex = {
   "high": require("./intermediate/layerbbox_high.json"),
   "medium": require("./intermediate/layerbbox_medium.json"),
@@ -39,6 +40,16 @@ require("./app.css");
 var indexes = {};
 var geoid_to_file = {};
 var grid_to_geoid = {};
+var getJSONAndSaveInMemory = function(f, cb) {
+  if (!localmemory[f]) {
+    getJSONAndSave(f, function(err, d) {
+      localmemory[f] = d;
+      cb(err, d);
+    });
+  } else {
+    cb(null, localmemory[f]);
+  }
+};
 var getJSONAndSave = function(f, cb) {
   localforage.getItem(f, function(err, locald) {
     if (locald===null) {
@@ -180,6 +191,7 @@ var Interactive = function(sel) {
     require("./js/zoom.js")(sel + " .mapwrap", m, $, d3);
     require("./js/drag.js")(sel + " .mapwrap", m, $, d3);
     m.onZoom(checkForDownloads);
+    console.log("done");
   }
 
   function checkForDownloads() {
@@ -227,8 +239,9 @@ var Interactive = function(sel) {
       var toDownload = [];
       var downloadPromiseMaker = function(file, cb) {
         toDownload.push(new Promise(function(resolve, reject) {
-          getJSONAndSave(file, function(err, d) {
+          getJSONAndSaveInMemory(file, function(err, d) {
             cb(file, d);
+            console.log(file, d);
             resolve();
           });
         }));
@@ -241,20 +254,17 @@ var Interactive = function(sel) {
       var geoid_to_file_cb = function(file, d) {
         geoid_to_file[file] = d;
       };
-
       for (var file in indexes) {
         if (indexes.hasOwnProperty(file)) {
-          if (layerObj[file]) {
+          if (layerObj[file + ".json"]) {
+            console.log(file);
             toDownload.push(downloadPromiseMaker(URL_BASE + "/grid/" + file + "/" + range + "/grid_to_geoid.json", grid_to_geoid_cb));
             toDownload.push(downloadPromiseMaker(URL_BASE + "/grid/" + file + "/" + range + "/geoid_to_file.json", geoid_to_file_cb));
           }
         }
       }
 
-      Promise.all(toDownload).then(function() {
-        console.log(grid_to_geoid);
-        console.log(geoid_to_file);
-      });
+      Promise.all(toDownload).then(getShapefiles);
 
       //var coordsmin = projection.invert([viewBox[0], viewBox[1]]);
       //var coordsmax = projection.invert([viewBox[0] + viewBox[2], viewBox[1]+viewBox[3]]);
@@ -262,15 +272,18 @@ var Interactive = function(sel) {
     }
   }
 
+
 };
 
-
+function getShapefiles() {
+  
+}
 
 function getIndexes() {
   var PromiseMaker = function(folder, gridSize) {
     var file = URL_BASE + "/grid/" + folder + "/" + gridSize + "/index.json";
     return new Promise(function(resolve, reject) {
-      getJSONAndSave(file, function(err, d) {
+      getJSONAndSaveInMemory(file, function(err, d) {
         if (err) {
           console.log("bad" + file);
           reject();
