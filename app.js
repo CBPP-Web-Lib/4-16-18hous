@@ -11,15 +11,19 @@ var Figure = require("./CBPP_Figure")($);
 var GridConfig = require("./gridConfig.json");
 var FileIndex = require("./fileIndex.json");
 var localforage = require("localforage");
+var geojson_bbox = require("geojson-bbox");
+var getBounds = require('svg-path-bounds');
 var localmemory = {};
 var LayerIndex = {
   "high": require("./intermediate/layerbbox_high.json"),
   "medium": require("./intermediate/layerbbox_medium.json"),
   "low": require("./intermediate/layerbbox_low.json")
 };
+var pako = require("pako");
 localforage.clear();
 var geoStore = {};
 var GEOID_tracker = {};
+var svg_path_data = {};
 var geo_data = (function() {
   var r = {};
   for (var i = 0, ii = FileIndex.length; i<ii; i++) {
@@ -37,9 +41,9 @@ var geo_data = (function() {
 })();
 var URL_BASE;
 require("./app.css");
-var indexes = {};
-var geoid_to_file = {};
-var grid_to_geoid = {};
+var indexes = require("./intermediate/gridIndex.json");
+
+var drawData = {};
 var getJSONAndSaveInMemory = function(f, cb) {
   if (!localmemory[f]) {
     getJSONAndSave(f, function(err, d) {
@@ -54,6 +58,9 @@ var getJSONAndSave = function(f, cb) {
   localforage.getItem(f, function(err, locald) {
     if (locald===null) {
       $.getJSON(f, function(d) {
+        if (typeof(d)==="object" && d.compressed) {
+          d = JSON.parse(pako.inflate(d.d, {to: "string"}));
+        }
         localforage.setItem(f, d);
         cb(null, d);
       }).fail(function() {
@@ -80,24 +87,25 @@ var Interactive = function(sel) {
     .then(getLowResShapes)
     .then(DrawInitialMap);
 
+  function handleShapeTopo(d, file, layer) {
+    console.log(d, file, layer);
+    console.log(geo_data);
+  /*  if (typeof(geo_data[file])==="undefined") {
+      geo_data[file] = {features: {}};
+    }*/
+    var geo = topojson.feature(d, d.objects.districts);
+    for (var i = 0, ii = geo.features.length; i<ii; i++) {
+      var GEOID = geo.features[i].properties.GEOID || geo.features[i].properties.GEOID10;
+      geo_data[file][layer].features[GEOID*1] = geo.features[i];
+    }
+  }
+
   function getLowResShapes() {
     var requests = [];
     var PromiseMaker = function(file,x,y) {
       return new Promise(function(resolve, reject) {
         getJSONAndSave(URL_BASE + "/grid/" + file + "/low/" + x + "_" + y + ".json", function(err, d) {
-          var geo = topojson.feature(d, d.objects.districts);
-          if (typeof(geo_data[file])==="undefined") {
-            geo_data[file] = {};
-          }
-          for (var i = 0, ii = geo.features.length; i<ii; i++) {
-            var GEOID = geo.features[i].properties.GEOID || geo.features[i].properties.GEOID10;
-            if (typeof(GEOID_tracker[GEOID])==="undefined") {
-              geo_data[file].low.features.push(geo.features[i]);
-            } else if (typeof(GEOID)==="undefined") {
-              geo_data[file].low.features.push(geo.features[i]);
-            }
-            GEOID_tracker[GEOID] = true;
-          }
+          handleShapeTopo(d, file, "low");
           resolve();
         });
       });
@@ -116,19 +124,59 @@ var Interactive = function(sel) {
     return Promise.all(requests);
   }
 
-  function DrawInitialMap() {
-    svg = d3.select(sel + " .mapwrap").append("svg")
-      .attr("viewBox", [50, 5, 820, 820*$(sel + " .mapwrap").height()/$(sel + " .mapwrap").width()].join(" "))
-      .attr("preserveAspectRatio", "xMinYMin slice");
-    geo_data.national = {};
-    geo_data.national.low = (function() {
-      var topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k.low}, 50000);
-      var merged = topojson.merge(topo, topo.objects.districts.geometries);
-      return {
-        type: "FeatureCollection",
-        features: [merged]
-      };
-    })();
+  function filterToVisible(geo_data, viewbox) {
+    var r = {};
+    viewbox = viewbox.split(" ");
+    for (var layer in geo_data) {
+      if (geo_data.hasOwnProperty(layer)) {
+        for (var size in geo_data[layer]) {
+          if (geo_data[layer].hasOwnProperty(size)) {
+            if (!r[size]) r[size] = {};
+            if (!r[size][layer]) r[size][layer] = [];
+            for (var geoid in geo_data[layer][size].features) {
+              if (geo_data[layer][size].features.hasOwnProperty(geoid)) {
+                geoid*=1;
+                if (!svg_path_data[geoid]) {
+                  svg_path_data[geoid] = {};
+                }
+                var thispath;
+                if (!svg_path_data[geoid][size]) {
+                  thispath = path(geo_data[layer][size].features[geoid]);
+                  svg_path_data[geoid][size] = thispath;
+                } else {
+                  thispath = svg_path_data[geoid][size];
+                }
+                if (thispath) {
+                  var bbox = getBounds(thispath);
+                  if (viewbox[0]*1 + viewbox[2]*1 > bbox[0] &&
+                      viewbox[1]*1 + viewbox[3]*1 > bbox[1] &&
+                      viewbox[0]*1 < bbox[2] &&
+                      viewbox[1]*1 < bbox[3]) {
+                    r[size][layer].push(geo_data[layer][size].features[geoid]);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    console.log(r);
+    return r;
+  }
+
+  function updateDrawData(svg) {
+    drawData = filterToVisible(geo_data, svg.attr("viewBox"));
+    drawData = (function(r) {
+      for (var size in r) {
+        if (r.hasOwnProperty(size)) {
+          var topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k[size]}, 50000);
+          var merged = topojson.merge(topo, topo.objects.districts.geometries);
+          r[size].national = [merged];
+        }
+      }
+      return r;
+    })(drawData);
     svg.selectAll("g")
       .data((function(g) {
         var r = [];
@@ -149,18 +197,35 @@ var Interactive = function(sel) {
       .attr("class", function(d) {
         return "layer " + d;
       });
-
-    svg.selectAll("g.size.low").selectAll("g.layer").each(function(layer) {
+    svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
+      var size = d3.select(this.parentNode).attr("class").split(" ")[1];
+      var scaling ={"low":1,"medium":0.1,"high":0.01};
       d3.select(this).selectAll("path")
-        .data(geo_data[layer].low.features)
+        .data(function() {
+          return drawData[size][layer];
+        })
         .enter()
         .append("path")
-        .attr("d", path)
+        .attr("d", function(el) {
+
+          if (!el.properties) {
+            el.properties = {};
+          }
+          var geoid = el.properties.GEOID | el.properties.GEOID10;
+          try {
+            if (!geoid || !svg_path_data[geoid]) {
+              return path(el);
+            }
+            return svg_path_data[geoid][size];
+          } catch (ex) {
+            console.log(geoid, ex);
+          }
+        })
         .attr("stroke-width",function() {
           if (layer.indexOf("state")!==-1) {
-            return 0.8;
+            return 0.8*scaling[size];
           }
-          return 0.5;
+          return 0.5*scaling[size];
         })
         .attr("fill", function() {
           if (layer.indexOf("state")!==-1) {
@@ -188,6 +253,16 @@ var Interactive = function(sel) {
           return "#EB9123";
         });
     });
+  }
+
+  function DrawInitialMap() {
+    svg = d3.select(sel + " .mapwrap").append("svg")
+      .attr("viewBox", [50, 5, 820, 820*$(sel + " .mapwrap").height()/$(sel + " .mapwrap").width()].join(" "))
+      .attr("preserveAspectRatio", "xMinYMin slice");
+
+    updateDrawData(svg);
+
+
     require("./js/zoom.js")(sel + " .mapwrap", m, $, d3);
     require("./js/drag.js")(sel + " .mapwrap", m, $, d3);
     m.onZoom(checkForDownloads);
@@ -200,13 +275,15 @@ var Interactive = function(sel) {
       viewBox[i]*=1;
     }
     var range = "low";
-    if (viewBox[2]*1 < 400) {
+    if (viewBox[2]*1 < 100) {
       range = "medium";
     }
-    if (viewBox[2]*1 < 100) {
+    if (viewBox[2]*1 < 10) {
       range = "high";
     }
     if (range!=="low") {
+      var geoid_to_file = {};
+      var grid_to_geoid = {};
       var samplePoints = [];
       for (var x = viewBox[0]; x<viewBox[0] + viewBox[2]*(51/50); x+= viewBox[2]/50) {
         for (var y = viewBox[1]; y<viewBox[1] + viewBox[3]*(51/50); y+= viewBox[3]/50) {
@@ -241,78 +318,107 @@ var Interactive = function(sel) {
         toDownload.push(new Promise(function(resolve, reject) {
           getJSONAndSaveInMemory(file, function(err, d) {
             cb(file, d);
-            console.log(file, d);
             resolve();
           });
         }));
       };
 
       var grid_to_geoid_cb = function(file, d) {
-        grid_to_geoid[file] = d;
+        grid_to_geoid[file.replace("/index.json","")] = d.grid_to_geoid;
+        geoid_to_file[file.replace("/index.json","")] = d.geoid_to_file;
       };
 
-      var geoid_to_file_cb = function(file, d) {
-        geoid_to_file[file] = d;
-      };
       for (var file in indexes) {
         if (indexes.hasOwnProperty(file)) {
           if (layerObj[file + ".json"]) {
-            console.log(file);
-            toDownload.push(downloadPromiseMaker(URL_BASE + "/grid/" + file + "/" + range + "/grid_to_geoid.json", grid_to_geoid_cb));
-            toDownload.push(downloadPromiseMaker(URL_BASE + "/grid/" + file + "/" + range + "/geoid_to_file.json", geoid_to_file_cb));
+            toDownload.push(downloadPromiseMaker(URL_BASE + "/grid/" + file + "/" + range + "/index.json", grid_to_geoid_cb));
+
           }
         }
       }
-
-      Promise.all(toDownload).then(getShapefiles);
-
-      //var coordsmin = projection.invert([viewBox[0], viewBox[1]]);
-      //var coordsmax = projection.invert([viewBox[0] + viewBox[2], viewBox[1]+viewBox[3]]);
-    //  console.log(coordsmin, coordsmax);
+      Promise.all(toDownload).then(function() {
+        getShapefiles(grid_to_geoid, geoid_to_file, range);
+      });
     }
   }
 
+  function getShapefiles(grid_to_geoid, geoid_to_file, range) {
+    var geoids = {};
+    for (var layer in grid_to_geoid) {
+      if (grid_to_geoid.hasOwnProperty(layer)) {
+        for (var x in grid_to_geoid[layer]) {
+          if (grid_to_geoid[layer].hasOwnProperty(x)) {
+            for (var y in grid_to_geoid[layer][x]) {
+              if (grid_to_geoid[layer][x].hasOwnProperty(y)) {
+                for (var i = 0, ii = grid_to_geoid[layer][x][y].length; i<ii; i++) {
+                  geoids[grid_to_geoid[layer][x][y][i]] = 1;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    var files = (function(g) {
+      var r = {};
+      for (var geoid in g) {
+        if (g.hasOwnProperty(geoid)) {
+          if (Math.random()<0.001) {
+            for (var file in geoid_to_file) {
+              if (geoid_to_file.hasOwnProperty(file)) {
+                if (geoid_to_file[file][geoid*1]) {
+                  r[file + "/" +geoid_to_file[file][geoid*1].join("_") + ".json"]=1;
+                }
+              }
+            }
+          }
+        }
+      }
+      var ar = [];
+      for (var filen in r) {
+        if (r.hasOwnProperty(filen)) {
+          ar.push(filen);
+        }
+      }
+      return ar;
+    })(geoids);
+    var requests = [];
+    var promiseMaker = function(file) {
+      return new Promise(function(resolve, reject) {
+        getJSONAndSave(file, function(err, d) {
+          file = file.split("/");
+          handleShapeTopo(d, file[file.length-3], range);
+          resolve();
+        });
+      });
+    };
+    for (var k = 0, kk = files.length; k<kk; k++) {
+      requests.push(promiseMaker(files[k]));
+    }
+    Promise.all(requests).then(function() {
+      updateDrawData(d3.select(sel + " svg"));
+    });
+  }
 
-};
+}; /*Interactive()*/
 
-function getShapefiles() {
-  
-}
+
 
 function getIndexes() {
-  var PromiseMaker = function(folder, gridSize) {
-    var file = URL_BASE + "/grid/" + folder + "/" + gridSize + "/index.json";
-    return new Promise(function(resolve, reject) {
-      getJSONAndSaveInMemory(file, function(err, d) {
-        if (err) {
-          console.log("bad" + file);
-          reject();
-        }
-        if (typeof(indexes[folder])==="undefined") {
-          indexes[folder] = {};
-        }
-        indexes[folder][gridSize] = d;
-        resolve();
-      });
-    });
-  };
-  var requests = [];
-  for (var i = 0, ii = FileIndex.length; i<ii; i++) {
-    var folder = FileIndex[i];
-    for (var gridSize in GridConfig) {
-      if (GridConfig.hasOwnProperty(gridSize)) {
-        var use = true;
-        if (!GridConfig[gridSize].exclude) GridConfig[gridSize].exclude = [];
-        for (var j = 0, jj= GridConfig[gridSize].exclude.length; j<jj; j++) {
-          if (FileIndex[i].indexOf(GridConfig[gridSize].exclude[j])!==-1) {
-            use = false;
-          }
-        }
-        if (use) {requests.push(PromiseMaker(folder, gridSize));}
+  var r = {};
+  for (var file in indexes) {
+    if (indexes.hasOwnProperty(file)) {
+      var filea = file.split("/");
+      if (!r[filea[0]]) {
+        r[filea[0]] = {};
       }
+      r[filea[0]][filea[1]] = indexes[file];
     }
   }
-  return Promise.all(requests);
+  indexes = r;
+  return new Promise(function(resolve, reject) {
+    resolve();
+  });
 }
 
 $(document).ready(function() {

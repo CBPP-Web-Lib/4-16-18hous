@@ -7,6 +7,7 @@ var topojson = require("topojson");
 var geojson_bbox = require("geojson-bbox");
 var fips = require("./fips.json");
 var turf = require("turf");
+var pako = require("pako");
 function zeroPad(fips) {
   fips = fips + "";
   while (fips.length < 2) {
@@ -361,6 +362,7 @@ gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], fun
 });
 gl.gulp.task("topojson_grid", ["topojson"], function(cb) {
   var layer_bboxes = {};
+  var g_index = {};
   if (fs.existsSync("./build/grid")) {
     cb();
   } else {
@@ -384,6 +386,7 @@ gl.gulp.task("topojson_grid", ["topojson"], function(cb) {
             fs.writeFileSync("./intermediate/layerbbox_" + size + ".json", JSON.stringify(layer_bboxes[size]));
           }
         }
+        fs.writeFileSync("./intermediate/gridIndex.json",JSON.stringify(g_index, null, " "));
         cb();
       });
     });
@@ -442,7 +445,7 @@ gl.gulp.task("topojson_grid", ["topojson"], function(cb) {
       g_ymin = Math.min(ymin, g_ymin);
       g_ymax = Math.max(ymax, g_ymax);
       if (typeof(obj[xmin])==="undefined") {
-        obj[xmin] = {};
+        obj[xmin*1] = {};
       }
       if (typeof(obj[xmin][ymin])==="undefined") {
         obj[xmin][ymin] = {
@@ -450,8 +453,8 @@ gl.gulp.task("topojson_grid", ["topojson"], function(cb) {
           features: []
         };
       }
-      obj[xmin][ymin].features.push(f);
-      geoid_to_file[geoid] = [xmin, ymin];
+      obj[xmin*1][ymin*1].features.push(f);
+      geoid_to_file[geoid*1] = [xmin*1, ymin*1];
       if (typeof(index[xmin])==="undefined") {
         index[xmin] = {};
       }
@@ -467,7 +470,7 @@ gl.gulp.task("topojson_grid", ["topojson"], function(cb) {
           if (typeof(grid_to_geoid[x][y])==="undefined") {
             grid_to_geoid[x][y] = [];
           }
-          grid_to_geoid[x][y].push(geoid);
+          grid_to_geoid[x][y].push(isNaN(geoid*1) ? geoid : geoid*1);
         }
       }
     });
@@ -487,13 +490,22 @@ gl.gulp.task("topojson_grid", ["topojson"], function(cb) {
       }
       return r;
     }
+    var writeCompressedFile = function(f, d) {
+      var data = {
+        d: pako.deflate(JSON.stringify(d), { to: 'string' }),
+        compressed: true
+      };
+      fs.writeFileSync(f, JSON.stringify(data));
+    };
     gl.makeDirectory("./build/grid/" + file.split(".")[0] + "/" + dir, function() {
-      fs.writeFileSync("./build/grid/" + file.split(".")[0] + "/" + dir + "/index.json",
-        JSON.stringify(indexFlatten(index)));
-      fs.writeFileSync("./build/grid/" + file.split(".")[0] + "/" + dir + "/grid_to_geoid.json",
-        JSON.stringify(grid_to_geoid));
-      fs.writeFileSync("./build/grid/" + file.split(".")[0] + "/" + dir + "/geoid_to_file.json",
-        JSON.stringify(geoid_to_file));
+      //writeCompressedFile("./build/grid/" + file.split(".")[0] + "/" + dir + "/index.json",indexFlatten(index));
+      var loc = file.split(".")[0] + "/" + dir;
+      console.log(grid_to_geoid);
+      writeCompressedFile("./build/grid/" + loc + "/index.json",{
+        grid_to_geoid: grid_to_geoid,
+        geoid_to_file: geoid_to_file
+      });
+      g_index[loc] = indexFlatten(index);
       var topoTile;
       for (var x in obj) {
         if (obj.hasOwnProperty(x)) {
@@ -510,9 +522,9 @@ gl.gulp.task("topojson_grid", ["topojson"], function(cb) {
               //topoTile = topojson.quantize(topoTile, quantizeF);
               //topoTile = topojson.presimplify(topoTile);
               //topoTile = topojson.simplify(topoTile, settings.simplify);
-              fs.writeFileSync("./build/grid/" + file.split(".")[0] + "/" + dir + "/" +
+              writeCompressedFile("./build/grid/" + file.split(".")[0] + "/" + dir + "/" +
                 x.replace(".","p") + "_" +
-                y.replace(".","p") + ".json", JSON.stringify(topoTile));
+                y.replace(".","p") + ".json", topoTile);
             }
           }
         }
