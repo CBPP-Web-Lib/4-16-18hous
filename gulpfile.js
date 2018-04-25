@@ -104,9 +104,10 @@ gl.gulp.task("unzip_shapefiles", ["download_shapefiles"], function(cb) {
 });
 gl.gulp.task("filter_geojson", ["ogr2ogr","split_data"], function(cb) {
   gulp.watch();
+
   function existsInData(feature, data) {
-    var geoid = feature.properties.GEOID;
-    return typeof(data[geoid])!=="undefined";
+    var geoid = feature.properties.GEOID | feature.properties.GEOID10;
+    return typeof(data[geoid*1])!=="undefined";
   }
   /*function removePoints(geos) {
     return geos;
@@ -133,53 +134,16 @@ gl.gulp.task("filter_geojson", ["ogr2ogr","split_data"], function(cb) {
       return;
     }
     fs.readFile("./geojson/" + f, function(err, d) {
-
       d = JSON.parse(d);
       var r = {
         "type": "FeatureCollection",
         "features" : []
       };
-      var intersections;
 
-      function bbox_intersect(b1, b2) {
-        return !((b1[0] > b2[2]) ||
-          (b1[1] > b2[3]) ||
-          (b1[2] < b2[0]) ||
-          (b1[3] < b2[1]));
-      }
-
-
-
-      var intersect;
       for (var i = 0, ii = d.features.length; i<ii; i++) {
-        intersections = [];
-        if (Math.random()<0.001) {
-          console.log(f, i/ii);
-        }
-        var outer_bbox = geojson_bbox(d.features[i]);
-        for (var j = 0, jj = cbsa.features.length; j<jj; j++) {
-          var inner_bbox = geojson_bbox(cbsa.features[j]);
-          if (bbox_intersect(outer_bbox, inner_bbox)) {
-            try {
-              intersect = turf.intersect(d.features[i], cbsa.features[j]);
-            } catch (ex) {
-              /*should maybe distinguish between undefined GEOIDs here and other errors?*/
-              console.log("error with " + d.features[i].properties.GEOID10);
-              console.log(ex);
-              intersect = d.features[i];
-            }
-            if (intersect!==null && typeof(intersect)!=="undefined") {
-              intersect.properties = d.features[i].properties;
-              intersect.properties.parentCBSA = cbsa.features[j].properties.GEOID;
-              //intersect.geometry.geometries = removePoints(intersect.geometry.geometries);
-              r.features.push(intersect);
-            }
-          }
-        }
-        /*if (intersections.length>0) {
-          d.features[i].properties.parents = intersections;
+        if (existsInData(d.features[i], data)) {
           r.features.push(d.features[i]);
-        }*/
+        }
       }
       fs.writeFileSync("./filtered/" + f, JSON.stringify(r, null, " "));
       cb();
@@ -187,8 +151,8 @@ gl.gulp.task("filter_geojson", ["ogr2ogr","split_data"], function(cb) {
   }
 
   var cbsa_org = JSON.parse(fs.readFileSync("./geojson/tl_2015_us_cbsa.json"));
-  var data = JSON.parse(fs.readFileSync("./intermediate/names.json"));
 
+  var data = JSON.parse(fs.readFileSync("./intermediate/names.json"));
 
   var cbsa = {
     "type": "FeatureCollection",

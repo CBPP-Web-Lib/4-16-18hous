@@ -88,8 +88,7 @@ var Interactive = function(sel) {
     .then(DrawInitialMap);
 
   function handleShapeTopo(d, file, layer) {
-    console.log(d, file, layer);
-    console.log(geo_data);
+  
   /*  if (typeof(geo_data[file])==="undefined") {
       geo_data[file] = {features: {}};
     }*/
@@ -177,7 +176,7 @@ var Interactive = function(sel) {
       }
       return r;
     })(drawData);
-    svg.selectAll("g")
+    var sizeLayers = svg.selectAll("g")
       .data((function(g) {
         var r = [];
         for (var size in g) {
@@ -190,16 +189,17 @@ var Interactive = function(sel) {
       .enter()
       .append("g")
       .attr("class", function(d) {return "size " + d;});
-    svg.selectAll("g.size").selectAll("g")
+    var fileLayers = svg.selectAll("g.size").selectAll("g")
       .data(FileIndex.concat(["national"]))
       .enter()
       .append("g")
       .attr("class", function(d) {
         return "layer " + d;
       });
-    svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
+    var shapes = svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
       var size = d3.select(this.parentNode).attr("class").split(" ")[1];
       var scaling ={"low":1,"medium":0.1,"high":0.01};
+      console.log(layer);
       d3.select(this).selectAll("path")
         .data(function() {
           return drawData[size][layer];
@@ -207,7 +207,6 @@ var Interactive = function(sel) {
         .enter()
         .append("path")
         .attr("d", function(el) {
-
           if (!el.properties) {
             el.properties = {};
           }
