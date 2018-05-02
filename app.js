@@ -70,6 +70,57 @@ var Interactive = function(sel) {
     path = d3.geoPath(projection);
   DrawInitialMap();
 
+  function zoomToCBSA(cbsa) {
+    var bbox = geojson_bbox(cbsa);
+    var scale = 18000/(bbox[2]-bbox[0]);
+    function projectionTween(projection0, projection1, t) {
+      var projection =  function(λ, φ) {
+        λ *= 180 / Math.PI;
+        φ *= 180 / Math.PI;
+        console.log(λ, φ);
+        var p0 = projection0([λ, φ]), p1 = projection1([λ, φ]);
+        if (p0===null) {
+          return projection1([λ, φ]);
+        }
+        var p2 = [(1 - t) * p0[0] + t * p1[0], (1 - t) * -p0[1] + t * -p1[1]];
+        console.log(p2);
+        return p2;
+      };
+      return d3.geoProjection(projection);
+    }
+
+
+
+    var orgProjection = d3.geoAlbersUsa();
+    var destProjection = d3.geoMercator()
+      .scale(scale)
+      .center([bbox[0] + (bbox[2]-bbox[0])/2, bbox[1] + (bbox[3]-bbox[1])/2]);
+
+    var testProjection = projectionTween(orgProjection, destProjection, 0.1);
+
+    console.log(orgProjection([-80, 25]));
+    console.log(destProjection([-80, 25]));
+    console.log(testProjection([-80, 25]));
+    return;
+
+    var timer = d3.timer(function(elapsed) {
+      var p = elapsed/1000;
+      if (p>=1) {
+        p=1;
+        timer.stop();
+      }
+      projection = projectionTween(orgProjection, destProjection, p);
+      path = d3.geoPath(projection);
+      d3.selectAll("path")
+        .attr("d", path);
+    }, 0);
+
+
+  }
+
+
+
+
   function filterToVisible(geo_data, viewbox) {
     var r = {};
     viewbox = viewbox.split(" ");
@@ -147,6 +198,7 @@ var Interactive = function(sel) {
       .attr("class", function(d) {
         return "layer " + d;
       });
+
     var shapes = svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
       var size = d3.select(this.parentNode).attr("class").split(" ")[1];
       var scaling ={"low":1,"high":0.1};
@@ -171,6 +223,7 @@ var Interactive = function(sel) {
               geo_data["tl_2010_tract_" + geoid] = {high:geo};
               updateDrawData(svg);
             });
+            zoomToCBSA(d, this);
           }
         })
         .attr("d", function(el) {
