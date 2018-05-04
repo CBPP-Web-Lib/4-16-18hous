@@ -66,56 +66,86 @@ var Interactive = function(sel) {
   $(sel).find(".grid00").empty().addClass("mapwrap");
   URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
   var svg;
-  var projection = d3.geoAlbersUsa(),
+  var active_cbsa;
+  var zooming = false;
+  var projection = d3.geoAlbers(),
     path = d3.geoPath(projection);
   DrawInitialMap();
-
-  function zoomToCBSA(cbsa) {
+  function projectInterpolate(projection0, projection1, t) {
+    return function(λ, φ) {
+      λ *= 180 / Math.PI, φ *= 180 / Math.PI;
+      var p0 = projection0([λ, φ]), p1 = projection1([λ, φ]);
+      var p2 = [(1 - t) * p0[0] + t * p1[0], (1 - t) * -p0[1] + t * -p1[1]];
+      return p2;
+    };
+  }
+  function zoomToCBSA(cbsa, direction) {
+    if (!direction) {direction = "in";}
+    if (zooming) {return false;}
+    zooming = true;
+    active_cbsa = cbsa;
     var bbox = geojson_bbox(cbsa);
-    var scale = 18000/(bbox[2]-bbox[0]);
-    function projectionTween(projection0, projection1, t) {
-      var projection =  function(λ, φ) {
-        λ *= 180 / Math.PI;
-        φ *= 180 / Math.PI;
-        console.log(λ, φ);
-        var p0 = projection0([λ, φ]), p1 = projection1([λ, φ]);
-        if (p0===null) {
-          return projection1([λ, φ]);
-        }
-        var p2 = [(1 - t) * p0[0] + t * p1[0], (1 - t) * -p0[1] + t * -p1[1]];
-        console.log(p2);
-        return p2;
-      };
-      return d3.geoProjection(projection);
+    var orgcenter = [-96.6,38.7];
+    var center = [(bbox[2]-bbox[0])/2+bbox[0],(bbox[3]-bbox[1])/2+bbox[1]];
+    var targetProj = d3.geoMercator();
+    var orgProjection = d3.geoAlbers();
+    var destProjection;
+    if (direction==="out") {
+      active_cbsa = undefined;
+      destProjection = orgProjection;
+      orgProjection = targetProj;
+    } else {
+      destProjection = targetProj;
     }
-
-
-
-    var orgProjection = d3.geoAlbersUsa();
-    var destProjection = d3.geoMercator()
-      .scale(scale)
-      .center([bbox[0] + (bbox[2]-bbox[0])/2, bbox[1] + (bbox[3]-bbox[1])/2]);
-
-    var testProjection = projectionTween(orgProjection, destProjection, 0.1);
-
-    console.log(orgProjection([-80, 25]));
-    console.log(destProjection([-80, 25]));
-    console.log(testProjection([-80, 25]));
-    return;
-
+    if (direction==="out") {
+      svg.selectAll("g.size.low")
+        .attr("opacity",0)
+        .transition()
+        .duration(750)
+        .attr("opacity",1)
+        .on("end", function() {
+          svg.selectAll("g.size.high").selectAll("path").remove();
+        });
+    }
     var timer = d3.timer(function(elapsed) {
-      var p = elapsed/1000;
+      var p = elapsed/4000;
       if (p>=1) {
         p=1;
         timer.stop();
+        if (direction==="in") {
+          svg.selectAll("g.size.low")
+            .attr("opacity",1)
+            .transition()
+            .duration(750)
+            .attr("opacity",0)
+            .on("end", function() {
+              console.log("here");
+              zooming = false;
+              setTimeout(function() {
+                zoomToCBSA(cbsa,"out");
+              }, 1000);
+            });
+        } else {
+          zooming = false;
+        }
       }
-      projection = projectionTween(orgProjection, destProjection, p);
+      var dp = p;
+      if (direction==="out") {
+        dp = 1-p;
+      }
+      var cp = -Math.pow(dp-1,4)+1;
+      var tp = Math.pow(dp,4);
+      var frameScale = 1+tp*230/Math.max(bbox[2]-bbox[0], 48/25*(bbox[3]-bbox[1]));
+      var frameCenter = [cp*(center[0]-orgcenter[0])+orgcenter[0],cp*(center[1]-orgcenter[1])+orgcenter[1]];
+      projection = d3.geoProjection(projectInterpolate(orgProjection, destProjection, p))
+        .scale(frameScale)
+        .center(center)
+        .translate([480,250])
+        .center(frameCenter);
       path = d3.geoPath(projection);
       d3.selectAll("path")
         .attr("d", path);
-    }, 0);
-
-
+    });
   }
 
 
@@ -164,6 +194,7 @@ var Interactive = function(sel) {
 
   function updateDrawData(svg) {
     drawData = filterToVisible(geo_data, svg.attr("viewBox"));
+    //drawData = geo_data;
     drawData = (function(r) {
       for (var size in r) {
         if (r.hasOwnProperty(size)) {
@@ -178,7 +209,7 @@ var Interactive = function(sel) {
       }
       return r;
     })(drawData);
-    var sizeLayers = svg.selectAll("g")
+    svg.selectAll("g")
       .data((function(g) {
         var r = [];
         for (var size in g) {
@@ -191,7 +222,7 @@ var Interactive = function(sel) {
       .enter()
       .append("g")
       .attr("class", function(d) {return "size " + d;});
-    var fileLayers = svg.selectAll("g.size").selectAll("g")
+    svg.selectAll("g.size").selectAll("g")
       .data(FileIndex.concat(["national"]))
       .enter()
       .append("g")
@@ -199,7 +230,7 @@ var Interactive = function(sel) {
         return "layer " + d;
       });
 
-    var shapes = svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
+    svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
       var size = d3.select(this.parentNode).attr("class").split(" ")[1];
       var scaling ={"low":1,"high":0.1};
       d3.select(this).selectAll("path")
@@ -223,7 +254,7 @@ var Interactive = function(sel) {
               geo_data["tl_2010_tract_" + geoid] = {high:geo};
               updateDrawData(svg);
             });
-            zoomToCBSA(d, this);
+            zoomToCBSA(d);
           }
         })
         .attr("d", function(el) {
