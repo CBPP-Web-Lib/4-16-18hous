@@ -88,6 +88,31 @@ var Interactive = function(sel) {
     var orgcenter = [-96.6,38.7];
     var center = [(bbox[2]-bbox[0])/2+bbox[0],(bbox[3]-bbox[1])/2+bbox[1]];
     var targetProj = d3.geoMercator();
+    var width = $(svg.node()).width();
+    var scale = Math.max((bbox[2]-bbox[0], bbox[3]-bbox[1]))*(256/width);
+    var zoom = Math.floor(Math.log(180/scale)/Math.log(2));
+
+    var top_left = get_tile_from_lat_long(bbox[1],bbox[0],zoom);
+    var bottom_right = get_tile_from_lat_long(bbox[3],bbox[2], zoom);
+    console.log(top_left, bottom_right);
+    function tile_project(lat, long) {
+      var siny = Math.sin(lat * Math.PI / 180);
+      siny = Math.min(Math.max(siny, -0.9999), 0.9999);
+      return [
+        (0.5 + long / 360),
+        (0.5 - Math.log((1 + siny) / (1 - siny)) / (4 * Math.PI))
+      ];
+    }
+    function get_tile_from_lat_long(lat, long, zoom) {
+      var scale = 1 << zoom;
+      console.log(scale);
+      var worldCoordinate = tile_project(lat, long);
+      console.log(worldCoordinate);
+      return [
+        Math.floor(worldCoordinate[0] * scale),
+        Math.floor(worldCoordinate[1] * scale)
+      ];
+    }
     var orgProjection = d3.geoAlbers();
     var destProjection;
     if (direction==="out") {
@@ -98,6 +123,13 @@ var Interactive = function(sel) {
       destProjection = targetProj;
     }
     if (direction==="out") {
+      for (var file in geo_data) {
+        if (geo_data.hasOwnProperty(file)) {
+          if (file.indexOf("tl_2010_tract_")!==-1) {
+            geo_data[file] = undefined;
+          }
+        }
+      }
       svg.selectAll("g.size.low")
         .attr("opacity",0)
         .transition()
