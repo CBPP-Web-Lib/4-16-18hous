@@ -64,21 +64,32 @@ var Interactive = function(sel) {
     rows: [0.61]
   });
   $(sel).find(".grid00").empty().addClass("mapwrap");
+  $(sel).find(".grid00").append($(document.createElement("div"))
+    .addClass("tilewrap"));
   URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
   var svg;
   var active_cbsa;
   var zooming = false;
   var projection = d3.geoAlbers(),
     path = d3.geoPath(projection);
+  var defaultViewbox = [50, 5, 820, 820*$(sel + " .mapwrap").height()/$(sel + " .mapwrap").width()].join(" ");
+  console.log(defaultViewbox);
   DrawInitialMap();
-  function projectInterpolate(projection0, projection1, t) {
-    return function(λ, φ) {
-      λ *= 180 / Math.PI, φ *= 180 / Math.PI;
-      var p0 = projection0([λ, φ]), p1 = projection1([λ, φ]);
-      var p2 = [(1 - t) * p0[0] + t * p1[0], (1 - t) * -p0[1] + t * -p1[1]];
-      return p2;
-    };
+
+  function getTiles(tl, br, z, cb) {
+    var tilewrap = $(sel).find(".tilewrap");
+    var img;
+    for (var x = tl[0]; x<=br[0];x++) {
+      for (var y = tl[1];y<=br[1];y++) {
+        img = $(document.createElement("img"))
+          .attr("src", "https://stamen-tiles.a.ssl.fastly.net/toner/"+z + "/" + x+"/"+y + ".png")
+          .css("left",(x-tl[0])*256 + "px")
+          .css("top",(y-tl[1])*256 + "px");
+        tilewrap.append(img);
+      }
+    }
   }
+
   function zoomToCBSA(cbsa, direction) {
     if (!direction) {direction = "in";}
     if (zooming) {return false;}
@@ -87,14 +98,27 @@ var Interactive = function(sel) {
     var bbox = geojson_bbox(cbsa);
     var orgcenter = [-96.6,38.7];
     var center = [(bbox[2]-bbox[0])/2+bbox[0],(bbox[3]-bbox[1])/2+bbox[1]];
-    var targetProj = d3.geoMercator();
+    var targetProj = d3.geoMercator;
     var width = $(svg.node()).width();
     var scale = Math.max((bbox[2]-bbox[0], bbox[3]-bbox[1]))*(256/width);
-    var zoom = Math.floor(Math.log(180/scale)/Math.log(2));
+    var zoom = Math.ceil(Math.log(180/scale)/Math.log(2));
+    var top_left = get_tile_from_long_lat(bbox[0],bbox[3],zoom);
+    var bottom_right = get_tile_from_long_lat(bbox[2],bbox[1], zoom);
 
-    var top_left = get_tile_from_lat_long(bbox[1],bbox[0],zoom);
-    var bottom_right = get_tile_from_lat_long(bbox[3],bbox[2], zoom);
-    console.log(top_left, bottom_right);
+    getTiles(top_left, bottom_right, zoom, function() {
+      console.log("tiles retrieved and rendered");
+    });
+
+    function tile2long(x,z) { return (x/Math.pow(2,z)*360-180); }
+    function tile2lat(y,z) {
+      var n=Math.PI-2*Math.PI*y/Math.pow(2,z);
+      return (180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))));
+    }
+    var top_lat = tile2lat(top_left[1], zoom);
+    var bottom_lat = tile2lat(bottom_right[1]+1, zoom);
+    var left_long = tile2long(top_left[0], zoom);
+    var right_long = tile2long(bottom_right[0]+1, zoom);
+
     function tile_project(lat, long) {
       var siny = Math.sin(lat * Math.PI / 180);
       siny = Math.min(Math.max(siny, -0.9999), 0.9999);
@@ -103,17 +127,39 @@ var Interactive = function(sel) {
         (0.5 - Math.log((1 + siny) / (1 - siny)) / (4 * Math.PI))
       ];
     }
-    function get_tile_from_lat_long(lat, long, zoom) {
+    function get_tile_from_long_lat(long, lat, zoom) {
       var scale = 1 << zoom;
-      console.log(scale);
       var worldCoordinate = tile_project(lat, long);
-      console.log(worldCoordinate);
       return [
         Math.floor(worldCoordinate[0] * scale),
         Math.floor(worldCoordinate[1] * scale)
       ];
     }
-    var orgProjection = d3.geoAlbers();
+    function projectInterpolate(projection0, projection1, t) {
+      var dp = t;
+      if (direction==="out") {
+        dp = 1-t;
+      }
+      var cp = -Math.pow(dp-1,4)+1;
+      var tp = Math.pow(dp,4);
+      var frameScaleG = function(tp) {
+        return 1+tp*100/Math.max(bbox[2]-bbox[0], 48/25*(bbox[3]-bbox[1]));
+      };
+      var frameCenterG = function(cp) {
+        return[cp*(center[0]-orgcenter[0])+orgcenter[0],cp*(center[1]-orgcenter[1])+orgcenter[1]];
+      };
+      return d3.geoProjection(function(λ, φ) {
+        λ *= 180 / Math.PI; φ *= 180 / Math.PI;
+        var p0 = projection0([λ, φ]), p1 = projection1([λ, φ]);
+        var p2 = [(1 - t) * p0[0] + t * p1[0], (1 - t) * -p0[1] + t * -p1[1]];
+        return p2;
+      })
+        .scale(frameScaleG(tp))
+        .center(center)
+        .translate([480,250])
+        .center(frameCenterG(cp));
+    }
+    var orgProjection = d3.geoAlbers;
     var destProjection;
     if (direction==="out") {
       active_cbsa = undefined;
@@ -139,6 +185,29 @@ var Interactive = function(sel) {
           svg.selectAll("g.size.high").selectAll("path").remove();
         });
     }
+
+    var destProjectionAdj = projectInterpolate(orgProjection(), destProjection(), 1, direction);
+    var top_left_vb = destProjectionAdj([
+      left_long, top_lat
+    ]);
+    var bottom_right_vb = destProjectionAdj([
+      right_long, bottom_lat
+    ]);
+    var destViewbox = [
+      top_left_vb[0],
+      top_left_vb[1],
+      bottom_right_vb[0] - top_left_vb[0],
+      bottom_right_vb[1] - top_left_vb[1]
+    ];
+    if (direction==="in") {
+      svg.transition()
+        .duration(4000)
+        .attr("viewBox", destViewbox.join(" "));
+    } else {
+      svg.transition()
+        .duration(4000)
+        .attr("viewBox", defaultViewbox);
+    }
     var timer = d3.timer(function(elapsed) {
       var p = elapsed/4000;
       if (p>=1) {
@@ -153,27 +222,15 @@ var Interactive = function(sel) {
             .on("end", function() {
               console.log("here");
               zooming = false;
-              setTimeout(function() {
+              /*setTimeout(function() {
                 zoomToCBSA(cbsa,"out");
-              }, 1000);
+              }, 1000);*/
             });
         } else {
           zooming = false;
         }
       }
-      var dp = p;
-      if (direction==="out") {
-        dp = 1-p;
-      }
-      var cp = -Math.pow(dp-1,4)+1;
-      var tp = Math.pow(dp,4);
-      var frameScale = 1+tp*230/Math.max(bbox[2]-bbox[0], 48/25*(bbox[3]-bbox[1]));
-      var frameCenter = [cp*(center[0]-orgcenter[0])+orgcenter[0],cp*(center[1]-orgcenter[1])+orgcenter[1]];
-      projection = d3.geoProjection(projectInterpolate(orgProjection, destProjection, p))
-        .scale(frameScale)
-        .center(center)
-        .translate([480,250])
-        .center(frameCenter);
+      projection = projectInterpolate(orgProjection(), destProjection(), p);
       path = d3.geoPath(projection);
       d3.selectAll("path")
         .attr("d", path);
@@ -339,8 +396,8 @@ var Interactive = function(sel) {
 
   function DrawInitialMap() {
     svg = d3.select(sel + " .mapwrap").append("svg")
-      .attr("viewBox", [50, 5, 820, 820*$(sel + " .mapwrap").height()/$(sel + " .mapwrap").width()].join(" "))
-      .attr("preserveAspectRatio", "xMinYMin slice");
+      .attr("viewBox", defaultViewbox);
+    //  .attr("preserveAspectRatio", "xMidYMin");
 
     updateDrawData(svg);
     require("./js/zoom.js")(sel + " .mapwrap", m, $, d3);
