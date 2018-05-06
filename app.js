@@ -79,8 +79,8 @@ var Interactive = function(sel) {
   function getTiles(tl, br, z, cb) {
     var tilewrap = $(sel).find(".tilewrap");
     var img;
-    for (var x = tl[0]; x<=br[0];x++) {
-      for (var y = tl[1];y<=br[1];y++) {
+    for (var x = tl[0]; x<=br[0]+1;x++) {
+      for (var y = tl[1];y<=br[1]+1;y++) {
         img = $(document.createElement("img"))
           .attr("src", "https://stamen-tiles.a.ssl.fastly.net/toner/"+z + "/" + x+"/"+y + ".png")
           .css("left",(x-tl[0])*256 + "px")
@@ -89,7 +89,10 @@ var Interactive = function(sel) {
       }
     }
   }
-
+  svg.on("click", function() {
+    var vcoords = d3.mouse(this);
+    console.log(vcoords);
+  });
   function zoomToCBSA(cbsa, direction) {
     if (!direction) {direction = "in";}
     if (zooming) {return false;}
@@ -100,11 +103,14 @@ var Interactive = function(sel) {
     var center = [(bbox[2]-bbox[0])/2+bbox[0],(bbox[3]-bbox[1])/2+bbox[1]];
     var targetProj = d3.geoMercator;
     var width = $(svg.node()).width();
-    var scale = Math.max((bbox[2]-bbox[0], bbox[3]-bbox[1]))*(256/width);
+    var height = $(svg.node()).height();
+    var scale = Math.max((bbox[2]-bbox[0], bbox[3]-bbox[1]))*(256/Math.max(width,height));
     var zoom = Math.ceil(Math.log(180/scale)/Math.log(2));
     var top_left = get_tile_from_long_lat(bbox[0],bbox[3],zoom);
     var bottom_right = get_tile_from_long_lat(bbox[2],bbox[1], zoom);
-
+    var tileRightExtra = (width%256)/256;
+    var tileBottomExtra = (height%256)/256;
+    console.log(tileRightExtra, tileBottomExtra);
     getTiles(top_left, bottom_right, zoom, function() {
       console.log("tiles retrieved and rendered");
     });
@@ -115,10 +121,10 @@ var Interactive = function(sel) {
       return (180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))));
     }
     var top_lat = tile2lat(top_left[1], zoom);
-    var bottom_lat = tile2lat(bottom_right[1]+1, zoom);
+    var bottom_lat = tile2lat(bottom_right[1]-1+tileBottomExtra, zoom);
     var left_long = tile2long(top_left[0], zoom);
-    var right_long = tile2long(bottom_right[0]+1, zoom);
-
+    var right_long = tile2long(bottom_right[0]-1+tileRightExtra, zoom);
+    console.log(top_lat);
     function tile_project(lat, long) {
       var siny = Math.sin(lat * Math.PI / 180);
       siny = Math.min(Math.max(siny, -0.9999), 0.9999);
@@ -148,7 +154,7 @@ var Interactive = function(sel) {
       var frameCenterG = function(cp) {
         return[cp*(center[0]-orgcenter[0])+orgcenter[0],cp*(center[1]-orgcenter[1])+orgcenter[1]];
       };
-      return d3.geoProjection(function(λ, φ) {
+      var project = d3.geoProjection(function(λ, φ) {
         λ *= 180 / Math.PI; φ *= 180 / Math.PI;
         var p0 = projection0([λ, φ]), p1 = projection1([λ, φ]);
         var p2 = [(1 - t) * p0[0] + t * p1[0], (1 - t) * -p0[1] + t * -p1[1]];
@@ -158,6 +164,7 @@ var Interactive = function(sel) {
         .center(center)
         .translate([480,250])
         .center(frameCenterG(cp));
+      return project;
     }
     var orgProjection = d3.geoAlbers;
     var destProjection;
@@ -199,6 +206,7 @@ var Interactive = function(sel) {
       bottom_right_vb[0] - top_left_vb[0],
       bottom_right_vb[1] - top_left_vb[1]
     ];
+    console.log(destViewbox);
     if (direction==="in") {
       svg.transition()
         .duration(4000)
@@ -220,7 +228,8 @@ var Interactive = function(sel) {
             .duration(750)
             .attr("opacity",0)
             .on("end", function() {
-              console.log("here");
+              console.log(bbox);
+              console.log(projection([bbox[2],bbox[3]]));
               zooming = false;
               /*setTimeout(function() {
                 zoomToCBSA(cbsa,"out");
@@ -396,8 +405,8 @@ var Interactive = function(sel) {
 
   function DrawInitialMap() {
     svg = d3.select(sel + " .mapwrap").append("svg")
-      .attr("viewBox", defaultViewbox);
-    //  .attr("preserveAspectRatio", "xMidYMin");
+      .attr("viewBox", defaultViewbox)
+      .attr("preserveAspectRatio", "xMinYMin");
 
     updateDrawData(svg);
     require("./js/zoom.js")(sel + " .mapwrap", m, $, d3);
