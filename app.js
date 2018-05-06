@@ -75,8 +75,10 @@ var Interactive = function(sel) {
   var defaultViewbox = [50, 5, 820, 820*$(sel + " .mapwrap").height()/$(sel + " .mapwrap").width()].join(" ");
   DrawInitialMap();
 
-  function getTiles(tl, br, z, cb) {
+  function getTiles(tl, br, z, offset) {
     var tilewrap = $(sel).find(".tilewrap");
+    tilewrap.css("left",(0-offset[0])+"px");
+    tilewrap.css("top",(0-offset[1])+"px");
     var img;
     for (var x = tl[0]; x<=br[0]+1;x++) {
       for (var y = tl[1];y<=br[1]+1;y++) {
@@ -103,13 +105,24 @@ var Interactive = function(sel) {
     var targetProj = d3.geoMercator();
     var width = $(svg.node()).width();
     var height = $(svg.node()).height();
-    var scale = Math.max(bbox[3]-bbox[1], (bbox[2] - bbox[0])*48/25);
-    var zoom = Math.ceil(Math.log(180/scale)/Math.log(2))+3;
+    var zoom = 1;
+    while (true) {
+      var test_tl = get_tile_from_long_lat(bbox[0],bbox[3],zoom);
+      var test_br = get_tile_from_long_lat(bbox[2],bbox[1],zoom);
+      if (test_br[0] - test_tl[0] > width/256) {
+        break;
+      }
+      if (test_br[1] - test_tl[1] > height/256) {
+        break;
+      }
+      zoom++;
+    }
+    zoom--;
     var top_left = get_tile_from_long_lat(bbox[0],bbox[3],zoom);
     var bottom_right = [Math.ceil(top_left[0]+width/256), Math.ceil(top_left[1] + height/256)];
     var tileRightExtra = (width%256)/256;
     var tileBottomExtra = (height%256)/256;
-    getTiles(top_left, bottom_right, zoom);
+
 
     function tile2long(x,z) { return (x/Math.pow(2,z)*360-180); }
     function tile2lat(y,z) {
@@ -177,12 +190,26 @@ var Interactive = function(sel) {
     var bottom_right_vb = destProjectionAdj([
       right_long, bottom_lat
     ]);
-    var destViewbox = [
-      top_left_vb[0],
-      top_left_vb[1],
+    var top_left_bbox = destProjectionAdj([
+      bbox[0], bbox[1]
+    ]);
+    var offset = [0.25*(top_left_bbox[0] - top_left_vb[0]), 0.25*(top_left_bbox[1] - top_left_vb[1])];
+    var vb_dim = [
       bottom_right_vb[0] - top_left_vb[0],
       bottom_right_vb[1] - top_left_vb[1]
     ];
+    console.log(offset);
+    var offset_px = [offset[0]/vb_dim[0]*width, offset[1]/vb_dim[1]*height];
+    console.log(offset_px);
+    var destViewbox = [
+      //top_left_bbox[0],
+      //top_left_bbox[1],
+      top_left_vb[0]+offset[0],
+      top_left_vb[1] + offset[1],
+      bottom_right_vb[0] - top_left_vb[0],
+      bottom_right_vb[1] - top_left_vb[1]
+    ];
+    getTiles(top_left, bottom_right, zoom, offset_px);
     if (direction==="in") {
       svg.transition()
         .duration(4000)
@@ -213,6 +240,12 @@ var Interactive = function(sel) {
         p=1;
         timer.stop();
         if (direction==="in") {
+          var tilewrap = d3.select(sel).select(".tilewrap");
+          console.log(tilewrap);
+          d3.select(sel).select(".tilewrap")
+            .transition()
+            .duration(750)
+            .style("opacity",1);
           svg.selectAll("g.size.low")
             .attr("opacity",1)
             .transition()
