@@ -1,5 +1,4 @@
 module.exports = function(sel, m, $, d3) {
-  var fixViewport = require("./fixviewport.js");
 	$(sel + " svg").bind('mousedown touchstart', function(e) {
 		m.dragOn = true;
     m.offset = $(sel).offset();
@@ -13,11 +12,21 @@ module.exports = function(sel, m, $, d3) {
 			y = e.originalEvent.touches[0].pageY - m.offset.top;
 		}
 		m.dragBase = [x,y];
+    m.offsetBase = [
+      $(sel).find(".tilewrap").css("left").replace("px","")*1,
+      $(sel).find(".tilewrap").css("top").replace("px","")*1
+    ];
 		return false;
 	});
 	$(sel + " svg").bind("mouseup touchend", function(e) {
 		m.dragOn = false;
 		delete(m.dragBase);
+    $(sel).find(".tilewrap img").addClass("old");
+    m.getTiles({
+      onload: function() {
+        $(sel).find(".tilewrap img.old").remove();
+      }
+    });
 	});
 	$(sel + " svg").bind('mouseout', function(e) {
 		if ($.contains($(sel)[0],e.relatedTarget)) {
@@ -47,13 +56,17 @@ module.exports = function(sel, m, $, d3) {
     var svg = d3.select(sel).select("svg");
     var viewport = svg.attr("viewBox").split(" ");
     if (!m.options) m.options = {};
-    viewport = fixViewport(viewport, m.options);
     var dX = x - m.dragBase[0];
     var dY = y - m.dragBase[1];
     viewport[0] = viewport[0]*1 - dX/width*viewport[2];
     viewport[1] = viewport[1]*1 - dY/height*viewport[3];
+    $(sel).find(".tilewrap").css("top", m.offsetBase[1] + dY + "px");
+    $(sel).find(".tilewrap").css("left", m.offsetBase[0] + dX + "px");
     m.dragBase = [x,y];
-    viewport = fixViewport(viewport, m.options);
+    m.offsetBase = [
+      $(sel).find(".tilewrap").css("left").replace("px","")*1,
+      $(sel).find(".tilewrap").css("top").replace("px","")*1
+    ];
     viewport = viewport.join(" ");
     svg.attr("viewBox", viewport);
   };

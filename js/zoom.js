@@ -2,10 +2,13 @@ module.exports = function(sel, obj, $, d3) {
   var m = obj;
   var fixViewport = require("./fixviewport.js");
   var zoomCallbacks = [];
+  var zooming = false;
   m.onZoom = function(cb) {
     zoomCallbacks.push(cb);
   };
-  m.zoom = function(x,y,direction,amount) {
+  m.zoom = function(x,y,direction) {
+    if (zooming) return;
+    zooming = true;
     var svg = d3.select(sel).select("svg");
     var width = $(sel).width();
     var height = $(sel).height();
@@ -14,44 +17,70 @@ module.exports = function(sel, obj, $, d3) {
     }
     var options = obj.options;
     var viewport = svg.attr("viewBox").split(" ");
-    viewport = fixViewport(viewport, obj.options);
-    for (var i = 0, ii = viewport.length; i<ii; i++) {
-      viewport[i]*=1;
+    var newwidth = viewport[2]*(direction==="in" ? 0.5 : 2);
+    var newheight = viewport[3]*(direction==="in" ? 0.5 : 2);
+    var xchange = 0-(x/width)*(newwidth-viewport[2]);
+    var ychange = 0-(y/height)*(newheight-viewport[3]);
+    var newviewport = [viewport[0]*1 + xchange, viewport[1]*1 + ychange, newwidth, newheight];
+    var boundviewport = svg.attr("data-viewbox-limit");
+    if (!boundviewport) {
+      boundviewport = svg.attr("viewBox");
+      svg.attr("data-viewbox-limit", boundviewport);
     }
-    if (x==="center") {
-      x = width/2;
+    boundviewport = boundviewport.split(" ");
+    if (newviewport[2] > boundviewport[2]) {
+      newviewport[2] = boundviewport[2];
     }
-    if (y === "center") {
-      y = height/2;
+    if (newviewport[3] > boundviewport[3]) {
+      newviewport[3] = boundviewport[3];
     }
-    var xViewportDelta = viewport[2]*0.15*(amount)/120;
-    var yViewportDelta = viewport[3]*0.15*(amount)/120;
-    var x1 = x - x*(width - xViewportDelta)/width;
-    var y1 = y - y*(height - yViewportDelta)/height;
-    viewport[0] += x1;
-    viewport[2] -= (xViewportDelta);
-    viewport[1] += y1;
-    viewport[3] -= (yViewportDelta);
-    if (viewport[3] < 1) {
-      viewport[3] = 1;
+    if (newviewport[0] < boundviewport[0]) {
+      newviewport[0] = boundviewport[0];
     }
-    if (viewport[2] < 1) {
-      viewport[2] = 1;
+    if (newviewport[1] < boundviewport[1]) {
+      newviewport[1] = boundviewport[1];
     }
-    fixViewport(viewport, options);
-    viewport = viewport.join(" ");
-    svg.attr("viewBox", viewport);
-    for (i =0, ii = zoomCallbacks.length; i<ii; i++) {
-      if (typeof(zoomCallbacks[i])==="function") {
-        zoomCallbacks[i]();
-      }
-    }
+    svg.transition()
+      .duration(750)
+      .ease(d3.easeLinear)
+      .attr("viewBox", newviewport.join(" "))
+      .on("end", function() {
+        zooming = false;
+      });
+    animateTiles(viewport, newviewport, width, height, direction);
   };
-  m.zoomIn = function(x, y, amount) {
-    m.zoom(x,y,"in", amount);
+  function animateTiles(oldviewport, newviewport, width, height, direction) {
+    var xoffset = (newviewport[0] - oldviewport[0])*(width/newviewport[2]);
+    var yoffset = (newviewport[1] - oldviewport[1])*(height/newviewport[3]);
+    var xscaling = oldviewport[3]/newviewport[3];
+    var yscaling = oldviewport[2]/newviewport[2];
+    var tilewrap = $(sel).find(".tilewrap");
+    var wleft = tilewrap.css("left").replace("px","")*(xscaling-1);
+    var wtop = tilewrap.css("top").replace("px","")*(yscaling - 1);
+    $(sel).find(".tilewrap img").addClass("old");
+    $(sel).find(".tilewrap img.old").each(function() {
+      var top = $(this).css("top").replace("px","");
+      var left = $(this).css("left").replace("px","");
+      left*=xscaling;
+      top*=yscaling;
+      top-=yoffset;
+      left-=xoffset;
+      d3.select(this).transition()
+        .ease(function(t) {
+          return direction==="in" ? t/(2-t) : 2*t/(1+t);
+        })
+        .duration(750)
+        .style("top",(top+wtop)+'px')
+        .style("left",(left+wleft)+'px')
+        .style("width",$(this).width()*xscaling + "px")
+        .style("height",$(this).height()*yscaling + "px");
+    });
+  }
+  m.zoomIn = function(x, y) {
+    m.zoom(x,y,"in");
   };
-  m.zoomOut = function(x, y, amount) {
-    m.zoom(x,y,"out", amount);
+  m.zoomOut = function(x, y) {
+    m.zoom(x,y,"out");
   };
   $(window).bind('mousewheel DOMMouseScroll', function(event) {
     if (m.scrollEventsBlocked) {
@@ -66,11 +95,12 @@ module.exports = function(sel, obj, $, d3) {
     if (typeof(amount)==="undefined") {
       amount = 0 - event.originalEvent.detail;
     }
+    if (amount===0) {return;}
     if (amount > 0) {
-      m.zoomIn(x, y, amount);
+      m.zoomIn(x, y);
     }
     else {
-      m.zoomOut(x, y, amount);
+      m.zoomOut(x, y);
     }
     return false;
   });
