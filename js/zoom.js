@@ -40,6 +40,8 @@ module.exports = function(sel, obj, $, d3) {
     if (newviewport[1] < boundviewport[1]) {
       newviewport[1] = boundviewport[1];
     }
+    animateTiles(viewport, newviewport, width, height, direction);
+    m.getTiles({cviewbox: newviewport,z:m.zoomLevel + (direction==="in" ? 1 : -1)});
     svg.transition()
       .duration(750)
       .ease(d3.easeLinear)
@@ -47,7 +49,7 @@ module.exports = function(sel, obj, $, d3) {
       .on("end", function() {
         zooming = false;
       });
-    animateTiles(viewport, newviewport, width, height, direction);
+
   };
   function animateTiles(oldviewport, newviewport, width, height, direction) {
     var xoffset = (newviewport[0] - oldviewport[0])*(width/newviewport[2]);

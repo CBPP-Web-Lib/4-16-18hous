@@ -100,8 +100,10 @@ var Interactive = function(sel) {
     var height = config.height;
     var z = config.z;
     var offset = config.offset;
+    var cviewbox = config.cviewbox;
     if (!bbox) {
       var viewbox = svg.attr("viewBox").split(" ");
+      if (cviewbox) {viewbox = cviewbox;}
       var btl = projection.invert([
         viewbox[0]*1,
         viewbox[1]*1
@@ -117,27 +119,36 @@ var Interactive = function(sel) {
         btl[1]
       ];
     }
-    console.log("bbox" , bbox);
     if (!width) {width = $(sel).width();}
     if (!height) {height = $(sel).height();}
-    if (!z) {z = m.zoomLevel;}
+    var zchange = 1;
+    if (!m.zoomLevel && !z) {
+      console.error("No zoom defined yet");
+    }
+    if (!m.zoomLevel) {
+      m.zoomLevel = z;
+    } else if (z) {
+      console.log(z);
+      zchange = Math.pow(2,z-m.zoomLevel);
+    } else {
+      z = m.zoomLevel;
+    }
     var tl = get_tile_from_long_lat(bbox[0],bbox[3],z);
     if (!offset) {
-      var ctx = $(sel).find(".tilewrap").attr("data-sx");
-      var cty = $(sel).find(".tilewrap").attr("data-sy");
+      var ctx = $(sel).find(".tilewrap").attr("data-sx")*zchange;
+      var cty = $(sel).find(".tilewrap").attr("data-sy")*zchange;
       var dx = ctx - tl[0];
       var dy = cty - tl[1];
+      console.log(dx);
       offset = [
         $(sel).find(".tilewrap").css("left").replace("px","")*1-dx*256,
         $(sel).find(".tilewrap").css("top").replace("px","")*1-dy*256
       ];
     }
-    console.log(offset);
+
     var tilewrap = $(sel).find(".tilewrap");
     tilewrap.css("left",(offset[0])+"px");
     tilewrap.css("top",(offset[1])+"px");
-
-    console.log("tl", tl)
     var br = [Math.ceil(tl[0]+width/256), Math.ceil(tl[1] + height/256)];
     var img;
     var onload = function() {
@@ -152,8 +163,9 @@ var Interactive = function(sel) {
     for (var x = tl[0]; x<=br[0]+1;x++) {
       for (var y = tl[1];y<=br[1]+1;y++) {
         requests++;
+        var url = "https://stamen-tiles.a.ssl.fastly.net/toner/"+z + "/" + x+"/"+y + ".png";
         img = $(document.createElement("img"))
-          .attr("src", "https://stamen-tiles.a.ssl.fastly.net/toner/"+z + "/" + x+"/"+y + ".png")
+          .attr("src", url)
           .css("left",(x-tl[0])*256 + "px")
           .css("top",(y-tl[1])*256 + "px")
           .on("load", onload);
@@ -437,6 +449,7 @@ var Interactive = function(sel) {
         .on("click", function(d) {
           if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa") {
             var geoid = d.properties.GEOID;
+            if (active_cbsa) {return false;}
             getJSONAndSaveInMemory(URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".json", function(err, d) {
               var geo = topojson.feature(d, d.objects.districts);
               geo_data["tl_2010_tract_" + geoid] = {high:geo};
