@@ -17,8 +17,6 @@ var getBounds = require('svg-path-bounds');
 var localmemory = {};
 var pako = require("pako");
 localforage.clear();
-var geoStore = {};
-var GEOID_tracker = {};
 var svg_path_data = {};
 var geo_data = {};
 var cb_2015_us_state_500k = require("./topojson/low/cb_2015_us_state_500k.json");
@@ -27,7 +25,8 @@ geo_data.cb_2015_us_state_500k = {low: topojson.feature(cb_2015_us_state_500k, c
 geo_data.tl_2015_us_cbsa = {low: topojson.feature(tl_2015_us_cbsa, tl_2015_us_cbsa.objects.districts)};
 var URL_BASE;
 require("./app.css");
-
+//var data = require("./intermediate/data.json");
+//console.log(data);
 var drawData = {};
 var getJSONAndSaveInMemory = function(f, cb) {
   if (!localmemory[f]) {
@@ -64,11 +63,8 @@ var Interactive = function(sel) {
     rows: [0.61]
   });
   $(sel).find(".grid00").empty().addClass("mapwrap");
-  $(sel).find(".grid00").append($(document.createElement("div"))
-    .addClass("tilewrap"));
   URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
   var svg;
-  var active_cbsa;
   var zooming = false;
   var projection = d3.geoAlbers(),
     path = d3.geoPath(projection);
@@ -91,7 +87,7 @@ var Interactive = function(sel) {
     ];
   }
   m.getTiles = function(config) {
-    if (!active_cbsa) {return;}
+    if (!m.active_cbsa) {return;}
     if (typeof(config)==="undefined") {
       config={};
     }
@@ -136,6 +132,10 @@ var Interactive = function(sel) {
     var tilewrap = $(sel).find(".tilewrap");
     var oldtilewrap = $(sel).find(".tilewrap.old");
     if (oldtilewrap.length===0) {
+      if (tilewrap.length===0) {
+        tilewrap = $(document.createElement("div")).addClass("tilewrap");
+        $(sel).find(".mapwrap").prepend(tilewrap);
+      }
       oldtilewrap = tilewrap;
     } else {
       tilewrap = $(document.createElement("div")).addClass("tilewrap");
@@ -193,7 +193,7 @@ var Interactive = function(sel) {
     if (!direction) {direction = "in";}
     if (zooming) {return false;}
     zooming = true;
-    active_cbsa = cbsa;
+    m.active_cbsa = cbsa;
     var bbox = geojson_bbox(cbsa);
     var orgcenter = [-96.6,38.7];
     var center = [(bbox[2]-bbox[0])/2+bbox[0],(bbox[3]-bbox[1])/2+bbox[1]];
@@ -268,7 +268,7 @@ var Interactive = function(sel) {
     var orgProjection = d3.geoAlbers();
     var destProjection;
     if (direction==="out") {
-      active_cbsa = undefined;
+      m.active_cbsa = undefined;
       destProjection = orgProjection;
       orgProjection = targetProj;
     } else {
@@ -300,6 +300,8 @@ var Interactive = function(sel) {
     ];
     var tilesLoaded = false;
     var zoomFinished = false;
+    m.minZoom = zoom;
+    m.maxZoom = zoom+3;
     m.getTiles({
       bbox:bbox,
       width:width,
@@ -318,6 +320,11 @@ var Interactive = function(sel) {
       }
     }
     if (direction==="in") {
+      svg.selectAll("text.label")
+        .attr("opacity",1)
+        .transition(1)
+        .duration(100)
+        .attr("opacity",0);
       svg.transition()
         .duration(1000)
         .attr("viewBox", destViewbox.join(" "));
@@ -340,12 +347,14 @@ var Interactive = function(sel) {
         .on("end", function() {
           svg.selectAll("g.size.high").selectAll("path").remove();
         });
+      $(sel).find(".tilewrap").fadeOut(100).remove();
     }
     var timer = d3.timer(function(elapsed) {
       var p = elapsed/1000;
       if (p>=1) {
         p=1;
         timer.stop();
+        makeZoomOutButton();
         if (direction==="in") {
           zoomFinished = true;
           checkDisplay();
@@ -369,6 +378,10 @@ var Interactive = function(sel) {
             });
         } else {
           zooming = false;
+          svg.selectAll("text.label")
+            .transition(1)
+            .duration(100)
+            .attr("opacity",1);
         }
       }
       projection = projectInterpolate(orgProjection, destProjection, p);
@@ -379,7 +392,16 @@ var Interactive = function(sel) {
   }
 
 
-
+  function makeZoomOutButton() {
+    var button = $(document.createElement("button"));
+    button.text("Zoom Out");
+    button.addClass("zoomOut");
+    $(sel).find(".mapwrap").append(button);
+    button.on("click",function() {
+      zoomToCBSA(m.active_cbsa,"out");
+      button.remove();
+    });
+  }
 
   function filterToVisible(geo_data, viewbox) {
     var r = {};
@@ -479,7 +501,7 @@ var Interactive = function(sel) {
         .on("click", function(d) {
           if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa") {
             var geoid = d.properties.GEOID;
-            if (active_cbsa) {return false;}
+            if (m.active_cbsa) {return false;}
             getJSONAndSaveInMemory(URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".json", function(err, d) {
               var geo = topojson.feature(d, d.objects.districts);
               geo_data["tl_2010_tract_" + geoid] = {high:geo};
@@ -532,7 +554,28 @@ var Interactive = function(sel) {
             return "#0C61A4";
           }
           return "#EB9123";
+        })
+        .each(function(d) {
+          if (d.properties && d3.select(this.parentNode).attr("class").indexOf("cbsa")!==-1) {
+            var bbox = this.getBBox();
+            var name = d.properties.NAME.split("-");
+            var textEl = d3.select(this.parentNode).append("text")
+              .attr("class","label")
+              .attr("x",bbox.x+bbox.width)
+              .attr("y",bbox.y+bbox.height/2)
+              .attr("font-size",10)
+              .attr("font-family","proxima-nova-condensed,sans-serif");
+            textEl.selectAll("tspan")
+              .data(name)
+              .enter()
+              .append("tspan")
+              .text(function(d) {
+                return d;
+              })
+              .attr("dx",2);
+          }
         });
+
     });
   }
 

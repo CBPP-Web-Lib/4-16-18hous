@@ -5,9 +5,18 @@
     position:absolute;
     top:0;
     left:0;
+    g.tl_2015_us_cbsa path {
+      cursor:pointer;
+    }
   }
   .mapwrap {
     overflow:hidden;
+    .zoomOut {
+      z-index:100;
+      position:absolute;
+      left:10px;
+      top:10px;
+    }
   }
   .tilewrap {
     position:absolute;

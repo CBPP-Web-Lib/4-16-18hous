@@ -8,6 +8,15 @@ module.exports = function(sel, obj, $, d3) {
   m.zoom = function(x,y,direction) {
     if (m.zooming) return;
     if (m.dragOn) return;
+    if (!m.active_cbsa) {return;}
+    var oz = direction==="in" ? 2: 0.5;
+    var db = direction==="in" ? 1 : -1;
+    if (m.zoomLevel + db > m.maxZoom) {
+      return;
+    }
+    if (m.zoomLevel + db < m.minZoom) {
+      return;
+    }
     m.zooming = true;
     var svg = d3.select(sel).select("svg");
     var width = $(sel).width();
@@ -21,21 +30,7 @@ module.exports = function(sel, obj, $, d3) {
     var xchange = 0-(x/width)*(newwidth-viewport[2]);
     var ychange = 0-(y/height)*(newheight-viewport[3]);
     var newviewport = [viewport[0]*1 + xchange, viewport[1]*1 + ychange, newwidth, newheight];
-    /*var boundviewport = svg.attr("data-viewbox-limit");
-    if (!boundviewport) {
-      boundviewport = svg.attr("viewBox");
-      svg.attr("data-viewbox-limit", boundviewport);
-    }
-    boundviewport = boundviewport.split(" ");
-    if (newviewport[0] < boundviewport[0]) {
-      newviewport[0] = boundviewport[0];
-    }
-    if (newviewport[1] < boundviewport[1]) {
-      newviewport[1] = boundviewport[1];
-    }*/
     animateTiles(viewport, newviewport, width, height, direction);
-    var oz = direction==="in" ? 2: 0.5;
-    var db = direction==="in" ? 1 : -1;
     var tilesLoaded = false;
     var zoomedFully = false;
     m.getTiles({

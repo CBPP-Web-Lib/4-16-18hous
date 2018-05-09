@@ -1,6 +1,8 @@
 module.exports = function(sel, m, $, d3) {
 	$(sel + " svg").bind('mousedown touchstart', function(e) {
 		if (m.zooming) {return;}
+		if (!m.active_cbsa) {return;}
+		if ($(sel).find(".tilewrap").length===0) {return;}
 		m.dragOn = true;
     m.offset = $(sel).offset();
 		var x = e.pageX - m.offset.left,
@@ -20,6 +22,8 @@ module.exports = function(sel, m, $, d3) {
 		return false;
 	});
 	$(sel + " svg").bind("mouseup touchend", function(e) {
+		if (m.zooming) {return;}
+		if (!m.active_cbsa) {return;}
 		if (m.dragOn===false) {return;}
 		m.dragOn = false;
 		delete(m.dragBase);
