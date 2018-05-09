@@ -128,38 +128,48 @@ var Interactive = function(sel) {
     if (!m.zoomLevel) {
       m.zoomLevel = z;
     } else if (z) {
-      console.log(z);
       zchange = Math.pow(2,z-m.zoomLevel);
     } else {
       z = m.zoomLevel;
     }
     var tl = get_tile_from_long_lat(bbox[0],bbox[3],z);
+    var tilewrap = $(sel).find(".tilewrap");
+    var oldtilewrap = $(sel).find(".tilewrap.old");
+    if (oldtilewrap.length===0) {
+      oldtilewrap = tilewrap;
+    } else {
+      tilewrap = $(document.createElement("div")).addClass("tilewrap");
+      oldtilewrap.after(tilewrap);
+    }
     if (!offset) {
-      var ctx = $(sel).find(".tilewrap").attr("data-sx")*zchange;
-      var cty = $(sel).find(".tilewrap").attr("data-sy")*zchange;
-      var dx = ctx - tl[0];
-      var dy = cty - tl[1];
-      console.log(dx);
       offset = [
-        $(sel).find(".tilewrap").css("left").replace("px","")*1-dx*256,
-        $(sel).find(".tilewrap").css("top").replace("px","")*1-dy*256
+        oldtilewrap.css("left").replace("px","")*1,
+        oldtilewrap.css("top").replace("px","")*1
       ];
     }
-
-    var tilewrap = $(sel).find(".tilewrap");
+    var ctx = oldtilewrap.attr("data-sx")*zchange;
+    var cty = oldtilewrap.attr("data-sy")*zchange;
+    var dx = isNaN(ctx) ? 0 : ctx - tl[0];
+    var dy = isNaN(cty) ? 0 : cty - tl[1];
+    offset[0] -= dx*256;
+    offset[1] -= dy*256;
     tilewrap.css("left",(offset[0])+"px");
     tilewrap.css("top",(offset[1])+"px");
     var br = [Math.ceil(tl[0]+width/256), Math.ceil(tl[1] + height/256)];
     var img;
+    var finished = function() {
+      tilewrap.find("img").css("visibility","visible");
+      if (typeof(config.onload)==="function") {config.onload();}
+    };
     var onload = function() {
       requests--;
       if (requests===0) {
-        if (typeof(config.onload)==="function") {config.onload();}
+        finished();
       }
     };
     var requests = 0;
-    $(sel).find(".tilewrap").attr("data-sx",tl[0]);
-    $(sel).find(".tilewrap").attr("data-sy",tl[1]);
+    tilewrap.attr("data-sx",tl[0]);
+    tilewrap.attr("data-sy",tl[1]);
     for (var x = tl[0]; x<=br[0]+1;x++) {
       for (var y = tl[1];y<=br[1]+1;y++) {
         requests++;
@@ -168,6 +178,7 @@ var Interactive = function(sel) {
           .attr("src", url)
           .css("left",(x-tl[0])*256 + "px")
           .css("top",(y-tl[1])*256 + "px")
+          .css("visibility","hidden")
           .on("load", onload);
         tilewrap.append(img);
       }
@@ -287,8 +298,25 @@ var Interactive = function(sel) {
       bottom_right_vb[0] - top_left_vb[0],
       bottom_right_vb[1] - top_left_vb[1]
     ];
-    m.getTiles({bbox:bbox, width:width, height:height, z:zoom, offset:offset_px});
-
+    var tilesLoaded = false;
+    var zoomFinished = false;
+    m.getTiles({
+      bbox:bbox,
+      width:width,
+      height:height,
+      z:zoom,
+      offset:offset_px,
+      onload:function() {
+        tilesLoaded = true;
+        checkDisplay();
+      }
+    });
+    function checkDisplay() {
+      if (zoomFinished && tilesLoaded) {
+        $(sel).find(".tilewrap").not("old").css("opacity",1);
+        $(sel).find(".tilewrap.old").remove();
+      }
+    }
     if (direction==="in") {
       svg.transition()
         .duration(1000)
@@ -319,6 +347,8 @@ var Interactive = function(sel) {
         p=1;
         timer.stop();
         if (direction==="in") {
+          zoomFinished = true;
+          checkDisplay();
           d3.select(sel).select(".tilewrap")
             .transition()
             .duration(750)

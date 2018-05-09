@@ -1,5 +1,6 @@
 module.exports = function(sel, m, $, d3) {
 	$(sel + " svg").bind('mousedown touchstart', function(e) {
+		if (m.zooming) {return;}
 		m.dragOn = true;
     m.offset = $(sel).offset();
 		var x = e.pageX - m.offset.left,
@@ -19,12 +20,15 @@ module.exports = function(sel, m, $, d3) {
 		return false;
 	});
 	$(sel + " svg").bind("mouseup touchend", function(e) {
+		if (m.dragOn===false) {return;}
 		m.dragOn = false;
 		delete(m.dragBase);
-    $(sel).find(".tilewrap img").addClass("old");
+    $(sel).find(".tilewrap").addClass("old");
     m.getTiles({
       onload: function() {
-        $(sel).find(".tilewrap img.old").remove();
+				console.log("loaded");
+				$(sel).find(".tilewrap").not("old").css("opacity",1);
+        $(sel).find(".tilewrap.old").remove();
       }
     });
 	});
