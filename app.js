@@ -192,7 +192,6 @@ var Interactive = function(sel) {
     console.log(Math.abs(coords[0])+"W",Math.abs(coords[1])+"N");
   });
   function zoomToCBSA(cbsa, direction, cb) {
-    console.log(cbsa, direction);
     if (!direction) {direction = "in";}
     if (zooming) {return false;}
     zooming = true;
@@ -357,8 +356,9 @@ var Interactive = function(sel) {
       if (p>=1) {
         p=1;
         timer.stop();
-        makeZoomOutButton();
         if (direction==="in") {
+
+          makeZoomOutButton();
           zoomFinished = true;
           checkDisplay();
           if (typeof(cb)==="function") {
@@ -408,13 +408,12 @@ var Interactive = function(sel) {
       zoomToCBSA(m.active_cbsa,"out", function() {
         updateDrawData(svg);
       });
-      button.remove();
+      $(sel).find("button.zoomOut").remove();
     });
   }
 
   function filterToVisible(geo_data, viewbox) {
     var r = {};
-    console.log(JSON.parse(JSON.stringify(geo_data)));
     viewbox = viewbox.split(" ");
     for (var layer in geo_data) {
       if (geo_data.hasOwnProperty(layer)) {
@@ -451,7 +450,6 @@ var Interactive = function(sel) {
         }
       }
     }
-    console.log(JSON.parse(JSON.stringify(r)));
     return r;
   }
 
@@ -465,6 +463,7 @@ var Interactive = function(sel) {
             if (!r[size].national) {
               var topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k[size]}, 50000);
               var merged = topojson.merge(topo, topo.objects.districts.geometries);
+              merged.properties = {GEOID:"us_national_outline"};
               r[size].national = [merged];
             }
           }
@@ -508,17 +507,25 @@ var Interactive = function(sel) {
     svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
       var size = d3.select(this.parentNode).attr("class").split(" ")[1];
       var scaling ={"low":1,"high":0.1};
+      var pathData = function() {
+        if (!drawData[size]) {
+          drawData[size] = {};
+        }
+        var d = drawData[size][layer];
+        if (!d) {
+          d = [];
+        }
+        return d;
+      }();
+      var pathIndex = function(pathData, i) {
+        if (pathData.properties) {
+          return pathData.properties.GEOID;
+        } else {
+          return i;
+        }
+      };
       d3.select(this).selectAll("path")
-        .data(function() {
-          if (!drawData[size]) {
-            drawData[size] = {};
-          }
-          var d = drawData[size][layer];
-          if (!d) {
-            d = [];
-          }
-          return d;
-        })
+        .data(pathData, pathIndex)
         .enter()
         .append("path")
         .on("click", function(d) {
