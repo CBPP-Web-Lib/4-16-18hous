@@ -187,9 +187,12 @@ var Interactive = function(sel) {
   };
   svg.on("click", function() {
     var vcoords = d3.mouse(this);
-    //console.log(projection.invert([vcoords[0], vcoords[1]]));
+    var coords = projection.invert([vcoords[0], vcoords[1]]);
+
+    console.log(Math.abs(coords[0])+"W",Math.abs(coords[1])+"N");
   });
   function zoomToCBSA(cbsa, direction) {
+    console.log(cbsa, direction);
     if (!direction) {direction = "in";}
     if (zooming) {return false;}
     zooming = true;
@@ -197,7 +200,6 @@ var Interactive = function(sel) {
     var bbox = geojson_bbox(cbsa);
     var orgcenter = [-96.6,38.7];
     var center = [(bbox[2]-bbox[0])/2+bbox[0],(bbox[3]-bbox[1])/2+bbox[1]];
-    var targetProj = d3.geoMercator();
     var width = $(svg.node()).width();
     var height = $(svg.node()).height();
     var zoom = 1;
@@ -228,53 +230,54 @@ var Interactive = function(sel) {
     var bottom_lat = tile2lat(bottom_right[1]-1+tileBottomExtra, zoom);
     var left_long = tile2long(top_left[0], zoom);
     var right_long = tile2long(bottom_right[0]-1+tileRightExtra, zoom);
-    function projectInterpolate(projection0, projection1, t) {
-      var dp = t;
+    function projectInterpolate(projection0g, projection1g, t, startScale, endScale, center, orgcenter) {
+      var projection0 = projection0g().scale(1).center(orgcenter);
+      var projection1 = projection1g().scale(1).center(center);
+      var fcenter = [];
+      var ct = 1-(t-1)*(t-1);
       if (direction==="out") {
-        dp = 1-t;
+        ct = t*t;
       }
-      var cp = -Math.pow(dp-1,4)+1;
-      var tp = Math.pow(dp,4);
-      var frameScaleG = function(tp) {
-        return 1+tp*100/Math.max(bbox[2]-bbox[0], 48/25*(bbox[3]-bbox[1]));
-      };
-      var frameCenterG = function(cp) {
-        return[cp*(center[0]-orgcenter[0])+orgcenter[0],cp*(center[1]-orgcenter[1])+orgcenter[1]];
-      };
+      for (var i = 0;i<2;i++) {
+        fcenter[i] = ct*(center[i] - orgcenter[i]) + orgcenter[i];
+      }
       var project = d3.geoProjection(function(λ, φ) {
         λ *= 180 / Math.PI; φ *= 180 / Math.PI;
         var p0 = projection0([λ, φ]), p1 = projection1([λ, φ]);
         var p2 = [(1 - t) * p0[0] + t * p1[0], (1 - t) * -p0[1] + t * -p1[1]];
         return p2;
-      })
-        .scale(frameScaleG(tp))
-        //.translate([480,250])
-        .center(frameCenterG(cp));
-      project.invert = function(coords) {
-        var x = coords[0];
-        var y = coords[1];
-        var c0 = projection0
-          .invert([x, y]);
-        var c1 = projection1
-          .invert([x, y]);
-        c1[0] /= frameScaleG(tp);
-        c1[1] /= frameScaleG(tp);
-        c1[0] += frameCenterG(cp)[0];
-        c1[1] += frameCenterG(cp)[1];
-        return [t*(c1[0] - c0[0])+c0[0], t*(c1[1] - c0[1])+c0[1]];
-      };
+      });
+      var frameScale = startScale + t*(endScale-startScale);
+      project
+        .scale(frameScale)
+        .center(fcenter);
+
+      if (t===1 && direction==="in") {
+        project.invert = projection1g().scale(endScale).center(center).invert;
+      }
+      if (t===1 && direction==="out") {
+        project.invert = projection0g().invert;
+      }
       return project;
     }
-    var orgProjection = d3.geoAlbers();
-    var destProjection;
+    var orgProjection = d3.geoAlbers;
+    var destProjection = d3.geoMercator;
+    var startScale = orgProjection().scale();
+    var destScale = 10000/(bbox[2]-bbox[0]);
     if (direction==="out") {
       m.active_cbsa = undefined;
+      var swap = destProjection;
       destProjection = orgProjection;
-      orgProjection = targetProj;
-    } else {
-      destProjection = targetProj;
+      orgProjection = swap;
+      swap = destScale;
+      destScale = startScale;
+      startScale = swap;
+      swap = center;
+      center = orgcenter;
+      orgcenter = swap;
     }
-    var destProjectionAdj = projectInterpolate(orgProjection, destProjection, 1, direction);
+
+    var destProjectionAdj = projectInterpolate(orgProjection, destProjection, 1, startScale, destScale, center, orgcenter);
     var top_left_vb = destProjectionAdj([
       left_long, top_lat
     ]);
@@ -301,7 +304,7 @@ var Interactive = function(sel) {
     var tilesLoaded = false;
     var zoomFinished = false;
     m.minZoom = zoom;
-    m.maxZoom = zoom+3;
+    m.maxZoom = zoom+4;
     m.getTiles({
       bbox:bbox,
       width:width,
@@ -325,7 +328,7 @@ var Interactive = function(sel) {
         .transition(1)
         .duration(100)
         .attr("opacity",0);
-      svg.transition()
+     svg.transition()
         .duration(1000)
         .attr("viewBox", destViewbox.join(" "));
     } else {
@@ -384,7 +387,7 @@ var Interactive = function(sel) {
             .attr("opacity",1);
         }
       }
-      projection = projectInterpolate(orgProjection, destProjection, p);
+      projection = projectInterpolate(orgProjection, destProjection, p, startScale, destScale, center, orgcenter);
       path = d3.geoPath(projection);
       d3.selectAll("path")
         .attr("d", path);
@@ -481,7 +484,17 @@ var Interactive = function(sel) {
       .attr("class", function(d) {
         return "layer " + d;
       });
-
+    var textOffsets = require("./textOffsets.json");
+    var cbsa_click = function(d) {
+      var geoid = d.properties.GEOID;
+      if (m.active_cbsa) {return false;}
+      getJSONAndSaveInMemory(URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".json", function(err, d) {
+        var geo = topojson.feature(d, d.objects.districts);
+        geo_data["tl_2010_tract_" + geoid] = {high:geo};
+        updateDrawData(svg);
+      });
+      zoomToCBSA(d);
+    };
     svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
       var size = d3.select(this.parentNode).attr("class").split(" ")[1];
       var scaling ={"low":1,"high":0.1};
@@ -500,14 +513,7 @@ var Interactive = function(sel) {
         .append("path")
         .on("click", function(d) {
           if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa") {
-            var geoid = d.properties.GEOID;
-            if (m.active_cbsa) {return false;}
-            getJSONAndSaveInMemory(URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".json", function(err, d) {
-              var geo = topojson.feature(d, d.objects.districts);
-              geo_data["tl_2010_tract_" + geoid] = {high:geo};
-              updateDrawData(svg);
-            });
-            zoomToCBSA(d);
+            cbsa_click(d);
           }
         })
         .attr("d", function(el) {
@@ -558,21 +564,50 @@ var Interactive = function(sel) {
         .each(function(d) {
           if (d.properties && d3.select(this.parentNode).attr("class").indexOf("cbsa")!==-1) {
             var bbox = this.getBBox();
-            var name = d.properties.NAME.split("-");
-            var textEl = d3.select(this.parentNode).append("text")
+            var name = d.properties.NAME.split(",");
+            name[0] = name[0].split("-")[0];
+            name[1] = name[1].split("-")[0];
+            name = name.join(",");
+            d3.select(this.parentNode).append("text")
               .attr("class","label")
-              .attr("x",bbox.x+bbox.width)
-              .attr("y",bbox.y+bbox.height/2)
+              .attr("x",function() {
+                var o = 0;
+                for (var offset in textOffsets) {
+                  if (textOffsets.hasOwnProperty(offset)) {
+                    if (d.properties.NAME.indexOf(offset)!==-1) {
+                      o = textOffsets[offset][0];
+                    }
+                  }
+                }
+                return bbox.x+bbox.width/2 + o;
+              })
+              .attr("y",function() {
+                var o = 0;
+                for (var offset in textOffsets) {
+                  if (textOffsets.hasOwnProperty(offset)) {
+                    if (d.properties.NAME.indexOf(offset)!==-1) {
+                      o = 0-textOffsets[offset][1];
+                    }
+                  }
+                }
+                return bbox.y+bbox.height/2 + o;
+              })
+              .attr("text-anchor","end")
+              .attr("fill","#0C61A4")
               .attr("font-size",10)
+              .text(name)
+              .on("click", function(){
+                cbsa_click(d);
+              })
               .attr("font-family","proxima-nova-condensed,sans-serif");
-            textEl.selectAll("tspan")
+            /*textEl.selectAll("tspan")
               .data(name)
               .enter()
               .append("tspan")
               .text(function(d) {
                 return d;
               })
-              .attr("dx",2);
+              .attr("dx",2);*/
           }
         });
 
