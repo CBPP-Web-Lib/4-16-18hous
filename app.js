@@ -191,7 +191,7 @@ var Interactive = function(sel) {
 
     console.log(Math.abs(coords[0])+"W",Math.abs(coords[1])+"N");
   });
-  function zoomToCBSA(cbsa, direction) {
+  function zoomToCBSA(cbsa, direction, cb) {
     console.log(cbsa, direction);
     if (!direction) {direction = "in";}
     if (zooming) {return false;}
@@ -361,6 +361,9 @@ var Interactive = function(sel) {
         if (direction==="in") {
           zoomFinished = true;
           checkDisplay();
+          if (typeof(cb)==="function") {
+            cb();
+          }
           d3.select(sel).select(".tilewrap")
             .transition()
             .duration(750)
@@ -374,6 +377,7 @@ var Interactive = function(sel) {
               /*console.log(bbox);
               console.log(projection([bbox[2],bbox[3]]));*/
               zooming = false;
+
               svg.attr("data-viewbox-limit",svg.attr("viewBox"));
               /*setTimeout(function() {
                 zoomToCBSA(cbsa,"out");
@@ -401,13 +405,16 @@ var Interactive = function(sel) {
     button.addClass("zoomOut");
     $(sel).find(".mapwrap").append(button);
     button.on("click",function() {
-      zoomToCBSA(m.active_cbsa,"out");
+      zoomToCBSA(m.active_cbsa,"out", function() {
+        updateDrawData(svg);
+      });
       button.remove();
     });
   }
 
   function filterToVisible(geo_data, viewbox) {
     var r = {};
+    console.log(JSON.parse(JSON.stringify(geo_data)));
     viewbox = viewbox.split(" ");
     for (var layer in geo_data) {
       if (geo_data.hasOwnProperty(layer)) {
@@ -444,6 +451,7 @@ var Interactive = function(sel) {
         }
       }
     }
+    console.log(JSON.parse(JSON.stringify(r)));
     return r;
   }
 
@@ -491,9 +499,11 @@ var Interactive = function(sel) {
       getJSONAndSaveInMemory(URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".json", function(err, d) {
         var geo = topojson.feature(d, d.objects.districts);
         geo_data["tl_2010_tract_" + geoid] = {high:geo};
+
+      });
+      zoomToCBSA(d, "in", function() {
         updateDrawData(svg);
       });
-      zoomToCBSA(d);
     };
     svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
       var size = d3.select(this.parentNode).attr("class").split(" ")[1];

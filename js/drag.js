@@ -2,6 +2,7 @@ module.exports = function(sel, m, $, d3) {
 	$(sel + " svg").bind('mousedown touchstart', function(e) {
 		if (m.zooming) {return;}
 		if (!m.active_cbsa) {return;}
+		$(sel).find(".tilewrap.old").remove();
 		if ($(sel).find(".tilewrap").length===0) {return;}
 		m.dragOn = true;
     m.offset = $(sel).offset();
@@ -16,8 +17,8 @@ module.exports = function(sel, m, $, d3) {
 		}
 		m.dragBase = [x,y];
     m.offsetBase = [
-      $(sel).find(".tilewrap").css("left").replace("px","")*1,
-      $(sel).find(".tilewrap").css("top").replace("px","")*1
+      $(sel).find(".tilewrap").not("old").css("left").replace("px","")*1,
+      $(sel).find(".tilewrap").not("old").css("top").replace("px","")*1
     ];
 		return false;
 	});
@@ -30,7 +31,6 @@ module.exports = function(sel, m, $, d3) {
     $(sel).find(".tilewrap").addClass("old");
     m.getTiles({
       onload: function() {
-				console.log("loaded");
 				$(sel).find(".tilewrap").not("old").css("opacity",1);
         $(sel).find(".tilewrap.old").remove();
       }
