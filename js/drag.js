@@ -1,6 +1,8 @@
 module.exports = function(sel, m, $, d3) {
 	$(sel + " svg").bind('mousedown touchstart', function(e) {
+		if (m.outstandingTiles) {return;}
 		if (m.zooming) {return;}
+		if (m.zoomingToCBSA) {return;}
 		if (!m.active_cbsa) {return;}
 		$(sel).find(".tilewrap.old").remove();
 		if ($(sel).find(".tilewrap").length===0) {return;}
@@ -29,6 +31,7 @@ module.exports = function(sel, m, $, d3) {
 		m.dragOn = false;
 		delete(m.dragBase);
     $(sel).find(".tilewrap").addClass("old");
+		m.updateDrawData(d3.select(sel + " svg"));
     m.getTiles({
       onload: function() {
 				$(sel).find(".tilewrap").not("old").css("opacity",1);

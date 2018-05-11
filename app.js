@@ -12,8 +12,6 @@ var GridConfig = require("./gridConfig.json");
 var FileIndex = require("./fileIndex.json");
 var localforage = require("localforage");
 var geojson_bbox = require("geojson-bbox");
-var getBounds = require('svg-path-bounds');
-
 var localmemory = {};
 var pako = require("pako");
 localforage.clear();
@@ -58,6 +56,7 @@ var getJSONAndSave = function(f, cb) {
 };
 var Interactive = function(sel) {
   var m = this;
+  m.geo_data = geo_data;
   m.requests = [];
   new Figure.Figure(sel, {
     rows: [0.61]
@@ -65,11 +64,11 @@ var Interactive = function(sel) {
   $(sel).find(".grid00").empty().addClass("mapwrap");
   URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
   var svg;
-  var zooming = false;
+  m.zoomingToCBSA = false;
   var projection = d3.geoAlbers(),
     path = d3.geoPath(projection);
   var defaultViewbox = [50, 5, 820, 820*$(sel + " .mapwrap").height()/$(sel + " .mapwrap").width()].join(" ");
-  DrawInitialMap();
+
   function get_tile_from_long_lat(long, lat, zoom) {
     var scale = 1 << zoom;
     var worldCoordinate = tile_project(lat, long);
@@ -86,16 +85,249 @@ var Interactive = function(sel) {
       (0.5 - Math.log((1 + siny) / (1 - siny)) / (4 * Math.PI))
     ];
   }
+  m.updateDrawData = function(svg) {
+    drawData = filterToVisible(geo_data, svg.attr("viewBox"));
+    //drawData = geo_data;
+    drawData = (function(r) {
+      for (var size in r) {
+        if (r.hasOwnProperty(size)) {
+          if (size==="low") {
+            if (!r[size].national) {
+              var topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k[size]}, 50000);
+              var merged = topojson.merge(topo, topo.objects.districts.geometries);
+              merged.properties = {GEOID:"us_national_outline"};
+              r[size].national = [merged];
+            }
+          }
+        }
+      }
+      return r;
+    })(drawData);
+    svg.selectAll("g")
+      .data((function(g) {
+        var r = [];
+        for (var size in g) {
+          if (g.hasOwnProperty(size)) {
+            r.push(size);
+          }
+        }
+        return r;
+      })(GridConfig))
+      .enter()
+      .append("g")
+      .attr("class", function(d) {return "size " + d;});
+    svg.selectAll("g.size").selectAll("g")
+      .data(FileIndex.concat(["national"]))
+      .enter()
+      .append("g")
+      .attr("class", function(d) {
+        return "layer " + d;
+      });
+    var textOffsets = require("./textOffsets.json");
+    var cbsa_click = function(d) {
+      var geoid = d.properties.GEOID;
+      if (m.active_cbsa) {return false;}
+      var zoomed = false;
+      var loaded = false;
+      function checkZoomAndLoad() {
+        if (zoomed && loaded) {
+          m.updateDrawData(svg);
+        }
+      }
+      getJSONAndSaveInMemory(URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".json", function(err, d) {
+        var geo = topojson.feature(d, d.objects.districts);
+        geo_data["tl_2010_tract_" + geoid] = {high:geo};
+        loaded = true;
+        checkZoomAndLoad();
+      });
+      zoomToCBSA(d, "in", function() {
+        zoomed = true;
+        checkZoomAndLoad();
+      });
+    };
+    svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
+      var size = d3.select(this.parentNode).attr("class").split(" ")[1];
+      var scaling ={"low":1,"high":0.1};
+      var pathData = function() {
+        if (!drawData[size]) {
+          drawData[size] = {};
+        }
+        var d = drawData[size][layer];
+        if (!d) {
+          d = [];
+        }
+        return d;
+      }();
+      var pathIndex = function(pathData, i) {
+        if (pathData.properties) {
+          return pathData.properties.GEOID;
+        } else {
+          return i;
+        }
+      };
+      var paths = d3.select(this).selectAll("path")
+        .data(pathData, pathIndex);
+      paths.exit().each(function() {
+        d3.select(this).remove();
+      });
+      d3.select(this).selectAll("text").remove();
+      paths.enter()
+        .append("path")
+        .on("click", function(d) {
+          if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa") {
+            cbsa_click(d);
+          }
+        })
+        .attr("d", function(el) {
+          if (!el.properties) {
+            el.properties = {};
+          }
+          var geoid = el.properties.GEOID | el.properties.GEOID10;
+          try {
+            if (!geoid || !svg_path_data[geoid]) {
+              return path(el);
+            }
+            return svg_path_data[geoid][size];
+          } catch (ex) {
+            console.log(geoid, ex);
+          }
+        })
+        .attr("stroke-width",function() {
+          if (layer.indexOf("state")!==-1) {
+            return 0.8*scaling[size];
+          }
+          return 0.5*scaling[size];
+        })
+        .attr("fill", function() {
+          if (layer.indexOf("state")!==-1) {
+            return "#D6E4F0";
+          }
+          if (layer==="national") {
+            return "none";
+          }
+          return "#EB9123";
+        })
+        .attr("fill-opacity", function() {
+          if (layer.indexOf("state")!==-1) {
+            return 1;
+          }
+
+          return 0.5;
+        })
+        .attr("stroke",function() {
+          if (layer.indexOf("state")!==-1) {
+            return "#fff";
+          }
+          if (layer==="national") {
+            return "#0C61A4";
+          }
+          return "#EB9123";
+        });
+      d3.select(this).selectAll("path").each(function(d) {
+        if (d.properties && d3.select(this.parentNode).attr("class").indexOf("cbsa")!==-1) {
+          var bbox = this.getBBox();
+          var name = d.properties.NAME.split(",");
+          name[0] = name[0].split("-")[0];
+          name[1] = name[1].split("-")[0];
+          name = name.join(",");
+          d3.select(this.parentNode)
+            .append("text")
+            .attr("class","label")
+            .attr("x",function() {
+              var o = 0;
+              for (var offset in textOffsets) {
+                if (textOffsets.hasOwnProperty(offset)) {
+                  if (d.properties.NAME.indexOf(offset)!==-1) {
+                    o = textOffsets[offset][0];
+                  }
+                }
+              }
+              return bbox.x+bbox.width/2 + o;
+            })
+            .attr("y",function() {
+              var o = 0;
+              for (var offset in textOffsets) {
+                if (textOffsets.hasOwnProperty(offset)) {
+                  if (d.properties.NAME.indexOf(offset)!==-1) {
+                    o = 0-textOffsets[offset][1];
+                  }
+                }
+              }
+              return bbox.y+bbox.height/2 + o;
+            })
+            .attr("text-anchor","end")
+            .attr("fill","#0C61A4")
+            .attr("font-size",10)
+            .text(name)
+            .on("click", function(){
+              cbsa_click(d);
+            })
+            .attr("font-family","proxima-nova-condensed,sans-serif");
+          /*textEl.selectAll("tspan")
+            .data(name)
+            .enter()
+            .append("tspan")
+            .text(function(d) {
+              return d;
+            })
+            .attr("dx",2);*/
+        }
+      });
+    });
+  };
+  function filterToVisible(geo_data, viewbox) {
+    var r = {};
+    viewbox = viewbox.split(" ");
+    for (var layer in geo_data) {
+      if (geo_data.hasOwnProperty(layer)) {
+        for (var size in geo_data[layer]) {
+          if (geo_data[layer].hasOwnProperty(size)) {
+            if (!r[size]) r[size] = {};
+            /*if (!r[size][layer])*/ r[size][layer] = [];
+            for (var i = 0, ii = geo_data[layer][size].features.length; i<ii; i++) {
+              var geoid = geo_data[layer][size].features[i].properties.GEOID ||
+                geo_data[layer][size].features[i].properties.GEOID10;
+              geoid*=1;
+              if (!svg_path_data[geoid]) {
+                svg_path_data[geoid] = {};
+              }
+              var thispath;
+              if (!svg_path_data[geoid][size]) {
+                thispath = path(geo_data[layer][size].features[i]);
+                svg_path_data[geoid][size] = thispath;
+              } else {
+                thispath = svg_path_data[geoid][size];
+              }
+              if (thispath) {
+                //var bbox = getBounds(thispath);
+              /*  if (viewbox[0]*1 + viewbox[2]*1 > bbox[0] &&
+                    viewbox[1]*1 + viewbox[3]*1 > bbox[1] &&
+                    viewbox[0]*1 < bbox[2] &&
+                    viewbox[1]*1 < bbox[3]) {*/
+                  r[size][layer].push(geo_data[layer][size].features[i]);
+              //  }
+              }
+            }
+          }
+        }
+      }
+    }
+    return r;
+  };
   m.getTiles = function(config) {
     if (!m.active_cbsa) {return;}
+    if (m.outstandingTiles) {return;}
+    m.outstandingTiles = true;
     if (typeof(config)==="undefined") {
       config={};
     }
+
     var bbox = config.bbox;
     var width = config.width;
     var height = config.height;
     var z = config.z;
     var offset = config.offset;
+
     var cviewbox = config.cviewbox;
     if (!bbox) {
       var viewbox = svg.attr("viewBox").split(" ");
@@ -153,12 +385,17 @@ var Interactive = function(sel) {
     var dy = isNaN(cty) ? 0 : cty - tl[1];
     offset[0] -= dx*256;
     offset[1] -= dy*256;
+    var tile_offset = [
+      Math.ceil(offset[0]/256),
+      Math.ceil(offset[1]/256)
+    ];
     tilewrap.css("left",(offset[0])+"px");
     tilewrap.css("top",(offset[1])+"px");
     var br = [Math.ceil(tl[0]+width/256), Math.ceil(tl[1] + height/256)];
     var img;
     var finished = function() {
       tilewrap.find("img").css("visibility","visible");
+      m.outstandingTiles = false;
       if (typeof(config.onload)==="function") {config.onload();}
     };
     var onload = function() {
@@ -170,8 +407,8 @@ var Interactive = function(sel) {
     var requests = 0;
     tilewrap.attr("data-sx",tl[0]);
     tilewrap.attr("data-sy",tl[1]);
-    for (var x = tl[0]; x<=br[0]+1;x++) {
-      for (var y = tl[1];y<=br[1]+1;y++) {
+    for (var x = tl[0] - tile_offset[0]; x<=br[0]+1 - tile_offset[0];x++) {
+      for (var y = tl[1] - tile_offset[1]; y<=br[1]+1 - tile_offset[1];y++) {
         requests++;
         var url = "https://stamen-tiles.a.ssl.fastly.net/toner/"+z + "/" + x+"/"+y + ".png";
         img = $(document.createElement("img"))
@@ -185,16 +422,16 @@ var Interactive = function(sel) {
     }
     m.zoomLevel = z;
   };
+  DrawInitialMap();
   svg.on("click", function() {
     var vcoords = d3.mouse(this);
     var coords = projection.invert([vcoords[0], vcoords[1]]);
-
     console.log(Math.abs(coords[0])+"W",Math.abs(coords[1])+"N");
   });
   function zoomToCBSA(cbsa, direction, cb) {
     if (!direction) {direction = "in";}
-    if (zooming) {return false;}
-    zooming = true;
+    if (m.zoomingToCBSA) {return false;}
+    m.zoomingToCBSA = true;
     m.active_cbsa = cbsa;
     var bbox = geojson_bbox(cbsa);
     var orgcenter = [-96.6,38.7];
@@ -218,8 +455,6 @@ var Interactive = function(sel) {
     var bottom_right = [Math.ceil(top_left[0]+width/256), Math.ceil(top_left[1] + height/256)];
     var tileRightExtra = (width%256)/256;
     var tileBottomExtra = (height%256)/256;
-
-
     function tile2long(x,z) { return (x/Math.pow(2,z)*360-180); }
     function tile2lat(y,z) {
       var n=Math.PI-2*Math.PI*y/Math.pow(2,z);
@@ -283,10 +518,11 @@ var Interactive = function(sel) {
     var bottom_right_vb = destProjectionAdj([
       right_long, bottom_lat
     ]);
-    var top_left_bbox = destProjectionAdj([
-      bbox[0], bbox[1]
-    ]);
-    var offset = [0.25*(top_left_bbox[0] - top_left_vb[0]), 0.25*(top_left_bbox[1] - top_left_vb[1])];
+    var center_vb = destProjectionAdj(center);
+    var offset = [
+      center_vb[0] - (top_left_vb[0] + bottom_right_vb[0])/2,
+      center_vb[1] - (top_left_vb[1] + bottom_right_vb[1])/2
+    ];
     var vb_dim = [
       bottom_right_vb[0] - top_left_vb[0],
       bottom_right_vb[1] - top_left_vb[1]
@@ -305,6 +541,7 @@ var Interactive = function(sel) {
     m.minZoom = zoom;
     m.maxZoom = zoom+4;
     m.getTiles({
+      //cviewbox:destViewbox.join(" "),
       bbox:bbox,
       width:width,
       height:height,
@@ -321,6 +558,8 @@ var Interactive = function(sel) {
         $(sel).find(".tilewrap.old").remove();
       }
     }
+    svg.selectAll("text.label")
+      .attr("opacity",0);
     if (direction==="in") {
       svg.selectAll("text.label")
         .attr("opacity",1)
@@ -356,14 +595,14 @@ var Interactive = function(sel) {
       if (p>=1) {
         p=1;
         timer.stop();
+        if (typeof(cb)==="function") {
+          cb();
+        }
         if (direction==="in") {
 
           makeZoomOutButton();
           zoomFinished = true;
           checkDisplay();
-          if (typeof(cb)==="function") {
-            cb();
-          }
           d3.select(sel).select(".tilewrap")
             .transition()
             .duration(750)
@@ -376,7 +615,7 @@ var Interactive = function(sel) {
             .on("end", function() {
               /*console.log(bbox);
               console.log(projection([bbox[2],bbox[3]]));*/
-              zooming = false;
+              m.zoomingToCBSA = false;
 
               svg.attr("data-viewbox-limit",svg.attr("viewBox"));
               /*setTimeout(function() {
@@ -384,7 +623,7 @@ var Interactive = function(sel) {
               }, 1000);*/
             });
         } else {
-          zooming = false;
+          m.zoomingToCBSA = false;
           svg.selectAll("text.label")
             .transition(1)
             .duration(100)
@@ -406,237 +645,24 @@ var Interactive = function(sel) {
     $(sel).find(".mapwrap").append(button);
     button.on("click",function() {
       zoomToCBSA(m.active_cbsa,"out", function() {
-        updateDrawData(svg);
+        setTimeout(function() {
+          m.updateDrawData(svg)
+        },50);
       });
       $(sel).find("button.zoomOut").remove();
     });
   }
 
-  function filterToVisible(geo_data, viewbox) {
-    var r = {};
-    viewbox = viewbox.split(" ");
-    for (var layer in geo_data) {
-      if (geo_data.hasOwnProperty(layer)) {
-        for (var size in geo_data[layer]) {
-          if (geo_data[layer].hasOwnProperty(size)) {
-            if (!r[size]) r[size] = {};
-            if (!r[size][layer]) r[size][layer] = [];
-            for (var i = 0, ii = geo_data[layer][size].features.length; i<ii; i++) {
-              var geoid = geo_data[layer][size].features[i].properties.GEOID ||
-                geo_data[layer][size].features[i].properties.GEOID10;
-              geoid*=1;
-              if (!svg_path_data[geoid]) {
-                svg_path_data[geoid] = {};
-              }
-              var thispath;
-              if (!svg_path_data[geoid][size]) {
-                thispath = path(geo_data[layer][size].features[i]);
-                svg_path_data[geoid][size] = thispath;
-              } else {
-                thispath = svg_path_data[geoid][size];
-              }
-              if (thispath) {
-                var bbox = getBounds(thispath);
-                if (viewbox[0]*1 + viewbox[2]*1 > bbox[0] &&
-                    viewbox[1]*1 + viewbox[3]*1 > bbox[1] &&
-                    viewbox[0]*1 < bbox[2] &&
-                    viewbox[1]*1 < bbox[3]) {
-                  r[size][layer].push(geo_data[layer][size].features[i]);
-                }
-              }
 
-            }
-          }
-        }
-      }
-    }
-    return r;
-  }
 
-  function updateDrawData(svg) {
-    drawData = filterToVisible(geo_data, svg.attr("viewBox"));
-    //drawData = geo_data;
-    drawData = (function(r) {
-      for (var size in r) {
-        if (r.hasOwnProperty(size)) {
-          if (size==="low") {
-            if (!r[size].national) {
-              var topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k[size]}, 50000);
-              var merged = topojson.merge(topo, topo.objects.districts.geometries);
-              merged.properties = {GEOID:"us_national_outline"};
-              r[size].national = [merged];
-            }
-          }
-        }
-      }
-      return r;
-    })(drawData);
-    svg.selectAll("g")
-      .data((function(g) {
-        var r = [];
-        for (var size in g) {
-          if (g.hasOwnProperty(size)) {
-            r.push(size);
-          }
-        }
-        return r;
-      })(GridConfig))
-      .enter()
-      .append("g")
-      .attr("class", function(d) {return "size " + d;});
-    svg.selectAll("g.size").selectAll("g")
-      .data(FileIndex.concat(["national"]))
-      .enter()
-      .append("g")
-      .attr("class", function(d) {
-        return "layer " + d;
-      });
-    var textOffsets = require("./textOffsets.json");
-    var cbsa_click = function(d) {
-      var geoid = d.properties.GEOID;
-      if (m.active_cbsa) {return false;}
-      getJSONAndSaveInMemory(URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".json", function(err, d) {
-        var geo = topojson.feature(d, d.objects.districts);
-        geo_data["tl_2010_tract_" + geoid] = {high:geo};
 
-      });
-      zoomToCBSA(d, "in", function() {
-        updateDrawData(svg);
-      });
-    };
-    svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
-      var size = d3.select(this.parentNode).attr("class").split(" ")[1];
-      var scaling ={"low":1,"high":0.1};
-      var pathData = function() {
-        if (!drawData[size]) {
-          drawData[size] = {};
-        }
-        var d = drawData[size][layer];
-        if (!d) {
-          d = [];
-        }
-        return d;
-      }();
-      var pathIndex = function(pathData, i) {
-        if (pathData.properties) {
-          return pathData.properties.GEOID;
-        } else {
-          return i;
-        }
-      };
-      d3.select(this).selectAll("path")
-        .data(pathData, pathIndex)
-        .enter()
-        .append("path")
-        .on("click", function(d) {
-          if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa") {
-            cbsa_click(d);
-          }
-        })
-        .attr("d", function(el) {
-          if (!el.properties) {
-            el.properties = {};
-          }
-          var geoid = el.properties.GEOID | el.properties.GEOID10;
-          try {
-            if (!geoid || !svg_path_data[geoid]) {
-              return path(el);
-            }
-            return svg_path_data[geoid][size];
-          } catch (ex) {
-            console.log(geoid, ex);
-          }
-        })
-        .attr("stroke-width",function() {
-          if (layer.indexOf("state")!==-1) {
-            return 0.8*scaling[size];
-          }
-          return 0.5*scaling[size];
-        })
-        .attr("fill", function() {
-          if (layer.indexOf("state")!==-1) {
-            return "#D6E4F0";
-          }
-          if (layer==="national") {
-            return "none";
-          }
-          return "#EB9123";
-        })
-        .attr("fill-opacity", function() {
-          if (layer.indexOf("state")!==-1) {
-            return 1;
-          }
-
-          return 0.5;
-        })
-        .attr("stroke",function() {
-          if (layer.indexOf("state")!==-1) {
-            return "#fff";
-          }
-          if (layer==="national") {
-            return "#0C61A4";
-          }
-          return "#EB9123";
-        })
-        .each(function(d) {
-          if (d.properties && d3.select(this.parentNode).attr("class").indexOf("cbsa")!==-1) {
-            var bbox = this.getBBox();
-            var name = d.properties.NAME.split(",");
-            name[0] = name[0].split("-")[0];
-            name[1] = name[1].split("-")[0];
-            name = name.join(",");
-            d3.select(this.parentNode).append("text")
-              .attr("class","label")
-              .attr("x",function() {
-                var o = 0;
-                for (var offset in textOffsets) {
-                  if (textOffsets.hasOwnProperty(offset)) {
-                    if (d.properties.NAME.indexOf(offset)!==-1) {
-                      o = textOffsets[offset][0];
-                    }
-                  }
-                }
-                return bbox.x+bbox.width/2 + o;
-              })
-              .attr("y",function() {
-                var o = 0;
-                for (var offset in textOffsets) {
-                  if (textOffsets.hasOwnProperty(offset)) {
-                    if (d.properties.NAME.indexOf(offset)!==-1) {
-                      o = 0-textOffsets[offset][1];
-                    }
-                  }
-                }
-                return bbox.y+bbox.height/2 + o;
-              })
-              .attr("text-anchor","end")
-              .attr("fill","#0C61A4")
-              .attr("font-size",10)
-              .text(name)
-              .on("click", function(){
-                cbsa_click(d);
-              })
-              .attr("font-family","proxima-nova-condensed,sans-serif");
-            /*textEl.selectAll("tspan")
-              .data(name)
-              .enter()
-              .append("tspan")
-              .text(function(d) {
-                return d;
-              })
-              .attr("dx",2);*/
-          }
-        });
-
-    });
-  }
 
   function DrawInitialMap() {
     svg = d3.select(sel + " .mapwrap").append("svg")
       .attr("viewBox", defaultViewbox)
       .attr("preserveAspectRatio", "xMinYMin");
 
-    updateDrawData(svg);
+    m.updateDrawData(svg);
     require("./js/zoom.js")(sel + " .mapwrap", m, $, d3);
     require("./js/drag.js")(sel + " .mapwrap", m, $, d3);
   }

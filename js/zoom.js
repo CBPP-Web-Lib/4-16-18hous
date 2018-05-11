@@ -8,6 +8,7 @@ module.exports = function(sel, obj, $, d3) {
   m.zoom = function(x,y,direction) {
     if (m.zooming) return;
     if (m.dragOn) return;
+    if (m.zoomingToCBSA) return;
     if (!m.active_cbsa) {return;}
     var oz = direction==="in" ? 2: 0.5;
     var db = direction==="in" ? 1 : -1;
@@ -52,6 +53,7 @@ module.exports = function(sel, obj, $, d3) {
         $(sel).find(".tilewrap").not(".old").css("visibility","visible").fadeIn(100, function() {
           $(sel).find(".tilewrap.old").remove();
         });
+        m.zooming = false;
       }
     }
     svg.transition()
@@ -59,8 +61,8 @@ module.exports = function(sel, obj, $, d3) {
       .ease(d3.easeLinear)
       .attr("viewBox", newviewport.join(" "))
       .on("end", function() {
+        m.updateDrawData(svg);
         zoomedFully=true;
-        m.zooming = false;
         checkFade();
       });
 
