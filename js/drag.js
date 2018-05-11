@@ -7,6 +7,7 @@ module.exports = function(sel, m, $, d3) {
 		$(sel).find(".tilewrap.old").remove();
 		if ($(sel).find(".tilewrap").length===0) {return;}
 		m.dragOn = true;
+		$(sel).find(".popup-outer").remove();
     m.offset = $(sel).offset();
 		var x = e.pageX - m.offset.left,
 		y = e.pageY - m.offset.top;

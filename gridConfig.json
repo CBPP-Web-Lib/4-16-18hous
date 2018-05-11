@@ -1,7 +1,7 @@
 {
   "low": {
-    "quantize":0.01,
-    "simplify":0.01,
+    "quantize":0.05,
+    "simplify":0.005,
     "dest":"./topojson/low/",
     "exclude" : [
       "tl_2010"

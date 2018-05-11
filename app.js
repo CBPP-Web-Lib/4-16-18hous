@@ -2,7 +2,7 @@
 (function() {
 "use strict";
 if (typeof(Promise)==="undefined") {
-  Promise = require("promise-polyfill");
+  var Promise = require("promise-polyfill");
 }
 var $ = require("jquery");
 var d3 = require("d3");
@@ -19,6 +19,7 @@ var svg_path_data = {};
 var geo_data = {};
 var cb_2015_us_state_500k = require("./topojson/low/cb_2015_us_state_500k.json");
 var tl_2015_us_cbsa = require("./topojson/low/tl_2015_us_cbsa.json");
+var popup_html = require("./popup.html");
 geo_data.cb_2015_us_state_500k = {low: topojson.feature(cb_2015_us_state_500k, cb_2015_us_state_500k.objects.districts)};
 geo_data.tl_2015_us_cbsa = {low: topojson.feature(tl_2015_us_cbsa, tl_2015_us_cbsa.objects.districts)};
 var URL_BASE;
@@ -85,6 +86,52 @@ var Interactive = function(sel) {
       (0.5 - Math.log((1 + siny) / (1 - siny)) / (4 * Math.PI))
     ];
   }
+
+  function makePopup(e, d) {
+    $(sel).find(".popup-outer").remove();
+    var popup_outer = $(document.createElement("div")).addClass("popup-outer");
+    var popup_wrap = $(document.createElement("div")).addClass("popup-wrap");
+    popup_wrap.html(popup_html);
+    var f = {
+      p: function(n) {
+        return Math.round(n*1000)/10 + "%";
+      },
+      p100: function(n) {
+        return Math.round(n*10)/10+"%";
+      },
+      n: function(n) {
+        return Math.round(n*1000)/1000;
+      },
+      t: function(t) {return t;}
+    };
+    var data = {
+      cbsa: [d.properties.NAMELSAD10, f.t],
+      distress: [d.properties.csvData[9], f.n],
+      opportunity: [d.properties.csvData[1], f.n],
+      poverty: [d.properties.csvData[2], f.p100],
+      race: [d.properties.csvData[7], f.p]
+    };
+    popup_wrap.find("span[name]").each(function() {
+      var d = data[$(this).attr("name")];
+      $(this).text(d[1](d[0]));
+    });
+    var popup_width = 0.4;
+    var offset = $(sel).find(".mapwrap").offset();
+    var x = e.pageX - offset.left;
+    var y = e.pageY - offset.top;
+    var px = x - x*popup_width;
+    popup_outer.css("left", px + "px");
+    popup_outer.css("top", y);
+    if (y < $(sel).find(".mapwrap").height()/2) {
+      popup_wrap.addClass("below");
+    } else {
+      popup_wrap.addClass("above");
+    }
+    popup_wrap.css("width",popup_width*$(sel).width() + "px");
+    popup_outer.append(popup_wrap);
+    $(sel).find(".mapwrap").append(popup_outer);
+  }
+
   m.updateDrawData = function(svg) {
     drawData = filterToVisible(geo_data, svg.attr("viewBox"));
     //drawData = geo_data;
@@ -131,6 +178,7 @@ var Interactive = function(sel) {
       var loaded = false;
       function checkZoomAndLoad() {
         if (zoomed && loaded) {
+          //applyData(csv, m.active_cbsa.properties.GEOID, []);
           m.updateDrawData(svg);
         }
       }
@@ -149,12 +197,21 @@ var Interactive = function(sel) {
       var size = d3.select(this.parentNode).attr("class").split(" ")[1];
       var scaling ={"low":1,"high":0.1};
       var pathData = function() {
+
         if (!drawData[size]) {
           drawData[size] = {};
         }
         var d = drawData[size][layer];
         if (!d) {
           d = [];
+        } else {
+          /*if (m.active_cbsa) {
+            if (layer.indexOf("tract")!==-1) {
+              var cbsa = m.active_cbsa.properties.GEOID;
+              d = applyData(csv,cbsa, d);
+              console.log(d);
+            }
+          }*/
         }
         return d;
       }();
@@ -178,6 +235,9 @@ var Interactive = function(sel) {
             cbsa_click(d);
           }
         })
+        .attr("data-geoid",function(d) {
+          return d.properties.GEOID;
+        })
         .attr("d", function(el) {
           if (!el.properties) {
             el.properties = {};
@@ -198,21 +258,44 @@ var Interactive = function(sel) {
           }
           return 0.5*scaling[size];
         })
-        .attr("fill", function() {
+        .merge(paths)
+        .attr("fill", function(d) {
           if (layer.indexOf("state")!==-1) {
             return "#D6E4F0";
           }
           if (layer==="national") {
             return "none";
           }
+          if (layer.indexOf("tl_2010_tract")!==-1) {
+            return fillFromData(d.properties.csvData);
+          }
           return "#EB9123";
+        })
+        .on("mousemove", function(d) {
+          if (m.dragOn) return;
+          if (d.properties.csvData) {
+            makePopup(d3.event, d);
+            $(this).css("cursor","pointer");
+            d3.select(this).attr("opacity",1);
+            d3.select(this).attr("fill","#EB9123");
+          }
+        })
+        .on("mouseout", function(d) {
+          if (d.properties.csvData) {
+            d3.select(this).attr("opacity",0.5);
+            $(this).css("cursor","auto");
+            d3.select(this).attr("fill",fillFromData(d.properties.csvData));
+            if (d3.event.relatedTarget.tagName!=="path") {
+              $(sel).find(".popup-outer").remove();
+            }
+          }
         })
         .attr("fill-opacity", function() {
           if (layer.indexOf("state")!==-1) {
             return 1;
           }
 
-          return 0.5;
+          return 0.7;
         })
         .attr("stroke",function() {
           if (layer.indexOf("state")!==-1) {
@@ -221,11 +304,31 @@ var Interactive = function(sel) {
           if (layer==="national") {
             return "#0C61A4";
           }
-          return "#EB9123";
+          return "#000000";
+        })
+        .attr("stroke-opacity", function() {
+          if (layer.indexOf("state")!==-1) {
+            return 1;
+          }
+          if (layer==="national") {
+            return 1;
+          }
+          return 0;
         });
+
+      if (m.active_cbsa) {
+        if (layer.indexOf("tract")!==-1) {
+          var d = d3.select(this).selectAll("path").data();
+          if (d.length > 0) {
+            var cbsa = m.active_cbsa.properties.GEOID;
+            d = applyData(csv,cbsa, d);
+          }
+        }
+      }
       d3.select(this).selectAll("path").each(function(d) {
         if (d.properties && d3.select(this.parentNode).attr("class").indexOf("cbsa")!==-1) {
           var bbox = this.getBBox();
+          if (!d.properties.NAME) {return;}
           var name = d.properties.NAME.split(",");
           name[0] = name[0].split("-")[0];
           name[1] = name[1].split("-")[0];
@@ -313,7 +416,20 @@ var Interactive = function(sel) {
       }
     }
     return r;
-  };
+  }
+  function fillFromData(d) {
+    if (typeof(d)==="undefined") {
+      return "#EB9123";
+    }
+    var poverty_rate = Math.min(40,d[2])/40;
+    /*var low = [255,255,255];
+    var high = [185, 41, 47];
+    var result = [];
+    for (var i = 0; i<3;i++) {
+      result[i] = Math.round(low[i] + poverty_rate*(high[i] - low[i]));
+    }*/
+    return "rgba(185,41,47," + poverty_rate + ")";
+  }
   m.getTiles = function(config) {
     if (!m.active_cbsa) {return;}
     if (m.outstandingTiles) {return;}
@@ -426,12 +542,31 @@ var Interactive = function(sel) {
   svg.on("click", function() {
     var vcoords = d3.mouse(this);
     var coords = projection.invert([vcoords[0], vcoords[1]]);
-    console.log(Math.abs(coords[0])+"W",Math.abs(coords[1])+"N");
+    //console.log(Math.abs(coords[0])+"W",Math.abs(coords[1])+"N");
   });
+  function applyData(d, cbsa, pathData) {
+    var selector = "g.tl_2010_tract_" + cbsa + " path";
+    var paths = svg.selectAll(selector);
+    paths.each(function(gd, i) {
+      pathData[i] = gd;
+      gd.properties.csvData = d[cbsa][gd.properties.GEOID10*1];
+      d3.select(this).attr("fill", function() {
+        return fillFromData(gd.properties.csvData);
+      });
+    });
+    return pathData;
+  }
+  var csv = {};
   function zoomToCBSA(cbsa, direction, cb) {
     if (!direction) {direction = "in";}
     if (m.zoomingToCBSA) {return false;}
     m.zoomingToCBSA = true;
+    var csvDataLoaded = false;
+    getJSONAndSaveInMemory(URL_BASE + "/data/" + cbsa.properties.GEOID + ".json", function(err, d) {
+      csvDataLoaded = true;
+      csv[cbsa.properties.GEOID] = d;
+      checkDisplay();
+    });
     m.active_cbsa = cbsa;
     var bbox = geojson_bbox(cbsa);
     var orgcenter = [-96.6,38.7];
@@ -539,7 +674,7 @@ var Interactive = function(sel) {
     var tilesLoaded = false;
     var zoomFinished = false;
     m.minZoom = zoom;
-    m.maxZoom = zoom+4;
+    m.maxZoom = 13;
     m.getTiles({
       //cviewbox:destViewbox.join(" "),
       bbox:bbox,
@@ -553,19 +688,25 @@ var Interactive = function(sel) {
       }
     });
     function checkDisplay() {
-      if (zoomFinished && tilesLoaded) {
+      if (zoomFinished && tilesLoaded && csvDataLoaded) {
         $(sel).find(".tilewrap").not("old").css("opacity",1);
         $(sel).find(".tilewrap.old").remove();
+        if (typeof(cb)==="function") {
+          cb();
+        }
       }
     }
     svg.selectAll("text.label")
-      .attr("opacity",0);
+      .attr("opacity",0)
+      .style("visibility","hidden");
     if (direction==="in") {
       svg.selectAll("text.label")
         .attr("opacity",1)
-        .transition(1)
+        .style("visibility","visible")
+        .transition()
         .duration(100)
-        .attr("opacity",0);
+        .attr("opacity",0)
+        .style("visibiltiy","hidden");
      svg.transition()
         .duration(1000)
         .attr("viewBox", destViewbox.join(" "));
@@ -582,6 +723,7 @@ var Interactive = function(sel) {
       }
       svg.selectAll("g.size.low")
         .attr("opacity",0)
+        .style("visibility","visible")
         .transition()
         .duration(750)
         .attr("opacity",1)
@@ -595,9 +737,6 @@ var Interactive = function(sel) {
       if (p>=1) {
         p=1;
         timer.stop();
-        if (typeof(cb)==="function") {
-          cb();
-        }
         if (direction==="in") {
 
           makeZoomOutButton();
@@ -609,9 +748,11 @@ var Interactive = function(sel) {
             .style("opacity",1);
           svg.selectAll("g.size.low")
             .attr("opacity",1)
+            .style("visibility","visible")
             .transition()
             .duration(750)
             .attr("opacity",0)
+            .style("visibility","hidden")
             .on("end", function() {
               /*console.log(bbox);
               console.log(projection([bbox[2],bbox[3]]));*/
@@ -624,8 +765,13 @@ var Interactive = function(sel) {
             });
         } else {
           m.zoomingToCBSA = false;
+          zoomFinished = true;
+          if (typeof(cb)==="function") {
+            cb();
+          }
           svg.selectAll("text.label")
-            .transition(1)
+            .style("visibility","visible")
+            .transition()
             .duration(100)
             .attr("opacity",1);
         }
@@ -646,7 +792,9 @@ var Interactive = function(sel) {
     button.on("click",function() {
       zoomToCBSA(m.active_cbsa,"out", function() {
         setTimeout(function() {
+
           m.updateDrawData(svg)
+
         },50);
       });
       $(sel).find("button.zoomOut").remove();

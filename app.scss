@@ -20,6 +20,50 @@
       left:10px;
       top:10px;
     }
+    .popup-outer {
+      width:0;
+      height:0;
+      position:absolute;
+      overflow:visible;
+    }
+    .popup-wrap {
+      position:absolute;
+    }
+    .popup-wrap.above {
+      bottom:10px;
+    }
+    .popup-wrap.below {
+      top:10px;
+    }
+    .popup {
+      background-color:#fff;
+      opacity:0.9;
+      padding:10px;
+      border:1px solid #aaa;
+      .popup-body {
+        display:table;
+        width:100%;
+      }
+      .entry {
+        display:table-row;
+      }
+      .label, .data {
+        display:table-cell;
+      }
+      .label {
+        font-weight:bold;
+      }
+      .data {
+        font-family:"proxima-nova-condensed",sans-serif;
+        text-align:right;
+      }
+      h4 {
+        text-align:center;
+        margin-top:0;
+        margin-bottom:0.3em;
+      }
+    }
+
   }
   .tilewrap {
     position:absolute;

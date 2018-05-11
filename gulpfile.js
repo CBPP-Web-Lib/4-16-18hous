@@ -292,14 +292,7 @@ gl.gulp.task("topojson_dir", function(cb) {
   makeDirectory("./topojson", cb);
 });
 var gridConfig = require("./gridConfig.json");
-gl.gulp.task("geojson_cbsa", ["data"], function(cb) {
-  var files = fs.readDirSync("./geojson");
-  files.each(function(f) {
-    if (f.indexOf("tract")!==-1) {
 
-    }
-  });
-});
 gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], function(done) {
   var files = fs.readdirSync("./filtered");
   var sizes = [];
@@ -378,7 +371,7 @@ gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], fun
 gl.gulp.task("topojson_db", ["topojson"], function(cb) {
   /*to do*/
 });
-gl.gulp.task("split_data", function(cb) {
+gl.gulp.task("split_data", ["buildDirectory"], function(cb) {
   if (fs.existsSync("./intermediate/names.json")) {
     if (typeof(cb)==="function") {cb();}
     return;
@@ -386,7 +379,7 @@ gl.gulp.task("split_data", function(cb) {
   var r = {};
   var name_lookup = {};
   var data = JSON.parse(fs.readFileSync("./intermediate/data.json")).data.tract_data;
-  var active_geoids = {};
+  var split = {};
   data.forEach(function(row, i) {
     if (i===0) {return;}
     var cbsa = row[1];
@@ -396,9 +389,20 @@ gl.gulp.task("split_data", function(cb) {
     var tract = row[0]*1;
     row.splice(2, 1);
     r[tract] = row.slice(1);
+    if (typeof(split[cbsa])==="undefined") {
+      split[cbsa] = {};
+    }
+    split[cbsa][tract] = r[tract];
   });
   fs.writeFileSync("./intermediate/names.json", JSON.stringify(name_lookup));
   fs.writeFileSync("./intermediate/data_by_tract.json", JSON.stringify(r, null, " "));
+  makeDirectory("./build/data", function() {
+    for (var cbsa in split) {
+      if (split.hasOwnProperty(cbsa)) {
+        fs.writeFileSync("./build/data/"+cbsa+".json", JSON.stringify(split[cbsa]));
+      }
+    }
+  });
   cb();
 
 
