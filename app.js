@@ -282,7 +282,7 @@ var Interactive = function(sel) {
         })
         .on("mouseout", function(d) {
           if (d.properties.csvData) {
-            d3.select(this).attr("opacity",0.5);
+            //d3.select(this).attr("opacity",0.5);
             $(this).css("cursor","auto");
             d3.select(this).attr("fill",fillFromData(d.properties.csvData));
             if (d3.event.relatedTarget.tagName!=="path") {
@@ -526,7 +526,11 @@ var Interactive = function(sel) {
     for (var x = tl[0] - tile_offset[0]; x<=br[0]+1 - tile_offset[0];x++) {
       for (var y = tl[1] - tile_offset[1]; y<=br[1]+1 - tile_offset[1];y++) {
         requests++;
-        var url = "https://stamen-tiles.a.ssl.fastly.net/toner/"+z + "/" + x+"/"+y + ".png";
+        var ext = ".png";
+        if (window.devicePixelRatio>1) {
+          ext = "@2x.png";
+        }
+        var url = "https://stamen-tiles.a.ssl.fastly.net/toner-lite/"+z + "/" + x+"/"+y + ext;
         img = $(document.createElement("img"))
           .attr("src", url)
           .css("left",(x-tl[0])*256 + "px")
