@@ -106,10 +106,10 @@ var Interactive = function(sel) {
     };
     var data = {
       cbsa: [d.properties.NAMELSAD10, f.t],
-      distress: [d.properties.csvData[9], f.n],
-      opportunity: [d.properties.csvData[1], f.n],
-      poverty: [d.properties.csvData[2], f.p100],
-      race: [d.properties.csvData[7], f.p]
+      distress: [d.properties.csvData[3], f.n],
+      //opportunity: [d.properties.csvData[1], f.n],
+      poverty: [d.properties.csvData[1], f.p100],
+      race: [d.properties.csvData[6], f.p]
     };
     popup_wrap.find("span[name]").each(function() {
       var d = data[$(this).attr("name")];
@@ -421,7 +421,7 @@ var Interactive = function(sel) {
     if (typeof(d)==="undefined") {
       return "#EB9123";
     }
-    var poverty_rate = Math.min(40,d[2])/40;
+    var poverty_rate = Math.min(40,d[1])/40;
     /*var low = [255,255,255];
     var high = [185, 41, 47];
     var result = [];
