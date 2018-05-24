@@ -8,8 +8,8 @@
     ]
   },
   "high": {
-    "quantize":0.00001,
-    "simplify":0.00001,
+    "quantize":0.000001,
+    "simplify":0.000001,
     "dest":"./build/topojson/high/",
     "exclude": [
       "tl_2015",

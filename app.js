@@ -66,8 +66,8 @@ var Interactive = function(sel) {
   URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
   var svg;
   m.zoomingToCBSA = false;
-  var projection = d3.geoAlbers(),
-    path = d3.geoPath(projection);
+  m.projection = d3.geoAlbers();
+  var path = d3.geoPath(m.projection);
   var defaultViewbox = [50, 5, 820, 820*$(sel + " .mapwrap").height()/$(sel + " .mapwrap").width()].join(" ");
 
   function get_tile_from_long_lat(long, lat, zoom) {
@@ -437,22 +437,20 @@ var Interactive = function(sel) {
     if (typeof(config)==="undefined") {
       config={};
     }
-
     var bbox = config.bbox;
     var width = config.width;
     var height = config.height;
     var z = config.z;
     var offset = config.offset;
-
     var cviewbox = config.cviewbox;
     if (!bbox) {
       var viewbox = svg.attr("viewBox").split(" ");
       if (cviewbox) {viewbox = cviewbox;}
-      var btl = projection.invert([
+      var btl = m.projection.invert([
         viewbox[0]*1,
         viewbox[1]*1
       ]);
-      var bbr = projection.invert([
+      var bbr = m.projection.invert([
         viewbox[0]*1 + viewbox[2]*1,
         viewbox[1]*1 + viewbox[3]*1
       ]);
@@ -505,6 +503,7 @@ var Interactive = function(sel) {
       Math.ceil(offset[0]/256),
       Math.ceil(offset[1]/256)
     ];
+    //console.log(offset);
     tilewrap.css("left",(offset[0])+"px");
     tilewrap.css("top",(offset[1])+"px");
     var br = [Math.ceil(tl[0]+width/256), Math.ceil(tl[1] + height/256)];
@@ -514,15 +513,16 @@ var Interactive = function(sel) {
       m.outstandingTiles = false;
       if (typeof(config.onload)==="function") {config.onload();}
     };
-    var onload = function() {
-      requests--;
-      if (requests===0) {
-        finished();
-      }
-    };
     var requests = 0;
     tilewrap.attr("data-sx",tl[0]);
     tilewrap.attr("data-sy",tl[1]);
+    var errorHandler = function() {
+      var url = $(this).attr("src");
+      if (url.indexOf("@2x")!==-1) {
+        url = url.replace("@2x","");
+      }
+      $(this).attr("src", url);
+    };
     for (var x = tl[0] - tile_offset[0]; x<=br[0]+1 - tile_offset[0];x++) {
       for (var y = tl[1] - tile_offset[1]; y<=br[1]+1 - tile_offset[1];y++) {
         requests++;
@@ -536,17 +536,18 @@ var Interactive = function(sel) {
           .css("left",(x-tl[0])*256 + "px")
           .css("top",(y-tl[1])*256 + "px")
           .css("visibility","hidden")
-          .on("load", onload);
+          .on("error", errorHandler);
         tilewrap.append(img);
       }
     }
     m.zoomLevel = z;
+    finished();
   };
   DrawInitialMap();
   svg.on("click", function() {
     var vcoords = d3.mouse(this);
-    var coords = projection.invert([vcoords[0], vcoords[1]]);
-    //console.log(Math.abs(coords[0])+"W",Math.abs(coords[1])+"N");
+    var coords = m.projection.invert([vcoords[0], vcoords[1]]);
+    console.log(Math.abs(coords[0])+"W",Math.abs(coords[1])+"N");
   });
   function applyData(d, cbsa, pathData) {
     var selector = "g.tl_2010_tract_" + cbsa + " path";
@@ -561,6 +562,57 @@ var Interactive = function(sel) {
     return pathData;
   }
   var csv = {};
+  function tile2long(x,z) { return (x/Math.pow(2,z)*360-180); }
+  function tile2lat(y,z) {
+    var n=Math.PI-2*Math.PI*y/Math.pow(2,z);
+    return (180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))));
+  }
+  m.offset_px_from_vb = function(viewbox, zoom, projection, container) {
+    var width = container.width();
+    var height = container.height();
+    console.log("top left viewbox", viewbox[0], viewbox[1]);
+    var top_left_coords = projection.invert([viewbox[0], viewbox[1]]);
+    console.log("top left coords", top_left_coords);
+    var top_left_tile = get_tile_from_long_lat(top_left_coords[0], top_left_coords[1], zoom);
+
+    console.log("top left tile", top_left_tile);
+    var top_left_tile_coords = [tile2long(top_left_tile[0], zoom), tile2lat(top_left_tile[1], zoom)];
+
+    console.log("top left tile coords", top_left_tile_coords);
+
+    var top_left_tile_vb = projection(top_left_tile_coords);
+    console.log("top left tile vb", top_left_tile_vb);
+    var viewbox_offset = [
+      top_left_tile_vb[0] - viewbox[0],
+      top_left_tile_vb[1] - viewbox[1]
+    ];
+    console.log("viewbox offset", viewbox_offset);
+    var px_offset = [
+      viewbox_offset[0]/viewbox[2]*width,
+      viewbox_offset[1]/viewbox[3]*height
+    ];
+    console.log("px_offset", px_offset);
+    return px_offset;
+    //console.log(center_vb);
+    //var center_vb = [viewbox[0] + viewbox[2]/2, viewbox[1] + viewbox[3]/2];
+  //  var center_vb = [480,250];
+    //console.log(center);
+    //var center_vb = projection(center);
+    //console.log(center_vb);
+    /*var top_left_vb = [viewbox[0], viewbox[1]];
+    var bottom_right_vb = [viewbox[0] + viewbox[2], viewbox[1] + viewbox[3]];
+    var offset = [
+      center_vb[0] - (top_left_vb[0] + bottom_right_vb[0])/2,
+      center_vb[1] - (top_left_vb[1] + bottom_right_vb[1])/2
+    ];
+    var vb_dim = [
+      bottom_right_vb[0] - top_left_vb[0],
+      bottom_right_vb[1] - top_left_vb[1]
+    ];
+    console.log("new offset", offset);
+    return [0-offset[0]/vb_dim[0]*width, 0-offset[1]/vb_dim[1]*height];*/
+  };
+
   function zoomToCBSA(cbsa, direction, cb) {
     if (!direction) {direction = "in";}
     if (m.zoomingToCBSA) {return false;}
@@ -590,19 +642,10 @@ var Interactive = function(sel) {
       zoom++;
     }
     zoom--;
-    var top_left = get_tile_from_long_lat(bbox[0],bbox[3],zoom);
-    var bottom_right = [Math.ceil(top_left[0]+width/256), Math.ceil(top_left[1] + height/256)];
-    var tileRightExtra = (width%256)/256;
-    var tileBottomExtra = (height%256)/256;
-    function tile2long(x,z) { return (x/Math.pow(2,z)*360-180); }
-    function tile2lat(y,z) {
-      var n=Math.PI-2*Math.PI*y/Math.pow(2,z);
-      return (180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))));
-    }
-    var top_lat = tile2lat(top_left[1], zoom);
-    var bottom_lat = tile2lat(bottom_right[1]-1+tileBottomExtra, zoom);
-    var left_long = tile2long(top_left[0], zoom);
-    var right_long = tile2long(bottom_right[0]-1+tileRightExtra, zoom);
+  //  var top_left_bbox = get_tile_from_long_lat(bbox[0],bbox[3],zoom);
+    //var bottom_right_bbox = get_tile_from_long_lat(bbox[2], bbox[1], zoom);
+    //var tiles_across = bottom_right_bbox[0] - top_left_bbox[0];
+
     function projectInterpolate(projection0g, projection1g, t, startScale, endScale, center, orgcenter) {
       var projection0 = projection0g().scale(1).center(orgcenter);
       var projection1 = projection1g().scale(1).center(center);
@@ -651,22 +694,43 @@ var Interactive = function(sel) {
     }
 
     var destProjectionAdj = projectInterpolate(orgProjection, destProjection, 1, startScale, destScale, center, orgcenter);
-    var top_left_vb = destProjectionAdj([
-      left_long, top_lat
-    ]);
-    var bottom_right_vb = destProjectionAdj([
-      right_long, bottom_lat
-    ]);
-    var center_vb = destProjectionAdj(center);
+
+    var top_left_bbox_svg_coords = destProjectionAdj([bbox[0], bbox[3]]);
+    var bottom_right_bbox_svg_coords = destProjectionAdj([bbox[2], bbox[1]]);
+    var bbox_width_svg_coords = bottom_right_bbox_svg_coords[0] - top_left_bbox_svg_coords[0];
+    var bbox_height_svg_coords = bottom_right_bbox_svg_coords[1] - top_left_bbox_svg_coords[1];
+
+    var top_left_viewport_svg_coords=[], bottom_right_viewport_svg_coords=[], diff;
+    if (bbox_width_svg_coords/bbox_height_svg_coords < width/height) {
+      diff = bbox_height_svg_coords*(width/height) - bbox_width_svg_coords;
+      top_left_viewport_svg_coords[0] = top_left_bbox_svg_coords[0] - diff/2;
+      top_left_viewport_svg_coords[1] = top_left_bbox_svg_coords[1];
+      bottom_right_viewport_svg_coords[0] = bottom_right_bbox_svg_coords[0] + diff/2;
+      bottom_right_viewport_svg_coords[1] = bottom_right_bbox_svg_coords[1];
+    } else {
+      diff = bbox_width_svg_coords*(height/width) - bbox_height_svg_coords;
+      top_left_viewport_svg_coords[0] = top_left_bbox_svg_coords[0];
+      top_left_viewport_svg_coords[1] = top_left_bbox_svg_coords[1] - diff/2;
+      bottom_right_viewport_svg_coords[0] = bottom_right_bbox_svg_coords[0];
+      bottom_right_viewport_svg_coords[1] = bottom_right_bbox_svg_coords[1] + diff/2;
+    }
+
+    var top_left_viewport_latlong = destProjectionAdj(top_left_viewport_svg_coords);
+
+    /*start here tomorrow*/
+
+    var viewbox = [
+      top_left_vb[0],
+      top_left_vb[1],
+      bottom_right_vb[0] - top_left_vb[0],
+      bottom_right_vb[1] - top_left_vb[1]
+    ];
+    var offset_px = m.offset_px_from_vb(viewbox, zoom, destProjectionAdj, $(sel).find(".mapwrap"));
     var offset = [
       center_vb[0] - (top_left_vb[0] + bottom_right_vb[0])/2,
       center_vb[1] - (top_left_vb[1] + bottom_right_vb[1])/2
     ];
-    var vb_dim = [
-      bottom_right_vb[0] - top_left_vb[0],
-      bottom_right_vb[1] - top_left_vb[1]
-    ];
-    var offset_px = [0-offset[0]/vb_dim[0]*width, 0-offset[1]/vb_dim[1]*height];
+
     var destViewbox = [
       //top_left_bbox[0],
       //top_left_bbox[1],
@@ -675,10 +739,10 @@ var Interactive = function(sel) {
       bottom_right_vb[0] - top_left_vb[0],
       bottom_right_vb[1] - top_left_vb[1]
     ];
-    var tilesLoaded = false;
+  //  var tilesLoaded = false;
     var zoomFinished = false;
     m.minZoom = zoom;
-    m.maxZoom = 13;
+    m.maxZoom = 15;
     m.getTiles({
       //cviewbox:destViewbox.join(" "),
       bbox:bbox,
@@ -686,13 +750,13 @@ var Interactive = function(sel) {
       height:height,
       z:zoom,
       offset:offset_px,
-      onload:function() {
+      /*onload:function() {
         tilesLoaded = true;
         checkDisplay();
-      }
+      }*/
     });
     function checkDisplay() {
-      if (zoomFinished && tilesLoaded && csvDataLoaded) {
+      if (zoomFinished /*&& tilesLoaded*/ && csvDataLoaded) {
         $(sel).find(".tilewrap").not("old").css("opacity",1);
         $(sel).find(".tilewrap.old").remove();
         if (typeof(cb)==="function") {
@@ -780,8 +844,8 @@ var Interactive = function(sel) {
             .attr("opacity",1);
         }
       }
-      projection = projectInterpolate(orgProjection, destProjection, p, startScale, destScale, center, orgcenter);
-      path = d3.geoPath(projection);
+      m.projection = projectInterpolate(orgProjection, destProjection, p, startScale, destScale, center, orgcenter);
+      path = d3.geoPath(m.projection);
       d3.selectAll("path")
         .attr("d", path);
     });
