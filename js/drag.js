@@ -33,7 +33,14 @@ module.exports = function(sel, m, $, d3) {
 		delete(m.dragBase);
     $(sel).find(".tilewrap").addClass("old");
 		m.updateDrawData(d3.select(sel + " svg"));
+		var viewport = d3.select(sel).select("svg").attr("viewBox").split(" ");
+		var offset_px = m.offset_px_from_vb(viewport, m.zoomLevel, m.projection);
     m.getTiles({
+			width: $(sel).width(),
+			height: $(sel).height(),
+			projection:m.projection,
+			viewport: viewport,
+			offset: offset_px,
       onload: function() {
 				$(sel).find(".tilewrap").not("old").css("opacity",1);
         $(sel).find(".tilewrap.old").remove();

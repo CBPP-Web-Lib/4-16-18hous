@@ -70,12 +70,16 @@ var Interactive = function(sel) {
   var path = d3.geoPath(m.projection);
   var defaultViewbox = [50, 5, 820, 820*$(sel + " .mapwrap").height()/$(sel + " .mapwrap").width()].join(" ");
 
-  function get_tile_from_long_lat(long, lat, zoom) {
+  function get_tile_from_long_lat(long, lat, zoom, exact) {
     var scale = 1 << zoom;
+    var rounder = Math.floor;
+    if (exact===true) {
+      rounder = function(n) {return n;};
+    }
     var worldCoordinate = tile_project(lat, long);
     return [
-      Math.floor(worldCoordinate[0] * scale),
-      Math.floor(worldCoordinate[1] * scale)
+      rounder(worldCoordinate[0] * scale),
+      rounder(worldCoordinate[1] * scale)
     ];
   }
   function tile_project(lat, long) {
@@ -422,12 +426,6 @@ var Interactive = function(sel) {
       return "#EB9123";
     }
     var poverty_rate = Math.min(40,d[1])/40;
-    /*var low = [255,255,255];
-    var high = [185, 41, 47];
-    var result = [];
-    for (var i = 0; i<3;i++) {
-      result[i] = Math.round(low[i] + poverty_rate*(high[i] - low[i]));
-    }*/
     return "rgba(185,41,47," + poverty_rate + ")";
   }
   m.getTiles = function(config) {
@@ -437,32 +435,10 @@ var Interactive = function(sel) {
     if (typeof(config)==="undefined") {
       config={};
     }
-    var bbox = config.bbox;
     var width = config.width;
     var height = config.height;
     var z = config.z;
     var offset = config.offset;
-    var cviewbox = config.cviewbox;
-    if (!bbox) {
-      var viewbox = svg.attr("viewBox").split(" ");
-      if (cviewbox) {viewbox = cviewbox;}
-      var btl = m.projection.invert([
-        viewbox[0]*1,
-        viewbox[1]*1
-      ]);
-      var bbr = m.projection.invert([
-        viewbox[0]*1 + viewbox[2]*1,
-        viewbox[1]*1 + viewbox[3]*1
-      ]);
-      bbox = [
-        btl[0],
-        bbr[1],
-        bbr[0],
-        btl[1]
-      ];
-    }
-    if (!width) {width = $(sel).width();}
-    if (!height) {height = $(sel).height();}
     var zchange = 1;
     if (!m.zoomLevel && !z) {
       console.error("No zoom defined yet");
@@ -474,7 +450,8 @@ var Interactive = function(sel) {
     } else {
       z = m.zoomLevel;
     }
-    var tl = get_tile_from_long_lat(bbox[0],bbox[3],z);
+    var final_tl_latlong = config.projection.invert([config.viewport[0], config.viewport[1]]);
+    var tl = get_tile_from_long_lat(final_tl_latlong[0], final_tl_latlong[1], z);
     var tilewrap = $(sel).find(".tilewrap");
     var oldtilewrap = $(sel).find(".tilewrap.old");
     if (oldtilewrap.length===0) {
@@ -493,19 +470,10 @@ var Interactive = function(sel) {
         oldtilewrap.css("top").replace("px","")*1
       ];
     }
-    var ctx = oldtilewrap.attr("data-sx")*zchange;
-    var cty = oldtilewrap.attr("data-sy")*zchange;
-    var dx = isNaN(ctx) ? 0 : ctx - tl[0];
-    var dy = isNaN(cty) ? 0 : cty - tl[1];
-    offset[0] -= dx*256;
-    offset[1] -= dy*256;
-    var tile_offset = [
-      Math.ceil(offset[0]/256),
-      Math.ceil(offset[1]/256)
-    ];
-    //console.log(offset);
-    tilewrap.css("left",(offset[0])+"px");
-    tilewrap.css("top",(offset[1])+"px");
+
+    tilewrap.css("left",(0-offset[0])+"px");
+    tilewrap.css("top",(0-offset[1])+"px");
+
     var br = [Math.ceil(tl[0]+width/256), Math.ceil(tl[1] + height/256)];
     var img;
     var finished = function() {
@@ -514,8 +482,6 @@ var Interactive = function(sel) {
       if (typeof(config.onload)==="function") {config.onload();}
     };
     var requests = 0;
-    tilewrap.attr("data-sx",tl[0]);
-    tilewrap.attr("data-sy",tl[1]);
     var errorHandler = function() {
       var url = $(this).attr("src");
       if (url.indexOf("@2x")!==-1) {
@@ -523,8 +489,8 @@ var Interactive = function(sel) {
       }
       $(this).attr("src", url);
     };
-    for (var x = tl[0] - tile_offset[0]; x<=br[0]+1 - tile_offset[0];x++) {
-      for (var y = tl[1] - tile_offset[1]; y<=br[1]+1 - tile_offset[1];y++) {
+    for (var x = tl[0]; x<=br[0];x++) {
+      for (var y = tl[1]; y<=br[1];y++) {
         requests++;
         var ext = ".png";
         if (window.devicePixelRatio>1) {
@@ -567,50 +533,14 @@ var Interactive = function(sel) {
     var n=Math.PI-2*Math.PI*y/Math.pow(2,z);
     return (180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))));
   }
-  m.offset_px_from_vb = function(viewbox, zoom, projection, container) {
-    var width = container.width();
-    var height = container.height();
-    console.log("top left viewbox", viewbox[0], viewbox[1]);
+  m.offset_px_from_vb = function(viewbox, zoom, projection) {
     var top_left_coords = projection.invert([viewbox[0], viewbox[1]]);
-    console.log("top left coords", top_left_coords);
-    var top_left_tile = get_tile_from_long_lat(top_left_coords[0], top_left_coords[1], zoom);
-
-    console.log("top left tile", top_left_tile);
-    var top_left_tile_coords = [tile2long(top_left_tile[0], zoom), tile2lat(top_left_tile[1], zoom)];
-
-    console.log("top left tile coords", top_left_tile_coords);
-
-    var top_left_tile_vb = projection(top_left_tile_coords);
-    console.log("top left tile vb", top_left_tile_vb);
-    var viewbox_offset = [
-      top_left_tile_vb[0] - viewbox[0],
-      top_left_tile_vb[1] - viewbox[1]
-    ];
-    console.log("viewbox offset", viewbox_offset);
+    var top_left_tile = get_tile_from_long_lat(top_left_coords[0], top_left_coords[1], zoom, true);
     var px_offset = [
-      viewbox_offset[0]/viewbox[2]*width,
-      viewbox_offset[1]/viewbox[3]*height
+      (top_left_tile[0] - Math.floor(top_left_tile[0]))*256,
+      (top_left_tile[1] - Math.floor(top_left_tile[1]))*256
     ];
-    console.log("px_offset", px_offset);
     return px_offset;
-    //console.log(center_vb);
-    //var center_vb = [viewbox[0] + viewbox[2]/2, viewbox[1] + viewbox[3]/2];
-  //  var center_vb = [480,250];
-    //console.log(center);
-    //var center_vb = projection(center);
-    //console.log(center_vb);
-    /*var top_left_vb = [viewbox[0], viewbox[1]];
-    var bottom_right_vb = [viewbox[0] + viewbox[2], viewbox[1] + viewbox[3]];
-    var offset = [
-      center_vb[0] - (top_left_vb[0] + bottom_right_vb[0])/2,
-      center_vb[1] - (top_left_vb[1] + bottom_right_vb[1])/2
-    ];
-    var vb_dim = [
-      bottom_right_vb[0] - top_left_vb[0],
-      bottom_right_vb[1] - top_left_vb[1]
-    ];
-    console.log("new offset", offset);
-    return [0-offset[0]/vb_dim[0]*width, 0-offset[1]/vb_dim[1]*height];*/
   };
 
   function zoomToCBSA(cbsa, direction, cb) {
@@ -642,10 +572,6 @@ var Interactive = function(sel) {
       zoom++;
     }
     zoom--;
-  //  var top_left_bbox = get_tile_from_long_lat(bbox[0],bbox[3],zoom);
-    //var bottom_right_bbox = get_tile_from_long_lat(bbox[2], bbox[1], zoom);
-    //var tiles_across = bottom_right_bbox[0] - top_left_bbox[0];
-
     function projectInterpolate(projection0g, projection1g, t, startScale, endScale, center, orgcenter) {
       var projection0 = projection0g().scale(1).center(orgcenter);
       var projection1 = projection1g().scale(1).center(center);
@@ -699,7 +625,6 @@ var Interactive = function(sel) {
     var bottom_right_bbox_svg_coords = destProjectionAdj([bbox[2], bbox[1]]);
     var bbox_width_svg_coords = bottom_right_bbox_svg_coords[0] - top_left_bbox_svg_coords[0];
     var bbox_height_svg_coords = bottom_right_bbox_svg_coords[1] - top_left_bbox_svg_coords[1];
-
     var top_left_viewport_svg_coords=[], bottom_right_viewport_svg_coords=[], diff;
     if (bbox_width_svg_coords/bbox_height_svg_coords < width/height) {
       diff = bbox_height_svg_coords*(width/height) - bbox_width_svg_coords;
@@ -715,41 +640,53 @@ var Interactive = function(sel) {
       bottom_right_viewport_svg_coords[1] = bottom_right_bbox_svg_coords[1] + diff/2;
     }
 
-    var top_left_viewport_latlong = destProjectionAdj(top_left_viewport_svg_coords);
+    var viewport_svg_width = bottom_right_viewport_svg_coords[0] - top_left_viewport_svg_coords[0];
+    var viewport_svg_height = bottom_right_viewport_svg_coords[1] - top_left_viewport_svg_coords[1];
 
-    /*start here tomorrow*/
+    var top_left_viewport_latlong = destProjectionAdj.invert(top_left_viewport_svg_coords);
+    var top_left_tile_coords =
+      get_tile_from_long_lat(
+        top_left_viewport_latlong[0],
+        top_left_viewport_latlong[1],
+        zoom,
+        true
+      );
+    var lat_long_second_tile = [
+      tile2long(top_left_tile_coords[0]+1, zoom),
+      tile2lat(top_left_tile_coords[1]+1,zoom)
+    ];
+    var svg_coords_second_tile = destProjectionAdj(lat_long_second_tile);
+    var current_tile_width_svg = svg_coords_second_tile[0] - top_left_viewport_svg_coords[0];
+    var current_tile_width_px = current_tile_width_svg/(viewport_svg_width)*width;
+    var scale_factor = 256/current_tile_width_px;
+    var final_svg_width = (1/scale_factor) * viewport_svg_width;
+    var final_svg_height = (1/scale_factor) * viewport_svg_height;
+    var final_svg_tl = [
+      0.5*(viewport_svg_width - final_svg_width) +
+        top_left_viewport_svg_coords[0],
+      0.5*(viewport_svg_height - final_svg_height) +
+        top_left_viewport_svg_coords[1]
+    ];
 
     var viewbox = [
-      top_left_vb[0],
-      top_left_vb[1],
-      bottom_right_vb[0] - top_left_vb[0],
-      bottom_right_vb[1] - top_left_vb[1]
-    ];
-    var offset_px = m.offset_px_from_vb(viewbox, zoom, destProjectionAdj, $(sel).find(".mapwrap"));
-    var offset = [
-      center_vb[0] - (top_left_vb[0] + bottom_right_vb[0])/2,
-      center_vb[1] - (top_left_vb[1] + bottom_right_vb[1])/2
+      final_svg_tl[0],
+      final_svg_tl[1],
+      final_svg_width,
+      final_svg_height
     ];
 
-    var destViewbox = [
-      //top_left_bbox[0],
-      //top_left_bbox[1],
-      top_left_vb[0]+offset[0],
-      top_left_vb[1] + offset[1],
-      bottom_right_vb[0] - top_left_vb[0],
-      bottom_right_vb[1] - top_left_vb[1]
-    ];
+    var offset_px = m.offset_px_from_vb(viewbox, zoom, destProjectionAdj);
   //  var tilesLoaded = false;
     var zoomFinished = false;
     m.minZoom = zoom;
     m.maxZoom = 15;
     m.getTiles({
-      //cviewbox:destViewbox.join(" "),
-      bbox:bbox,
+      viewport: viewbox,
       width:width,
       height:height,
       z:zoom,
       offset:offset_px,
+      projection: destProjectionAdj
       /*onload:function() {
         tilesLoaded = true;
         checkDisplay();
@@ -777,7 +714,7 @@ var Interactive = function(sel) {
         .style("visibiltiy","hidden");
      svg.transition()
         .duration(1000)
-        .attr("viewBox", destViewbox.join(" "));
+        .attr("viewBox", viewbox.join(" "));
     } else {
       svg.transition()
         .duration(1000)

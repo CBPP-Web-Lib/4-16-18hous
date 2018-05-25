@@ -34,19 +34,13 @@ module.exports = function(sel, obj, $, d3) {
     animateTiles(viewport, newviewport, width, height, direction);
     var tilesLoaded = false;
     var zoomedFully = false;
-    //console.log(newviewport);
-    /*var center = [
-      newviewport[0] + newviewport[2]/2,
-      newviewport[1] + newviewport[3]/2
-    ];*/
-    var offset_px = m.offset_px_from_vb(newviewport, projection, $(sel).find(".mapwrap"));
-    /*var offset_px  = [
-      ($(sel).find(".tilewrap").css("left").replace("px","")*oz-x*(oz-1)),
-      ($(sel).find(".tilewrap").css("top").replace("px","")*oz-y*(oz-1))-(m.zoomLevel + db)/60
-    ];*/
+    var offset_px = m.offset_px_from_vb(newviewport, m.zoomLevel + db, m.projection);
     m.getTiles({
-      cviewbox: newviewport,
+      viewport: newviewport,
       z:m.zoomLevel + db,
+      width: $(sel).width(),
+      height: $(sel).height(),
+      projection: m.projection,
       offset: offset_px,
       onload: function() {
         tilesLoaded = true;
