@@ -486,8 +486,8 @@ var Interactive = function(sel) {
       var url = $(this).attr("src");
       if (url.indexOf("@2x")!==-1) {
         url = url.replace("@2x","");
+        $(this).attr("src", url);
       }
-      $(this).attr("src", url);
     };
     for (var x = tl[0]; x<=br[0];x++) {
       for (var y = tl[1]; y<=br[1];y++) {
@@ -496,7 +496,7 @@ var Interactive = function(sel) {
         if (window.devicePixelRatio>1) {
           ext = "@2x.png";
         }
-        var url = "https://stamen-tiles.a.ssl.fastly.net/toner-lite/"+z + "/" + x+"/"+y + ext;
+        var url = "https://stamen-tiles.a.ssl.fastly.net/toner/"+z + "/" + x+"/"+y + ext;
         img = $(document.createElement("img"))
           .attr("src", url)
           .css("left",(x-tl[0])*256 + "px")
