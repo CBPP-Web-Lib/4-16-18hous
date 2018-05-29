@@ -11,6 +11,7 @@
     "jquery": "^1.12.4",
     "localforage": "^1.7.1",
     "pako": "^1.0.6",
+    "point-in-polygon": "^1.0.1",
     "promise-polyfill": "^7.1.2",
     "stringify": "^5.1.0",
     "svg-path-bounds": "^1.0.1"

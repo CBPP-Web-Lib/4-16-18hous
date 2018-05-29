@@ -20,6 +20,9 @@ var geo_data = {};
 var cb_2015_us_state_500k = require("./topojson/low/cb_2015_us_state_500k.json");
 var tl_2015_us_cbsa = require("./topojson/low/tl_2015_us_cbsa.json");
 var popup_html = require("./popup.html");
+var getBounds = require("svg-path-bounds");
+var pointInPolygon = require("point-in-polygon");
+var dot_data = {};
 geo_data.cb_2015_us_state_500k = {low: topojson.feature(cb_2015_us_state_500k, cb_2015_us_state_500k.objects.districts)};
 geo_data.tl_2015_us_cbsa = {low: topojson.feature(tl_2015_us_cbsa, tl_2015_us_cbsa.objects.districts)};
 var URL_BASE;
@@ -136,8 +139,75 @@ var Interactive = function(sel) {
     $(sel).find(".mapwrap").append(popup_outer);
   }
 
+  m.updateDotData = function(drawData) {
+    function update_dots_for_tract(tract) {
+      var geoid = tract.properties.GEOID10;
+      if (typeof(dot_data[geoid])==="undefined") {
+        dot_data[geoid] = [];
+      }
+
+      var doneDots = dot_data[geoid].length;
+      var numDots = tract.properties.csvData[9]*1;
+      if (doneDots>=numDots) {
+        return;
+      }
+      var bbox = geojson_bbox(tract);
+      var j = 0;
+      while (doneDots < numDots && j<10000) {
+        j++;
+        if (j===10000) {
+          console.log("error - had trouble drawing dots for " + geoid);
+          console.log(doneDots, numDots, bbox, tract);
+        }
+        var xrange = bbox[2] - bbox[0];
+        var yrange = bbox[3] - bbox[1];
+        var x = Math.random()*xrange + bbox[0];
+        var y = Math.random()*yrange + bbox[1];
+        var pip = false;
+
+        for (var i = 0, ii = tract.geometry.coordinates.length; i<ii; i++) {
+          if (tract.geometry.type==="MultiPolygon") {
+            for (var k = 0, kk = tract.geometry.coordinates[i].length;k<kk;k++) {
+              if (pointInPolygon([x,y],tract.geometry.coordinates[i][k])) {
+                pip = true;
+              }
+            }
+          } else {
+            if (pointInPolygon([x,y],tract.geometry.coordinates[i])) {
+              pip = true;
+            }
+          }
+        /*  if (Math.random()<0.001) {
+            console.log([x,y],tract.geometry.coordinates[i], pip);
+          }*/
+        }
+        if (pip) {
+          dot_data[geoid].push([x,y]);
+          doneDots++;
+          if (doneDots === numDots) {
+          //  console.log("success for " + geoid);
+          }
+          //console.log(true);
+        }
+
+      }
+    }
+    function update_dots_for_cbsa(tract_data) {
+      for (var i = 0, ii = tract_data.length; i<ii; i++) {
+        update_dots_for_tract(tract_data[i]);
+      }
+    }
+    for (var cbsa_layer_name in drawData.high) {
+      if (drawData.high.hasOwnProperty(cbsa_layer_name)) {
+        update_dots_for_cbsa(drawData.high[cbsa_layer_name]);
+      }
+    }
+    console.log(dot_data);
+  };
+
   m.updateDrawData = function(svg) {
     drawData = filterToVisible(geo_data, svg.attr("viewBox"));
+
     //drawData = geo_data;
     drawData = (function(r) {
       for (var size in r) {
@@ -381,6 +451,9 @@ var Interactive = function(sel) {
         }
       });
     });
+
+    m.updateDotData(drawData);
+
   };
   function filterToVisible(geo_data, viewbox) {
     var r = {};
@@ -406,13 +479,13 @@ var Interactive = function(sel) {
                 thispath = svg_path_data[geoid][size];
               }
               if (thispath) {
-                //var bbox = getBounds(thispath);
-              /*  if (viewbox[0]*1 + viewbox[2]*1 > bbox[0] &&
+                var bbox = getBounds(thispath);
+                if (viewbox[0]*1 + viewbox[2]*1 > bbox[0] &&
                     viewbox[1]*1 + viewbox[3]*1 > bbox[1] &&
                     viewbox[0]*1 < bbox[2] &&
-                    viewbox[1]*1 < bbox[3]) {*/
+                    viewbox[1]*1 < bbox[3]) {
                   r[size][layer].push(geo_data[layer][size].features[i]);
-              //  }
+                }
               }
             }
           }
