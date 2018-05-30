@@ -22,6 +22,7 @@ var tl_2015_us_cbsa = require("./topojson/low/tl_2015_us_cbsa.json");
 var popup_html = require("./popup.html");
 var getBounds = require("svg-path-bounds");
 var pointInPolygon = require("point-in-polygon");
+var legend_dot_svg = require("./legend_dot_svg.html");
 var dot_data = {};
 geo_data.cb_2015_us_state_500k = {low: topojson.feature(cb_2015_us_state_500k, cb_2015_us_state_500k.objects.districts)};
 geo_data.tl_2015_us_cbsa = {low: topojson.feature(tl_2015_us_cbsa, tl_2015_us_cbsa.objects.districts)};
@@ -63,13 +64,16 @@ var Interactive = function(sel) {
   m.geo_data = geo_data;
   m.requests = [];
   new Figure.Figure(sel, {
-    rows: [0.61]
+    subtitle: "<div class=\"data-picker-wrapper\"></div>",
+    rows: [0.61,"fixed"]
   });
   $(sel).find(".grid00").empty().addClass("mapwrap");
+  $(sel).find(".grid01").empty().addClass("legendwrap");
   URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
   var svg;
   m.zoomingToCBSA = false;
   m.projection = d3.geoAlbers();
+  m.dataset = "poverty_rate";
   var path = d3.geoPath(m.projection);
   var defaultViewbox = [50, 5, 820, 820*$(sel + " .mapwrap").height()/$(sel + " .mapwrap").width()].join(" ");
 
@@ -141,13 +145,20 @@ var Interactive = function(sel) {
 
   m.updateDotData = function(drawData) {
     function update_dots_for_tract(tract) {
+      var z = m.zoomLevel;
       var geoid = tract.properties.GEOID10;
-      if (typeof(dot_data[geoid])==="undefined") {
-        dot_data[geoid] = [];
+      if (typeof(dot_data[z])==="undefined") {
+        dot_data[z] = {};
+      }
+      if (typeof(dot_data[z][geoid])==="undefined") {
+        dot_data[z][geoid] = [];
       }
 
-      var doneDots = dot_data[geoid].length;
+      var doneDots = dot_data[z][geoid].length;
       var numDots = tract.properties.csvData[9]*1;
+      m.dotRepresents = Math.ceil(Math.pow(2,m.maxZoom-z));
+      numDots /= m.dotRepresents;
+      numDots = Math.round(numDots);
       if (doneDots>=numDots) {
         return;
       }
@@ -182,7 +193,7 @@ var Interactive = function(sel) {
           }*/
         }
         if (pip) {
-          dot_data[geoid].push([x,y]);
+          dot_data[z][geoid].push([x,y]);
           doneDots++;
           if (doneDots === numDots) {
           //  console.log("success for " + geoid);
@@ -202,7 +213,6 @@ var Interactive = function(sel) {
         update_dots_for_cbsa(drawData.high[cbsa_layer_name]);
       }
     }
-    console.log(dot_data);
   };
 
   m.updateDrawData = function(svg) {
@@ -291,10 +301,14 @@ var Interactive = function(sel) {
       }();
       var pathIndex = function(pathData, i) {
         if (pathData.properties) {
-          return pathData.properties.GEOID;
-        } else {
-          return i;
+          if (pathData.properties.GEOID10) {
+            return pathData.properties.GEOID10;
+          }
+          if (pathData.properties.GEOID) {
+            return pathData.properties.GEOID;
+          }
         }
+        return i;
       };
       var paths = d3.select(this).selectAll("path")
         .data(pathData, pathIndex);
@@ -330,6 +344,9 @@ var Interactive = function(sel) {
           if (layer.indexOf("state")!==-1) {
             return 0.8*scaling[size];
           }
+          if (layer.indexOf("cbsa")!==-1) {
+            return 1*scaling[size];
+          }
           return 0.5*scaling[size];
         })
         .merge(paths)
@@ -351,7 +368,7 @@ var Interactive = function(sel) {
             makePopup(d3.event, d);
             $(this).css("cursor","pointer");
             d3.select(this).attr("opacity",1);
-            d3.select(this).attr("fill","#EB9123");
+            d3.select(this).attr("fill","#ED1C24");
           }
         })
         .on("mouseout", function(d) {
@@ -378,6 +395,9 @@ var Interactive = function(sel) {
           if (layer==="national") {
             return "#0C61A4";
           }
+          if (layer.indexOf("cbsa")!==-1) {
+            return "#0C61A4";
+          }
           return "#000000";
         })
         .attr("stroke-opacity", function() {
@@ -386,6 +406,9 @@ var Interactive = function(sel) {
           }
           if (layer==="national") {
             return 1;
+          }
+          if (layer.indexOf("cbsa")!==-1) {
+            return 0.3;
           }
           return 0;
         });
@@ -453,11 +476,133 @@ var Interactive = function(sel) {
     });
 
     m.updateDotData(drawData);
-
+    m.updateDots(drawData);
+    m.makeLegend();
   };
+
+  function makeGradientDef(conf, svg) {
+      var defs = svg.append("defs");
+      var grad = defs.append("linearGradient")
+        .attr("id","legend_gradient_def");
+      var min = conf[0][0];
+      var max = conf[conf.length-1][0];
+      grad.selectAll("stop")
+        .data(conf)
+        .enter()
+        .append("stop")
+        .attr("offset", function(d) {
+          return Math.round(1000*(d[0]-min)/(max-min))/10+"%";
+        })
+        .attr("stop-color", function(d) {
+          return "rgba(" + d[1].join(",") + ")";
+        });
+  }
+
+  function makeGradientText(conf, container) {
+    var max = conf.colors[conf.colors.length-1][0];
+    var min = conf.colors[0][0];
+    container.selectAll("div.label")
+      .data(conf.colors)
+      .enter()
+      .append("div")
+      .attr("class","label")
+      .style("left", function(d) {
+        return 100*(d[0]-min)/(max-min) + "%";
+      })
+      .html(function(d, i) {
+        return "<div>" + conf.labels[i] + "</div>";
+      });
+  }
+
+  m.makeLegend = function() {
+    var dotExplainer = $(document.createElement("div"));
+    dotExplainer.addClass("dotExplainer");
+    dotExplainer.html("Each <div class='legend_dot_svg_ex'></div> represents " + m.dotRepresents + " household" +
+      (m.dotRepresents !== 1 ? "s" : "") + ".");
+    $(sel).find(".legendwrap").empty().append(dotExplainer);
+    $(sel).find(".legend_dot_svg_ex").html(legend_dot_svg);
+    var gradientwrap = $(document.createElement("div"))
+      .attr("class","gradientwrap");
+    var labelwrap = $(document.createElement("div"))
+      .attr("class","labelwrap");
+    $(sel).find(".legendwrap").append(gradientwrap);
+    var legend_gradient_svg = d3.select(".gradientwrap").append("svg")
+      .attr("viewBox", "0 0 100 10")
+      .attr("preserveAspectRatio","none");
+    gradientwrap.append(labelwrap);
+    var titlewrap = $(document.createElement("div"));
+    titlewrap.addClass("titlewrap");
+    titlewrap.text(m.gradientConfig[m.dataset].name);
+    makeGradientDef(m.gradientConfig[m.dataset].colors, legend_gradient_svg);
+    legend_gradient_svg.append("rect")
+      .attr("x",0)
+      .attr("y",0)
+      .attr("width",100)
+      .attr("height",10)
+      .attr("opacity",0.7)
+      .attr("class","legend_gradient_rect")
+      .attr("stroke","none")
+      .attr("fill","url(#legend_gradient_def)");
+    makeGradientText(m.gradientConfig[m.dataset], d3.select(labelwrap[0]));
+    gradientwrap.append(titlewrap);
+  };
+
+  m.updateDots = function(d) {
+    var view_dot_data = (function(dot_data, d) {
+      var tracts = [];
+      var j, jj;
+      for (var cbsa in d.high) {
+        if (d.high.hasOwnProperty(cbsa)) {
+          for (j = 0, jj = d.high[cbsa].length; j<jj; j++) {
+            tracts.push(d.high[cbsa][j].properties.GEOID10);
+          }
+        }
+      }
+      var r = [];
+      for (var i = 0, ii = tracts.length; i<ii; i++) {
+        var tract_dots = dot_data[m.zoomLevel][tracts[i]];
+        for (j = 0, jj = tract_dots.length; j<jj; j++) {
+          r.push(tract_dots[j]);
+        }
+      }
+      return r;
+    })(dot_data, d);
+    var circle_size = (function() {
+      var viewport = svg.attr("viewBox").split(" ");
+      var px_width = $(sel).find(".mapwrap").width();
+      var svg_coords_width = viewport[2];
+      return 1.5*svg_coords_width/px_width;
+    })();
+    var dots = svg.selectAll("circle.household")
+      .data(view_dot_data, function(d) {
+        return d[0]*d[1];
+      });
+    dots.enter()
+      .append("circle")
+      .attr("class","household")
+      .attr("stroke","#000")
+      .attr("stroke-width",circle_size/4)
+      .attr("fill","#ED1C24")
+      .merge(dots)
+      .attr("r",circle_size)
+      .each(function(d) {
+        var el = d3.select(this);
+        var coords = m.projection(d);
+        el.attr("cx", coords[0]);
+        el.attr("cy", coords[1]);
+      });
+    dots.exit().remove();
+  };
+
   function filterToVisible(geo_data, viewbox) {
     var r = {};
     viewbox = viewbox.split(" ");
+    /*console.log(viewbox);
+    viewbox[0]-=viewbox[2]*0.2;
+    viewbox[1]-=viewbox[3]*0.2;
+    viewbox[2]*=1.4;
+    viewbox[3]*=1.4;
+    console.log(viewbox);*/
     for (var layer in geo_data) {
       if (geo_data.hasOwnProperty(layer)) {
         for (var size in geo_data[layer]) {
@@ -468,10 +613,10 @@ var Interactive = function(sel) {
               var geoid = geo_data[layer][size].features[i].properties.GEOID ||
                 geo_data[layer][size].features[i].properties.GEOID10;
               geoid*=1;
+              var thispath;
               if (!svg_path_data[geoid]) {
                 svg_path_data[geoid] = {};
               }
-              var thispath;
               if (!svg_path_data[geoid][size]) {
                 thispath = path(geo_data[layer][size].features[i]);
                 svg_path_data[geoid][size] = thispath;
@@ -479,6 +624,7 @@ var Interactive = function(sel) {
                 thispath = svg_path_data[geoid][size];
               }
               if (thispath) {
+
                 var bbox = getBounds(thispath);
                 if (viewbox[0]*1 + viewbox[2]*1 > bbox[0] &&
                     viewbox[1]*1 + viewbox[3]*1 > bbox[1] &&
@@ -494,12 +640,60 @@ var Interactive = function(sel) {
     }
     return r;
   }
+  m.gradientConfig = {
+    "poverty_rate" : {
+      name:"Poverty Rate",
+      colors: [
+        [0, [214, 228, 240, 1]],
+        [5, [12, 97, 164, 1]],
+        [40, [235, 145, 35, 1]]
+      ],
+      labels: ["0%","","40% or more"],
+      dataIndex: 1
+    },
+    "distress" : {
+      name:"Distress Index",
+      colors: [
+        [-5, [12,97,164,1]],
+        [0, [255,255,255,1]],
+        [30, [237,28,36,1]]
+      ],
+      labels: ["-5","0","30"],
+      dataIndex: 3
+    },
+    "nonwhite" : {
+      name:"Non-white percentage",
+      colors: [
+        [0,[200,200,200,1]],
+        [1,[15,99,33,1]]
+      ],
+      labels: ["0%","100%"],
+      dataIndex:6
+    }
+  };
   function fillFromData(d) {
     if (typeof(d)==="undefined") {
       return "#EB9123";
     }
-    var poverty_rate = Math.min(40,d[1])/40;
-    return "rgba(185,41,47," + poverty_rate + ")";
+    d = d[m.gradientConfig[m.dataset].dataIndex];
+    var gconf = m.gradientConfig[m.dataset].colors;
+    var color;
+    if (d < gconf[0][0]) {
+      color = gconf[0][1];
+    } else if (d >= gconf[gconf.length-1][0]) {
+      color = gconf[gconf.length-1][1];
+    } else {
+      for (var i = 0, ii = gconf.length-1;i<ii;i++) {
+        if (d >= gconf[i][0] && d < gconf[i+1][0]) {
+          var p = (d - gconf[i][0])/(gconf[i+1][0] - gconf[i][0]);
+          color = [];
+          for (var j = 0; j<4;j++) {
+            color[j] = p*(gconf[i+1][1][j] - gconf[i][1][j]) + gconf[i][1][j];
+          }
+        }
+      }
+    }
+    return "rgba("+color.join(",")+")";
   }
   m.getTiles = function(config) {
     if (!m.active_cbsa) {return;}
@@ -586,7 +780,7 @@ var Interactive = function(sel) {
   svg.on("click", function() {
     var vcoords = d3.mouse(this);
     var coords = m.projection.invert([vcoords[0], vcoords[1]]);
-    console.log(Math.abs(coords[0])+"W",Math.abs(coords[1])+"N");
+    //console.log(Math.abs(coords[0])+"W",Math.abs(coords[1])+"N");
   });
   function applyData(d, cbsa, pathData) {
     var selector = "g.tl_2010_tract_" + cbsa + " path";
@@ -774,6 +968,7 @@ var Interactive = function(sel) {
         }
       }
     }
+    svg.selectAll("circle.household").remove();
     svg.selectAll("text.label")
       .attr("opacity",0)
       .style("visibility","hidden");
@@ -815,8 +1010,11 @@ var Interactive = function(sel) {
       if (p>=1) {
         p=1;
         timer.stop();
+        m.projection = projectInterpolate(orgProjection, destProjection, p, startScale, destScale, center, orgcenter);
+        path = d3.geoPath(m.projection);
         if (direction==="in") {
 
+          $(sel).find(".legendwrap").slideDown(100);
           makeZoomOutButton();
           zoomFinished = true;
           checkDisplay();
@@ -842,6 +1040,7 @@ var Interactive = function(sel) {
               }, 1000);*/
             });
         } else {
+          $(sel).find(".legendwrap").slideUp(100);
           m.zoomingToCBSA = false;
           zoomFinished = true;
           if (typeof(cb)==="function") {
@@ -854,8 +1053,10 @@ var Interactive = function(sel) {
             .attr("opacity",1);
         }
       }
-      m.projection = projectInterpolate(orgProjection, destProjection, p, startScale, destScale, center, orgcenter);
-      path = d3.geoPath(m.projection);
+      if (!zoomFinished) {
+        m.projection = projectInterpolate(orgProjection, destProjection, p, startScale, destScale, center, orgcenter);
+        path = d3.geoPath(m.projection);
+      }
       d3.selectAll("path")
         .attr("d", path);
     });
@@ -879,6 +1080,26 @@ var Interactive = function(sel) {
     });
   }
 
+  function makeDataPicker() {
+    var select = $(document.createElement("select"));
+    for (var dataset in m.gradientConfig) {
+      if (m.gradientConfig.hasOwnProperty(dataset)) {
+        var option = $(document.createElement("option"));
+        option.val(dataset);
+        option.html(m.gradientConfig[dataset].name);
+        select.append(option);
+      }
+    }
+    select.on("change", function() {
+      m.dataset = $(this).val();
+      m.updateDrawData(svg);
+      /*m.updateDotData(drawData);
+      m.updateDots(drawData);
+      m.makeLegend();*/
+    });
+    return select;
+  }
+
 
 
 
@@ -886,11 +1107,12 @@ var Interactive = function(sel) {
   function DrawInitialMap() {
     svg = d3.select(sel + " .mapwrap").append("svg")
       .attr("viewBox", defaultViewbox)
-      .attr("preserveAspectRatio", "xMinYMin");
+      .attr("preserveAspectRatio", "none");
 
     m.updateDrawData(svg);
     require("./js/zoom.js")(sel + " .mapwrap", m, $, d3);
     require("./js/drag.js")(sel + " .mapwrap", m, $, d3);
+    $(sel).find(".data-picker-wrapper").append(makeDataPicker());
   }
 }; /*Interactive()*/
 

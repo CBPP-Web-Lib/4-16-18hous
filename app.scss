@@ -1,4 +1,64 @@
 #hous4-16-18 {
+  select, option {
+    font-family:inherit;
+    font-size:inherit;
+    font-weight:inherit;
+    line-height:inherit;
+  }
+  .legendwrap {
+    .dotExplainer {
+      text-align:center;
+    }
+    display:none;
+    font-family:"proxima-nova-condensed",sans-serif;
+    .titlewrap {
+      bottom:0px;
+      font-size:16pt;
+      text-align:center;
+      position:absolute;
+      width:100%;
+    }
+    .gradientwrap {
+      position:relative;
+      width:80%;
+      left:10%;
+      .labelwrap {
+        height:1.5em;
+        position:relative;
+      }
+      .label {
+        position:absolute;
+        top:-5px;
+        white-space:nowrap;
+      }
+      .label > div {
+        position:relative;
+        left:-50%;
+      }
+      .label:first-child > div {
+        left:0%;
+      }
+      .label:last-child > div {
+        left:-100%;
+      }
+      svg {
+        width:100%;
+        height:20px;
+        border:1px solid #666;
+        left:0;
+        top:0;
+        position:relative;
+      }
+    }
+    .legend_dot_svg_ex {
+      display:inline-block;
+      width:8px;
+      height:8px;
+      svg {
+        position:relative;
+      }
+    }
+  }
   svg {
     width:100%;
     height:100%;
@@ -10,6 +70,9 @@
     }
     text.label {
       cursor:pointer;
+    }
+    circle.household {
+      pointer-events:none;
     }
   }
   .mapwrap {
