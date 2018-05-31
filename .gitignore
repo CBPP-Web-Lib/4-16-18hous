@@ -14,3 +14,5 @@ shp/
 grid/
 filtered/
 .DS_Store
+geojson_water/
+water_simple/

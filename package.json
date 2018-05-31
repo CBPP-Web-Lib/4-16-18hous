@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Voucher/Metro Areas Project",
   "dependencies": {
+    "@turf/truncate": "^6.0.1",
     "comma-number": "^2.0.0",
     "csv-parse": "^1.2.0",
     "d3": "^4.8.0",
@@ -35,6 +36,7 @@
     "gulp-unzip": "^1.0.0",
     "gulp-util": "^3.0.8",
     "gulp-watch": "^4.3.11",
+    "martinez-polygon-clipping": "^0.4.1",
     "ogr2ogr": "^1.2.1",
     "request": "^2.85.0",
     "sassr": "^0.1.2",

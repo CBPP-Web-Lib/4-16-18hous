@@ -7,7 +7,8 @@ var topojson = require("topojson");
 var geojson_bbox = require("geojson-bbox");
 var fips = require("./fips.json");
 var turf = require("turf");
-var pako = require("pako");
+var truncate = require("@turf/truncate").default;
+//var clip_poly = polygon_clip_lib.martinez;
 function zeroPad(fips) {
   fips = fips + "";
   while (fips.length < 2) {
@@ -33,35 +34,59 @@ gl.gulp.task("download_shapefiles", function(cb) {
       files.push("https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/tl_2010_" + zeroPad(state) + "_tract10.zip");
     }
   }
+  var waterfiles = fs.readFileSync("./water_files.csv","utf-8");
+  waterfiles = waterfiles.split(/\r?\n/);
+  waterfiles.forEach(function(f) {
+    files.push("https://www2.census.gov/geo/tiger/TIGER2017/AREAWATER/" + f);
+  });
   var requests = [];
-  gl.makeDirectory("./download", function() {
-    files.forEach(function(f) {
-      requests.push(new Promise(function(resolve, reject) {
-        try {
-          var filename = f.split("/")[f.split("/").length - 1];
-          if (fs.existsSync("./download/" + filename)) {
-            resolve();
-          } else {
-            var ws = fs.createWriteStream("./download/" +  filename);
-            request(f)
-              .pipe(ws);
-            ws.on("finish", function() {
-              console.log("finished downloading " + f);
-              resolve();
-            });
-          }
-        } catch (ex) {
-          console.log(ex);
-          reject(ex);
+  var max_simultaneous = 8;
+  var RequestMaker = function(f, j) {
+    return new Promise(function(resolve, reject) {
+      try {
+        var filename = f.split("/")[f.split("/").length - 1];
+        if (fs.existsSync("./download/" + filename)) {
+          console.log("file exists " + f);
+          resolve(j);
+        } else {
+          var ws = fs.createWriteStream("./download/" +  filename);
+          request(f)
+            .pipe(ws);
+          ws.on("finish", function() {
+            console.log("finished downloading " + f);
+            resolve(j);
+          });
         }
-      }));
+      } catch (ex) {
+        console.log(ex);
+        reject(ex);
+      }
     });
-    Promise.all(requests).then(function() {
-      cb();
-    });
+  };
+  gl.makeDirectory("./download", function() {
+    var fIndex = 0;
+    function clearRequest(j) {
+      console.log("clearing slot " + j);
+      requests[j] = null;
+      tryFile();
+    }
+    function tryFile() {
+      if (fIndex >= files.length) {return;}
+      for (var j = 0; j<max_simultaneous;j++) {
+        var f = files[fIndex];
+        if (requests[j]===null || typeof(requests[j])==="undefined") {
+
+          console.log("trying " + f, j);
+          requests[j] = new RequestMaker(f, j).then(clearRequest);
+          fIndex++;
+        }
+      }
+      console.log("done trying, waiting...");
+    }
+    tryFile();
   });
 });
-gl.gulp.task("unzip_shapefiles", ["download_shapefiles"], function(cb) {
+gl.gulp.task("unzip_shapefiles", function(cb) {
   gl.makeDirectory("./shp", function() {
     var zips = fs.readdirSync("./download");
     var requests = [];
@@ -175,6 +200,9 @@ gl.gulp.task("filter_geojson", ["ogr2ogr","split_data"], function(cb) {
     cbsa = clip_cbsa(cbsa);
     fs.writeFileSync("./filtered/tl_2015_us_cbsa.json", JSON.stringify(cbsa, null, " "));*/
     var files = fs.readdirSync("./geojson");
+    files = files.filter(function(f) {
+      return f.indexOf("areawater")===-1;
+    });
     var filterTasks = [];
     files.forEach(function(f) {
       filterTasks.push(new Promise(function(resolve, reject) {
@@ -242,14 +270,156 @@ gl.gulp.task("filter_geojson", ["ogr2ogr","split_data"], function(cb) {
 
 
 });
+
+gl.gulp.task("simplify_water", ["ogr2ogr"], function(cb) {
+  gl.makeDirectory("water_simple", function() {
+    var files = fs.readdirSync("./geojson");
+    files = files.filter(function(f) {
+      return f.indexOf("areawater")!==-1;
+    });
+    var settings = gridConfig.high;
+    files.forEach(function(f) {
+      var geo = JSON.parse(fs.readFileSync("./geojson/" + f, "utf-8"));
+      var topo = topojson.topology({districts:geo});
+      topo = topojson.presimplify(topo);
+      topo = topojson.simplify(topo, settings.simplify);
+      topo = topojson.quantize(topo, {
+        scale:[settings.quantize,settings.quantize],
+        translate:[0,0]
+      });
+      fs.writeFileSync("./water_simple/" + f, JSON.stringify(topojson.feature(topo, topo.objects.districts), null, " "));
+    });
+    cb();
+  });
+});
+
+gl.gulp.task("subtract_water", [/*"clip_cbsa", "simplify_water"*/], function(cb) {
+  /*var waterIndex = JSON.parse(fs.readFileSync("./intermediate/waterIndex.json","utf-8"));
+
+  function bbox_overlap(box1, box2) {
+    return !(
+      box1[0] > box2[2] ||
+      box1[1] > box2[3] ||
+      box1[2] < box2[0] ||
+      box1[3] < box2[1]
+    );
+  }*/
+
+  function subtract(base, water) {
+  
+    water.features.forEach(function(f) {
+      try {
+        //console.log(JSON.parse(JSON.stringify(base.geometry.coordinates)));
+        base = turf.difference(base, f);
+      } catch (ex) {
+        console.log(base);
+      }
+    });
+    return base;
+  }
+
+  gl.makeDirectory("./geojson_water", function() {
+    var files = fs.readdirSync("./filtered");
+    files = files.filter(function(f) {
+      return f.indexOf("areawater")===-1;
+    });
+    var waterFiles = {};
+
+    files.forEach(function(f) {
+      if (f.indexOf("tract")===-1) {
+        fs.writeFileSync("./geojson_water/" + f, fs.readFileSync("./filtered/" + f));
+        return;
+      }
+      var d = JSON.parse(fs.readFileSync("./filtered/" + f,"utf-8"));
+      d.features.forEach(function(f, i) {
+        console.log(i/d.features.length);
+
+        var countyString = (f.properties.STATEFP10*1000 + f.properties.COUNTYFP10*1);
+        while ((countyString + "").length < 5) {
+          countyString = "0" + countyString;
+        }
+        var county = "tl_2017_" + countyString + "_areawater.json";
+        if (fs.existsSync("./water_simple/" + county) && typeof(waterFiles[county])==="undefined") {
+          var geo = JSON.parse(fs.readFileSync("./water_simple/" + county));
+          waterFiles[county] = geo;
+        }
+        if (typeof(waterFiles[county])!=="undefined") {
+          d.features[i] = subtract(d.features[i], waterFiles[county], "utf-8");
+        }
+      });
+      fs.writeFileSync("./geojson_water/" + f, JSON.stringify(d, null, " "));
+    });
+  });
+
+  gulp.watch([]);
+});
+
+gl.gulp.task("index_water", [/*"ogr2ogr"*/], function(cb) {
+  var files = fs.readdirSync("./geojson");
+  files = files.filter(function(e) {
+    return e.indexOf("areawater")!==-1;
+  });
+  var r = {};
+  var calcs = [];
+  var max_concurrent = 8;
+  var BboxMaker = function(f, j) {
+    return new Promise(function(resolve, reject) {
+      console.log("calculating bbox for " + f);
+      fs.readFile("./geojson/" + f, "utf-8", function(err, result) {
+        if (err) {
+          console.log(err);
+          reject(err);
+        }
+        resolve([geojson_bbox(JSON.parse(result)), f, j]);
+      });
+    });
+  };
+  var fileIndex = 0;
+  function finishCalc(args) {
+    var bbox = args[0], f = args[1], j = args[2];
+    r[f] = bbox;
+    calcs[j] = null;
+    if (done) {
+      var readsDone = true;
+      for (var i =0, ii = calcs.length; i<ii;i++) {
+        if (calcs[i]!==null) {readsDone = false;}
+      }
+      if (readsDone) {
+        fs.writeFileSync("./intermediate/waterIndex.json", JSON.stringify(r, null, " "));
+        cb();
+      }
+      return;
+    }
+    tryCalc();
+  }
+  var done = false;
+  function tryCalc() {
+    if (fileIndex===files.length) {
+      done = true;
+      return;
+    }
+    for (var i = 0;i<max_concurrent;i++) {
+      if (fileIndex >= files.length) {
+        return;
+      }
+      if (typeof(calcs[i])==="undefined" || calcs[i]===null) {
+        calcs[i] = new BboxMaker(files[fileIndex], i).then(finishCalc);
+        console.log(fileIndex/files.length);
+        fileIndex++;
+      }
+    }
+  }
+  tryCalc();
+});
+
 gl.gulp.task("ogr2ogr", ["geojson_dir","unzip_shapefiles"], function(cb) {
   var shp = fs.readdirSync("./shp");
   var requests = [];
-  shp.forEach(function(f) {
-    requests.push(new Promise(function(resolve, reject) {
+  var Converter = function(f, j) {
+    return new Promise(function(resolve, reject) {
       try {
         if (fs.existsSync("./geojson/" + f + ".json")) {
-          resolve();
+          resolve(j);
         } else {
           var geojson = ogr2ogr('./shp/' + f + "/" + f + ".shp")
             .format('GeoJSON')
@@ -260,7 +430,7 @@ gl.gulp.task("ogr2ogr", ["geojson_dir","unzip_shapefiles"], function(cb) {
             } else {
               console.log("finished ogr2ogr for " + f);
               gl.fs.writeFileSync('./geojson/' + f + ".json", JSON.stringify(data, null, " "));
-              resolve();
+              resolve(j);
             }
           });
         }
@@ -268,12 +438,36 @@ gl.gulp.task("ogr2ogr", ["geojson_dir","unzip_shapefiles"], function(cb) {
         console.log(ex);
         reject(ex);
       }
-    }));
-  });
-  Promise.all(requests).then(function() {
-    console.log("finished ogr2ogr for all");
-    cb();
-  });
+    });
+  };
+  var max_simultaneous = 8;
+  var fileIndex = 0;
+  function clearConvert(i) {
+    requests[i] = null;
+    tryConvert();
+  }
+  function tryConvert() {
+    for (var i = 0; i<max_simultaneous;i++) {
+      if (typeof(requests[i])==="undefined" || requests[i]===null) {
+        if (fileIndex >= shp.length) {
+          var done = true;
+          for (var j = 0; j<max_simultaneous;j++) {
+            if (requests[j]!==null) {done = false;}
+          }
+          if (done) {
+            console.log("finished ogr2ogr for all");
+            cb();
+          }
+          return;
+        }
+        var f = shp[fileIndex];
+        console.log("starting for " + f);
+        requests[i] = new Converter(f, i).then(clearConvert);
+        fileIndex++;
+      }
+    }
+  }
+  tryConvert();
 });
 function makeDirectory(d, cb) {
   fs.mkdir(d, function(e) {
