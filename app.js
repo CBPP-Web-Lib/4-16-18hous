@@ -17,12 +17,14 @@ var pako = require("pako");
 localforage.clear();
 var svg_path_data = {};
 var geo_data = {};
+var water_data = {};
 var cb_2015_us_state_500k = require("./topojson/low/cb_2015_us_state_500k.json");
 var tl_2015_us_cbsa = require("./topojson/low/tl_2015_us_cbsa.json");
 var popup_html = require("./popup.html");
 var getBounds = require("svg-path-bounds");
 var pointInPolygon = require("point-in-polygon");
 var legend_dot_svg = require("./legend_dot_svg.html");
+var waterIndex = require("./waterIndex.json");
 var dot_data = {};
 geo_data.cb_2015_us_state_500k = {low: topojson.feature(cb_2015_us_state_500k, cb_2015_us_state_500k.objects.districts)};
 geo_data.tl_2015_us_cbsa = {low: topojson.feature(tl_2015_us_cbsa, tl_2015_us_cbsa.objects.districts)};
@@ -260,8 +262,9 @@ var Interactive = function(sel) {
       if (m.active_cbsa) {return false;}
       var zoomed = false;
       var loaded = false;
+      var water_loaded = false;
       function checkZoomAndLoad() {
-        if (zoomed && loaded) {
+        if (zoomed && loaded && water_loaded) {
           //applyData(csv, m.active_cbsa.properties.GEOID, []);
           m.updateDrawData(svg);
         }
@@ -270,6 +273,27 @@ var Interactive = function(sel) {
         var geo = topojson.feature(d, d.objects.districts);
         geo_data["tl_2010_tract_" + geoid] = {high:geo};
         loaded = true;
+        checkZoomAndLoad();
+      });
+      var water_files = waterIndex["tl_2010_tract_" + geoid + ".json"];
+      var WaterRequest = function(file) {
+        return new Promise(function(resolve, reject) {
+          if (typeof(water_data[file])!=="undefined") {
+            resolve();
+          } else {
+            getJSONAndSaveInMemory(file, function(err, d) {
+              water_data[file] = topojson.feature(d, d.objects.districts);
+              resolve();
+            });
+          }
+        });
+      };
+      var water_requests = [];
+      for (var i = 0, ii = water_files.length; i<ii; i++) {
+        water_requests.push(new WaterRequest("./water/tl_2017_" + water_files[i] + "_areawater.json"));
+      }
+      Promise.all(water_requests).then(function() {
+        water_loaded = true;
         checkZoomAndLoad();
       });
       zoomToCBSA(d, "in", function() {

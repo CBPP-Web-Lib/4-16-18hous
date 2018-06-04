@@ -6,8 +6,8 @@ var ogr2ogr = require("ogr2ogr");
 var topojson = require("topojson");
 var geojson_bbox = require("geojson-bbox");
 var fips = require("./fips.json");
-var turf = require("turf");
-var truncate = require("@turf/truncate").default;
+var turf_intersect = require("@turf/intersect").default;
+//var truncate = require("@turf/truncate").default;
 //var clip_poly = polygon_clip_lib.martinez;
 function zeroPad(fips) {
   fips = fips + "";
@@ -127,7 +127,7 @@ gl.gulp.task("unzip_shapefiles", function(cb) {
     });
   });
 });
-gl.gulp.task("clip_cbsa", ["filter_geojson"], function(cb) {
+gl.gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
   function clip_cbsa(cbsa) {
     var states = JSON.parse(fs.readFileSync("./geojson/cb_2015_us_state_500k.json"));
     var topostate = topojson.topology({districts:states});
@@ -138,19 +138,27 @@ gl.gulp.task("clip_cbsa", ["filter_geojson"], function(cb) {
     var merged = topojson.merge(topostate, topostate.objects.districts.geometries);
     var r = [];
     var intersect;
-    cbsa.features.forEach(function(f) {
-      intersect = turf.intersect(merged, f);
-      //intersect.geometry.geometries = removePoints(intersect.geometry.geometries);
-      intersect.properties = f.properties;
-      r.push(intersect);
-    });
+    gulp.watch();
+    try {
+      cbsa.features.forEach(function(f) {
+        //console.log(merged, f.geometry);
+        //intersect = turf_intersect(merged, f.geometry);
+        //intersect.properties = f.properties;
+      //  console.log(intersect);
+
+        r.push(f);
+
+      });
+    } catch (ex) {
+      console.log(ex);
+    }
     cbsa.features = r;
     return cbsa;
   }
-  if (fs.existsSync("./filtered/tl_2015_us_cbsa.json")) {
-    cb();
-    return;
-  }
+//  if (fs.existsSync("./filtered/tl_2015_us_cbsa.json")) {
+//    cb();
+//    return;
+//  }
   var cbsa = JSON.parse(fs.readFileSync("./intermediate/cbsa_filtered_unclipped.json"));
   fs.writeFileSync("./filtered/tl_2015_us_cbsa.json", JSON.stringify(clip_cbsa(cbsa), null, " "));
   cb();
@@ -278,138 +286,47 @@ gl.gulp.task("simplify_water", ["ogr2ogr"], function(cb) {
       return f.indexOf("areawater")!==-1;
     });
     var settings = gridConfig.high;
-    files.forEach(function(f) {
-      var geo = JSON.parse(fs.readFileSync("./geojson/" + f, "utf-8"));
-      var topo = topojson.topology({districts:geo});
-      topo = topojson.presimplify(topo);
-      topo = topojson.simplify(topo, settings.simplify);
-      topo = topojson.quantize(topo, {
-        scale:[settings.quantize,settings.quantize],
-        translate:[0,0]
+    gl.makeDirectory("./build/water", function() {
+      files.forEach(function(f) {
+        var geo = JSON.parse(fs.readFileSync("./geojson/" + f, "utf-8"));
+        var topo = topojson.topology({districts:geo});
+        topo = topojson.presimplify(topo);
+        topo = topojson.simplify(topo, settings.simplify);
+        topo = topojson.quantize(topo, {
+          scale:[settings.quantize/100,settings.quantize],
+          translate:[0,0]
+        });
+        topo.objects.districts.geometries.forEach(function(el) {
+          delete(el.properties);
+        });
+        fs.writeFileSync("./build/water/" + f, JSON.stringify(topo));
       });
-      fs.writeFileSync("./water_simple/" + f, JSON.stringify(topojson.feature(topo, topo.objects.districts), null, " "));
-    });
-    cb();
-  });
-});
-
-gl.gulp.task("subtract_water", [/*"clip_cbsa", "simplify_water"*/], function(cb) {
-  /*var waterIndex = JSON.parse(fs.readFileSync("./intermediate/waterIndex.json","utf-8"));
-
-  function bbox_overlap(box1, box2) {
-    return !(
-      box1[0] > box2[2] ||
-      box1[1] > box2[3] ||
-      box1[2] < box2[0] ||
-      box1[3] < box2[1]
-    );
-  }*/
-
-  function subtract(base, water) {
-  
-    water.features.forEach(function(f) {
-      try {
-        //console.log(JSON.parse(JSON.stringify(base.geometry.coordinates)));
-        base = turf.difference(base, f);
-      } catch (ex) {
-        console.log(base);
-      }
-    });
-    return base;
-  }
-
-  gl.makeDirectory("./geojson_water", function() {
-    var files = fs.readdirSync("./filtered");
-    files = files.filter(function(f) {
-      return f.indexOf("areawater")===-1;
-    });
-    var waterFiles = {};
-
-    files.forEach(function(f) {
-      if (f.indexOf("tract")===-1) {
-        fs.writeFileSync("./geojson_water/" + f, fs.readFileSync("./filtered/" + f));
-        return;
-      }
-      var d = JSON.parse(fs.readFileSync("./filtered/" + f,"utf-8"));
-      d.features.forEach(function(f, i) {
-        console.log(i/d.features.length);
-
-        var countyString = (f.properties.STATEFP10*1000 + f.properties.COUNTYFP10*1);
-        while ((countyString + "").length < 5) {
-          countyString = "0" + countyString;
-        }
-        var county = "tl_2017_" + countyString + "_areawater.json";
-        if (fs.existsSync("./water_simple/" + county) && typeof(waterFiles[county])==="undefined") {
-          var geo = JSON.parse(fs.readFileSync("./water_simple/" + county));
-          waterFiles[county] = geo;
-        }
-        if (typeof(waterFiles[county])!=="undefined") {
-          d.features[i] = subtract(d.features[i], waterFiles[county], "utf-8");
-        }
-      });
-      fs.writeFileSync("./geojson_water/" + f, JSON.stringify(d, null, " "));
+      cb();
     });
   });
-
-  gulp.watch([]);
 });
 
 gl.gulp.task("index_water", [/*"ogr2ogr"*/], function(cb) {
-  var files = fs.readdirSync("./geojson");
+  var files = fs.readdirSync("./filtered");
   files = files.filter(function(e) {
-    return e.indexOf("areawater")!==-1;
+    return e.indexOf("tract")!==-1;
   });
   var r = {};
-  var calcs = [];
-  var max_concurrent = 8;
-  var BboxMaker = function(f, j) {
-    return new Promise(function(resolve, reject) {
-      console.log("calculating bbox for " + f);
-      fs.readFile("./geojson/" + f, "utf-8", function(err, result) {
-        if (err) {
-          console.log(err);
-          reject(err);
-        }
-        resolve([geojson_bbox(JSON.parse(result)), f, j]);
-      });
+  files.forEach(function(f) {
+    var fIndex = {};
+    var features = JSON.parse(fs.readFileSync("./filtered/" + f)).features;
+    features.forEach(function(f) {
+      fIndex[f.properties.COUNTYFP10*1000 + f.properties.STATEFP10*1] = true;
     });
-  };
-  var fileIndex = 0;
-  function finishCalc(args) {
-    var bbox = args[0], f = args[1], j = args[2];
-    r[f] = bbox;
-    calcs[j] = null;
-    if (done) {
-      var readsDone = true;
-      for (var i =0, ii = calcs.length; i<ii;i++) {
-        if (calcs[i]!==null) {readsDone = false;}
-      }
-      if (readsDone) {
-        fs.writeFileSync("./intermediate/waterIndex.json", JSON.stringify(r, null, " "));
-        cb();
-      }
-      return;
-    }
-    tryCalc();
-  }
-  var done = false;
-  function tryCalc() {
-    if (fileIndex===files.length) {
-      done = true;
-      return;
-    }
-    for (var i = 0;i<max_concurrent;i++) {
-      if (fileIndex >= files.length) {
-        return;
-      }
-      if (typeof(calcs[i])==="undefined" || calcs[i]===null) {
-        calcs[i] = new BboxMaker(files[fileIndex], i).then(finishCalc);
-        console.log(fileIndex/files.length);
-        fileIndex++;
+    var fArr = [];
+    for (var cfips in fIndex) {
+      if (fIndex.hasOwnProperty(cfips)) {
+        fArr.push(cfips);
       }
     }
-  }
-  tryCalc();
+    r[f] = fArr;
+  });
+  fs.writeFileSync("./waterIndex.json", JSON.stringify(r, null, " "));
 });
 
 gl.gulp.task("ogr2ogr", ["geojson_dir","unzip_shapefiles"], function(cb) {
@@ -489,6 +406,12 @@ var gridConfig = require("./gridConfig.json");
 
 gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], function(done) {
   var files = fs.readdirSync("./filtered");
+  files = files.filter(function(f) {
+    if (f.indexOf("areawater")===-1) {
+      return true;
+    }
+    return false;
+  });
   var sizes = [];
   makeDirectory("./build/topojson", function() {
     makeDirectory("./build/topojson/high", directoryCB);
@@ -530,6 +453,7 @@ gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], fun
               var geo = JSON.parse(fs.readFileSync("./filtered/" + f, {
                 encoding: "utf-8"
               }));
+              try {
               var topo = topojson.topology({districts:geo}/*, 10000*/);
               for (var i = topo.objects.districts.geometries.length-1; i>=0; i--) {
                 var obj = topo.objects.districts.geometries[i].properties;
@@ -549,8 +473,12 @@ gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], fun
                 scale:[settings.quantize,settings.quantize],
                 translate:[0,0]
               });
+
               fs.writeFileSync(settings.dest + f, JSON.stringify(topo, null, settings.dest.indexOf("build")===-1 ? " " : null));
               console.log("wrote " + settings.dest + f);
+            } catch (ex) {
+              console.log(ex);
+            }
               resolve();
             }
           });
