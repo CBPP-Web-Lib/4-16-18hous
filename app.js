@@ -17,17 +17,18 @@ var pako = require("pako");
 localforage.clear();
 var svg_path_data = {};
 var geo_data = {};
-var water_data = {};
+var water_data = {type:"FeatureCollection","features":[]};
 var cb_2015_us_state_500k = require("./topojson/low/cb_2015_us_state_500k.json");
 var tl_2015_us_cbsa = require("./topojson/low/tl_2015_us_cbsa.json");
 var popup_html = require("./popup.html");
 var getBounds = require("svg-path-bounds");
-var pointInPolygon = require("point-in-polygon");
 var legend_dot_svg = require("./legend_dot_svg.html");
 var waterIndex = require("./waterIndex.json");
 var dot_data = {};
+var water_uid = 0;
 geo_data.cb_2015_us_state_500k = {low: topojson.feature(cb_2015_us_state_500k, cb_2015_us_state_500k.objects.districts)};
 geo_data.tl_2015_us_cbsa = {low: topojson.feature(tl_2015_us_cbsa, tl_2015_us_cbsa.objects.districts)};
+geo_data.water = {high: water_data};
 var URL_BASE;
 require("./app.css");
 //var data = require("./intermediate/data.json");
@@ -145,6 +146,33 @@ var Interactive = function(sel) {
     $(sel).find(".mapwrap").append(popup_outer);
   }
 
+  function bbox_overlap(box1, box2) {
+    return !(
+      box1[0] > box2[2] ||
+      box1[1] > box2[3] ||
+      box2[0] > box1[2] ||
+      box2[1] > box1[3]
+    );
+  }
+
+  function featureContains(point, feature) {
+    var pip = false;
+    for (var i = 0, ii = feature.geometry.coordinates.length;i<ii;i++) {
+      if (feature.geometry.type==="MultiPolygon") {
+        for (var k = 0, kk = feature.geometry.coordinates[i].length;k<kk;k++) {
+          if (d3.polygonContains(feature.geometry.coordinates[i][k], point)) {
+            pip = true;
+          }
+        }
+      } else {
+        if (d3.polygonContains(feature.geometry.coordinates[i], point)) {
+          pip = true;
+        }
+      }
+    }
+    return pip;
+  }
+
   m.updateDotData = function(drawData) {
     function update_dots_for_tract(tract) {
       var z = m.zoomLevel;
@@ -157,8 +185,12 @@ var Interactive = function(sel) {
       }
 
       var doneDots = dot_data[z][geoid].length;
+      if (!tract.properties.csvData) return;
       var numDots = tract.properties.csvData[9]*1;
-      m.dotRepresents = Math.ceil(Math.pow(2,m.maxZoom-z));
+      var dotRepresents = Math.ceil(Math.pow(2,m.maxZoom+3-z));
+      m.dotRepresents = Math.max(12,dotRepresents);
+      m.dotScale = Math.max(1,12/dotRepresents);
+
       numDots /= m.dotRepresents;
       numDots = Math.round(numDots);
       if (doneDots>=numDots) {
@@ -166,6 +198,13 @@ var Interactive = function(sel) {
       }
       var bbox = geojson_bbox(tract);
       var j = 0;
+      var water_checks = [];
+      for (var l = 0, ll = drawData.high.water.length;l<ll;l++) {
+        var water_bbox = drawData.high.water[l].bbox;
+        if (bbox_overlap(water_bbox, bbox)) {
+          water_checks.push(drawData.high.water[l]);
+        }
+      }
       while (doneDots < numDots && j<10000) {
         j++;
         if (j===10000) {
@@ -176,29 +215,20 @@ var Interactive = function(sel) {
         var yrange = bbox[3] - bbox[1];
         var x = Math.random()*xrange + bbox[0];
         var y = Math.random()*yrange + bbox[1];
-        var pip = false;
 
-        for (var i = 0, ii = tract.geometry.coordinates.length; i<ii; i++) {
-          if (tract.geometry.type==="MultiPolygon") {
-            for (var k = 0, kk = tract.geometry.coordinates[i].length;k<kk;k++) {
-              if (pointInPolygon([x,y],tract.geometry.coordinates[i][k])) {
-                pip = true;
-              }
-            }
-          } else {
-            if (pointInPolygon([x,y],tract.geometry.coordinates[i])) {
-              pip = true;
+        if (featureContains([x,y],tract)) {
+          var inWater = false;
+          for (var n = 0,nn=water_checks.length;n<nn;n++) {
+            if (featureContains([x,y],water_checks[n])) {
+              inWater = true;
             }
           }
-        /*  if (Math.random()<0.001) {
-            console.log([x,y],tract.geometry.coordinates[i], pip);
-          }*/
-        }
-        if (pip) {
-          dot_data[z][geoid].push([x,y]);
-          doneDots++;
-          if (doneDots === numDots) {
-          //  console.log("success for " + geoid);
+          if (!inWater) {
+            dot_data[z][geoid].push([x,y]);
+            doneDots++;
+            if (doneDots === numDots) {
+            //  console.log("success for " + geoid);
+            }
           }
           //console.log(true);
         }
@@ -212,14 +242,15 @@ var Interactive = function(sel) {
     }
     for (var cbsa_layer_name in drawData.high) {
       if (drawData.high.hasOwnProperty(cbsa_layer_name)) {
-        update_dots_for_cbsa(drawData.high[cbsa_layer_name]);
+        if (cbsa_layer_name!=="water") {
+          update_dots_for_cbsa(drawData.high[cbsa_layer_name]);
+        }
       }
     }
   };
 
   m.updateDrawData = function(svg) {
     drawData = filterToVisible(geo_data, svg.attr("viewBox"));
-
     //drawData = geo_data;
     drawData = (function(r) {
       for (var size in r) {
@@ -250,7 +281,7 @@ var Interactive = function(sel) {
       .append("g")
       .attr("class", function(d) {return "size " + d;});
     svg.selectAll("g.size").selectAll("g")
-      .data(FileIndex.concat(["national"]))
+      .data(FileIndex.concat(["national","water"]))
       .enter()
       .append("g")
       .attr("class", function(d) {
@@ -282,7 +313,13 @@ var Interactive = function(sel) {
             resolve();
           } else {
             getJSONAndSaveInMemory(file, function(err, d) {
-              water_data[file] = topojson.feature(d, d.objects.districts);
+              var waterFeatures = topojson.feature(d, d.objects.districts).features;
+              for (var i = 0, ii = waterFeatures.length; i<ii; i++) {
+                waterFeatures[i].bbox = geojson_bbox(waterFeatures[i]);
+                waterFeatures[i].properties.WATERUID = water_uid;
+                water_uid++;
+              }
+              water_data.features = water_data.features.concat(waterFeatures);
               resolve();
             });
           }
@@ -290,6 +327,9 @@ var Interactive = function(sel) {
       };
       var water_requests = [];
       for (var i = 0, ii = water_files.length; i<ii; i++) {
+        while (water_files[i].length<5) {
+          water_files[i] = "0" + water_files[i];
+        }
         water_requests.push(new WaterRequest("./water/tl_2017_" + water_files[i] + "_areawater.json"));
       }
       Promise.all(water_requests).then(function() {
@@ -302,6 +342,7 @@ var Interactive = function(sel) {
       });
     };
     svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
+      if (layer==="water") {return;}
       var size = d3.select(this.parentNode).attr("class").split(" ")[1];
       var scaling ={"low":1,"high":0.1};
       var pathData = function() {
@@ -312,14 +353,6 @@ var Interactive = function(sel) {
         var d = drawData[size][layer];
         if (!d) {
           d = [];
-        } else {
-          /*if (m.active_cbsa) {
-            if (layer.indexOf("tract")!==-1) {
-              var cbsa = m.active_cbsa.properties.GEOID;
-              d = applyData(csv,cbsa, d);
-              console.log(d);
-            }
-          }*/
         }
         return d;
       }();
@@ -330,6 +363,9 @@ var Interactive = function(sel) {
           }
           if (pathData.properties.GEOID) {
             return pathData.properties.GEOID;
+          }
+          if (pathData.properties.WATERUID) {
+            return pathData.properties.WATERUID;
           }
         }
         return i;
@@ -359,6 +395,7 @@ var Interactive = function(sel) {
             if (!geoid || !svg_path_data[geoid]) {
               return path(el);
             }
+            console.log("cached " + geoid);
             return svg_path_data[geoid][size];
           } catch (ex) {
             console.log(geoid, ex);
@@ -585,8 +622,10 @@ var Interactive = function(sel) {
       var r = [];
       for (var i = 0, ii = tracts.length; i<ii; i++) {
         var tract_dots = dot_data[m.zoomLevel][tracts[i]];
-        for (j = 0, jj = tract_dots.length; j<jj; j++) {
-          r.push(tract_dots[j]);
+        if (tract_dots) {
+          for (j = 0, jj = tract_dots.length; j<jj; j++) {
+            r.push(tract_dots[j]);
+          }
         }
       }
       return r;
@@ -608,7 +647,7 @@ var Interactive = function(sel) {
       .attr("stroke-width",circle_size/4)
       .attr("fill","#ED1C24")
       .merge(dots)
-      .attr("r",circle_size)
+      .attr("r",circle_size*m.dotScale)
       .each(function(d) {
         var el = d3.select(this);
         var coords = m.projection(d);
@@ -635,7 +674,8 @@ var Interactive = function(sel) {
             /*if (!r[size][layer])*/ r[size][layer] = [];
             for (var i = 0, ii = geo_data[layer][size].features.length; i<ii; i++) {
               var geoid = geo_data[layer][size].features[i].properties.GEOID ||
-                geo_data[layer][size].features[i].properties.GEOID10;
+                geo_data[layer][size].features[i].properties.GEOID10 ||
+                geo_data[layer][size].features[i].properties.WATERUID
               geoid*=1;
               var thispath;
               if (!svg_path_data[geoid]) {
@@ -970,7 +1010,7 @@ var Interactive = function(sel) {
   //  var tilesLoaded = false;
     var zoomFinished = false;
     m.minZoom = zoom;
-    m.maxZoom = 15;
+    m.maxZoom = 12;
     m.getTiles({
       viewport: viewbox,
       width:width,

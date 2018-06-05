@@ -7,6 +7,8 @@ var topojson = require("topojson");
 var geojson_bbox = require("geojson-bbox");
 var fips = require("./fips.json");
 var turf_intersect = require("@turf/intersect").default;
+var turf_area = require("@turf/area").default;
+var turf = require("turf");
 //var truncate = require("@turf/truncate").default;
 //var clip_poly = polygon_clip_lib.martinez;
 function zeroPad(fips) {
@@ -142,11 +144,12 @@ gl.gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
     try {
       cbsa.features.forEach(function(f) {
         //console.log(merged, f.geometry);
-        //intersect = turf_intersect(merged, f.geometry);
-        //intersect.properties = f.properties;
-      //  console.log(intersect);
+        console.log(merged, f.geometry, f.properties.GEOID);
+        intersect = turf.intersect(merged, f.geometry);
+        intersect.properties = f.properties;
+        console.log(intersect);
 
-        r.push(f);
+        r.push(intersect);
 
       });
     } catch (ex) {
@@ -279,7 +282,7 @@ gl.gulp.task("filter_geojson", ["ogr2ogr","split_data"], function(cb) {
 
 });
 
-gl.gulp.task("simplify_water", ["ogr2ogr"], function(cb) {
+gl.gulp.task("simplify_water", [/*"ogr2ogr"*/], function(cb) {
   gl.makeDirectory("water_simple", function() {
     var files = fs.readdirSync("./geojson");
     files = files.filter(function(f) {
@@ -289,11 +292,14 @@ gl.gulp.task("simplify_water", ["ogr2ogr"], function(cb) {
     gl.makeDirectory("./build/water", function() {
       files.forEach(function(f) {
         var geo = JSON.parse(fs.readFileSync("./geojson/" + f, "utf-8"));
+        geo.features = geo.features.filter(function(o) {
+          return turf_area(o)>10000;
+        });
         var topo = topojson.topology({districts:geo});
         topo = topojson.presimplify(topo);
         topo = topojson.simplify(topo, settings.simplify);
         topo = topojson.quantize(topo, {
-          scale:[settings.quantize/100,settings.quantize],
+          scale:[settings.quantize,settings.quantize],
           translate:[0,0]
         });
         topo.objects.districts.geometries.forEach(function(el) {
@@ -316,7 +322,7 @@ gl.gulp.task("index_water", [/*"ogr2ogr"*/], function(cb) {
     var fIndex = {};
     var features = JSON.parse(fs.readFileSync("./filtered/" + f)).features;
     features.forEach(function(f) {
-      fIndex[f.properties.COUNTYFP10*1000 + f.properties.STATEFP10*1] = true;
+      fIndex[f.properties.STATEFP10*1000 + f.properties.COUNTYFP10*1] = true;
     });
     var fArr = [];
     for (var cfips in fIndex) {
