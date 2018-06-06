@@ -6,8 +6,9 @@ var ogr2ogr = require("ogr2ogr");
 var topojson = require("topojson");
 var geojson_bbox = require("geojson-bbox");
 var fips = require("./fips.json");
-var turf_intersect = require("@turf/intersect").default;
 var turf_area = require("@turf/area").default;
+
+/*newer turf seems to have problems with intersects and multipolygons so need old as well*/
 var turf = require("turf");
 //var truncate = require("@turf/truncate").default;
 //var clip_poly = polygon_clip_lib.martinez;

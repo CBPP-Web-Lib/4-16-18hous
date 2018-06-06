@@ -250,6 +250,8 @@ var Interactive = function(sel) {
   };
 
   m.updateDrawData = function(svg) {
+    console.log("update now");
+    console.log(svg.attr("viewBox"));
     drawData = filterToVisible(geo_data, svg.attr("viewBox"));
     //drawData = geo_data;
     drawData = (function(r) {
@@ -267,6 +269,7 @@ var Interactive = function(sel) {
       }
       return r;
     })(drawData);
+    console.log(JSON.parse(JSON.stringify(drawData)));
     svg.selectAll("g")
       .data((function(g) {
         var r = [];
@@ -386,21 +389,6 @@ var Interactive = function(sel) {
         .attr("data-geoid",function(d) {
           return d.properties.GEOID;
         })
-        .attr("d", function(el) {
-          if (!el.properties) {
-            el.properties = {};
-          }
-          var geoid = el.properties.GEOID | el.properties.GEOID10;
-          try {
-            if (!geoid || !svg_path_data[geoid]) {
-              return path(el);
-            }
-            console.log("cached " + geoid);
-            return svg_path_data[geoid][size];
-          } catch (ex) {
-            console.log(geoid, ex);
-          }
-        })
         .attr("stroke-width",function() {
           if (layer.indexOf("state")!==-1) {
             return 0.8*scaling[size];
@@ -422,6 +410,20 @@ var Interactive = function(sel) {
             return fillFromData(d.properties.csvData);
           }
           return "#EB9123";
+        })
+        .attr("d", function(el) {
+          if (!el.properties) {
+            el.properties = {};
+          }
+          var geoid = el.properties.GEOID | el.properties.GEOID10;
+          try {
+            if (!geoid || !svg_path_data[geoid]) {
+              return path(el);
+            }
+            return svg_path_data[geoid][size];
+          } catch (ex) {
+            console.log(geoid, ex);
+          }
         })
         .on("mousemove", function(d) {
           if (m.dragOn) return;
@@ -666,6 +668,7 @@ var Interactive = function(sel) {
     viewbox[2]*=1.4;
     viewbox[3]*=1.4;
     console.log(viewbox);*/
+    //console.log(m.projection([-72.67,41.76]));
     for (var layer in geo_data) {
       if (geo_data.hasOwnProperty(layer)) {
         for (var size in geo_data[layer]) {
@@ -678,18 +681,19 @@ var Interactive = function(sel) {
                 geo_data[layer][size].features[i].properties.WATERUID
               geoid*=1;
               var thispath;
-              if (!svg_path_data[geoid]) {
+              /*if (!svg_path_data[geoid]) {
                 svg_path_data[geoid] = {};
               }
-              if (!svg_path_data[geoid][size]) {
+              if (!svg_path_data[geoid][size]) {*/
                 thispath = path(geo_data[layer][size].features[i]);
-                svg_path_data[geoid][size] = thispath;
+            /*    svg_path_data[geoid][size] = thispath;
               } else {
                 thispath = svg_path_data[geoid][size];
-              }
+              }*/
               if (thispath) {
 
                 var bbox = getBounds(thispath);
+
                 if (viewbox[0]*1 + viewbox[2]*1 > bbox[0] &&
                     viewbox[1]*1 + viewbox[3]*1 > bbox[1] &&
                     viewbox[0]*1 < bbox[2] &&
@@ -1058,7 +1062,7 @@ var Interactive = function(sel) {
           }
         }
       }
-      svg.selectAll("g.size.low")
+      svg.selectAll("g.size.low g.cb_2015_us_state_500k")
         .attr("opacity",0)
         .style("visibility","visible")
         .transition()
@@ -1086,7 +1090,12 @@ var Interactive = function(sel) {
             .transition()
             .duration(750)
             .style("opacity",1);
-          svg.selectAll("g.size.low")
+          svg.selectAll("g.layer.tl_2015_us_cbsa path")
+            .transition()
+            .duration(750)
+            .attr("fill","#dddddd");
+          var toFadeOut = "g.size.low g.cb_2015_us_state_500k, g.size.low path[data-geoid='"+m.active_cbsa.properties.GEOID+"']";
+          svg.selectAll(toFadeOut)
             .attr("opacity",1)
             .style("visibility","visible")
             .transition()
@@ -1110,6 +1119,11 @@ var Interactive = function(sel) {
           if (typeof(cb)==="function") {
             cb();
           }
+          svg.selectAll("g.layer.tl_2015_us_cbsa path")
+            .style("visibility","visible")
+            .transition()
+            .duration(100)
+            .attr("opacity",1);
           svg.selectAll("text.label")
             .style("visibility","visible")
             .transition()
