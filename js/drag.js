@@ -23,11 +23,12 @@ module.exports = function(sel, m, $, d3) {
       $(sel).find(".tilewrap").not("old").css("left").replace("px","")*1,
       $(sel).find(".tilewrap").not("old").css("top").replace("px","")*1
     ];
-		return false;
+		//return false;
 	});
 	$(sel + " svg").bind("mouseup touchend", function(e) {
 		if (m.zooming) {return;}
 		if (!m.active_cbsa) {return;}
+		if (m.zoomingToCBSA) {return;}
 		if (m.dragOn===false) {return;}
 		m.dragOn = false;
 		delete(m.dragBase);

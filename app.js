@@ -250,8 +250,6 @@ var Interactive = function(sel) {
   };
 
   m.updateDrawData = function(svg) {
-    console.log("update now");
-    console.log(svg.attr("viewBox"));
     drawData = filterToVisible(geo_data, svg.attr("viewBox"));
     //drawData = geo_data;
     drawData = (function(r) {
@@ -269,7 +267,6 @@ var Interactive = function(sel) {
       }
       return r;
     })(drawData);
-    console.log(JSON.parse(JSON.stringify(drawData)));
     svg.selectAll("g")
       .data((function(g) {
         var r = [];
@@ -292,8 +289,14 @@ var Interactive = function(sel) {
       });
     var textOffsets = require("./textOffsets.json");
     var cbsa_click = function(d) {
+      if (m.zoomingToCBSA) {
+        return false;
+      }
       var geoid = d.properties.GEOID;
-      if (m.active_cbsa) {return false;}
+      if (m.active_cbsa) {
+        removeTractsFromDrawData();
+        resetCBSALowRes();
+      }
       var zoomed = false;
       var loaded = false;
       var water_loaded = false;
@@ -394,6 +397,9 @@ var Interactive = function(sel) {
             return 0.8*scaling[size];
           }
           if (layer.indexOf("cbsa")!==-1) {
+            if (m.active_cbsa) {
+              return 0;
+            }
             return 1*scaling[size];
           }
           return 0.5*scaling[size];
@@ -409,7 +415,13 @@ var Interactive = function(sel) {
           if (layer.indexOf("tl_2010_tract")!==-1) {
             return fillFromData(d.properties.csvData);
           }
+          if (m.active_cbsa) {
+            return "#cccccc";
+          }
           return "#EB9123";
+        })
+        .attr("data-orgfill", function() {
+          return d3.select(this).attr("fill");
         })
         .attr("d", function(el) {
           if (!el.properties) {
@@ -439,6 +451,10 @@ var Interactive = function(sel) {
             //d3.select(this).attr("opacity",0.5);
             $(this).css("cursor","auto");
             d3.select(this).attr("fill",fillFromData(d.properties.csvData));
+            if (!d3.event.relatedTarget) {
+              $(sel).find(".popup-outer").remove();
+              return;
+            }
             if (d3.event.relatedTarget.tagName!=="path") {
               $(sel).find(".popup-outer").remove();
             }
@@ -493,9 +509,11 @@ var Interactive = function(sel) {
           name[0] = name[0].split("-")[0];
           name[1] = name[1].split("-")[0];
           name = name.join(",");
+          if (m.active_cbsa) {return;}
           d3.select(this.parentNode)
             .append("text")
             .attr("class","label")
+            .attr("data-geoid",d.properties.GEOID)
             .attr("x",function() {
               var o = 0;
               for (var offset in textOffsets) {
@@ -522,7 +540,7 @@ var Interactive = function(sel) {
             .attr("fill","#0C61A4")
             .attr("font-size",10)
             .text(name)
-            .on("click", function(){
+            .on("click", function() {
               cbsa_click(d);
             })
             .attr("font-family","proxima-nova-condensed,sans-serif");
@@ -845,11 +863,11 @@ var Interactive = function(sel) {
     finished();
   };
   DrawInitialMap();
-  svg.on("click", function() {
-    var vcoords = d3.mouse(this);
-    var coords = m.projection.invert([vcoords[0], vcoords[1]]);
+  /*svg.on("click", function() {
+    //var vcoords = d3.mouse(this);
+    //var coords = m.projection.invert([vcoords[0], vcoords[1]]);
     //console.log(Math.abs(coords[0])+"W",Math.abs(coords[1])+"N");
-  });
+  });*/
   function applyData(d, cbsa, pathData) {
     var selector = "g.tl_2010_tract_" + cbsa + " path";
     var paths = svg.selectAll(selector);
@@ -888,6 +906,12 @@ var Interactive = function(sel) {
       csv[cbsa.properties.GEOID] = d;
       checkDisplay();
     });
+    var zoomSideways = false;
+    var org_bbox;
+    if (m.active_cbsa && direction==="in") {
+      zoomSideways = true;
+      org_bbox = geojson_bbox(m.active_cbsa);
+    }
     m.active_cbsa = cbsa;
     var bbox = geojson_bbox(cbsa);
     var orgcenter = [-96.6,38.7];
@@ -941,6 +965,12 @@ var Interactive = function(sel) {
     var destProjection = d3.geoMercator;
     var startScale = orgProjection().scale();
     var destScale = 10000/(bbox[2]-bbox[0]);
+    if (zoomSideways) {
+      orgProjection = destProjection;
+      orgcenter = [(org_bbox[0] + org_bbox[2])/2, (org_bbox[1] + org_bbox[3])/2];
+      startScale = 10000/(org_bbox[2] - org_bbox[0]);
+      $(sel).find(".tilewrap").hide();
+    }
     if (direction==="out") {
       m.active_cbsa = undefined;
       var swap = destProjection;
@@ -1029,6 +1059,7 @@ var Interactive = function(sel) {
     });
     function checkDisplay() {
       if (zoomFinished /*&& tilesLoaded*/ && csvDataLoaded) {
+        $(sel).find(".tilewrap").show();
         $(sel).find(".tilewrap").not("old").css("opacity",1);
         $(sel).find(".tilewrap.old").remove();
         if (typeof(cb)==="function") {
@@ -1055,13 +1086,7 @@ var Interactive = function(sel) {
       svg.transition()
         .duration(1000)
         .attr("viewBox", defaultViewbox);
-      for (var file in geo_data) {
-        if (geo_data.hasOwnProperty(file)) {
-          if (file.indexOf("tl_2010_tract_")!==-1) {
-            geo_data[file] = undefined;
-          }
-        }
-      }
+      removeTractsFromDrawData();
       svg.selectAll("g.size.low g.cb_2015_us_state_500k")
         .attr("opacity",0)
         .style("visibility","visible")
@@ -1090,10 +1115,6 @@ var Interactive = function(sel) {
             .transition()
             .duration(750)
             .style("opacity",1);
-          svg.selectAll("g.layer.tl_2015_us_cbsa path")
-            .transition()
-            .duration(750)
-            .attr("fill","#dddddd");
           var toFadeOut = "g.size.low g.cb_2015_us_state_500k, g.size.low path[data-geoid='"+m.active_cbsa.properties.GEOID+"']";
           svg.selectAll(toFadeOut)
             .attr("opacity",1)
@@ -1105,8 +1126,8 @@ var Interactive = function(sel) {
             .on("end", function() {
               /*console.log(bbox);
               console.log(projection([bbox[2],bbox[3]]));*/
+              svg.select("g.layer.national").attr("opacity",0);
               m.zoomingToCBSA = false;
-
               svg.attr("data-viewbox-limit",svg.attr("viewBox"));
               /*setTimeout(function() {
                 zoomToCBSA(cbsa,"out");
@@ -1119,16 +1140,8 @@ var Interactive = function(sel) {
           if (typeof(cb)==="function") {
             cb();
           }
-          svg.selectAll("g.layer.tl_2015_us_cbsa path")
-            .style("visibility","visible")
-            .transition()
-            .duration(100)
-            .attr("opacity",1);
-          svg.selectAll("text.label")
-            .style("visibility","visible")
-            .transition()
-            .duration(100)
-            .attr("opacity",1);
+          svg.select("g.layer.national").attr("opacity",1);
+          resetCBSALowRes();
         }
       }
       if (!zoomFinished) {
@@ -1140,6 +1153,28 @@ var Interactive = function(sel) {
     });
   }
 
+  function removeTractsFromDrawData() {
+    for (var file in geo_data) {
+      if (geo_data.hasOwnProperty(file)) {
+        if (file.indexOf("tl_2010_tract_")!==-1) {
+          geo_data[file] = undefined;
+        }
+      }
+    }
+  }
+
+  function resetCBSALowRes() {
+    svg.selectAll("g.layer.tl_2015_us_cbsa path")
+      .style("visibility","visible")
+      .transition()
+      .duration(100)
+      .attr("opacity",1);
+    svg.selectAll("text.label")
+      .style("visibility","visible")
+      .transition()
+      .duration(100)
+      .attr("opacity",1);
+  }
 
   function makeZoomOutButton() {
     var button = $(document.createElement("button"));
@@ -1147,14 +1182,17 @@ var Interactive = function(sel) {
     button.addClass("zoomOut");
     $(sel).find(".mapwrap").append(button);
     button.on("click",function() {
-      zoomToCBSA(m.active_cbsa,"out", function() {
-        setTimeout(function() {
-
-          m.updateDrawData(svg)
-
-        },50);
-      });
-      $(sel).find("button.zoomOut").remove();
+      if (m.zoomLevel===m.minZoom) {
+        zoomToCBSA(m.active_cbsa,"out", function() {
+          setTimeout(function() {
+            m.updateDrawData(svg)
+          },50);
+        });
+        $(sel).find("button.zoomOut").remove();
+      } else {
+        var vb = svg.attr("viewBox").split(" ");
+        m.zoomOut(vb[0]*1 + vb[2]*1/2, vb[1]*1 + vb[3]*1/2);
+      }
     });
   }
 
@@ -1179,7 +1217,11 @@ var Interactive = function(sel) {
   }
 
 
-
+  function hoverOver(path) {
+    path = d3.select(path);
+    path.attr("data-orgfill", path.attr("fill"));
+    path.attr("fill","#B9292F");
+  }
 
 
   function DrawInitialMap() {
@@ -1190,6 +1232,22 @@ var Interactive = function(sel) {
     m.updateDrawData(svg);
     require("./js/zoom.js")(sel + " .mapwrap", m, $, d3);
     require("./js/drag.js")(sel + " .mapwrap", m, $, d3);
+    $(svg.node()).on("mouseover", "g.tl_2015_us_cbsa > path", function() {
+      hoverOver(this);
+    });
+    $(svg.node()).on("mouseover", "g.tl_2015_us_cbsa > text.label", function() {
+      var geoid = $(this).attr("data-geoid");
+      var path = $(svg.node()).find("g.tl_2015_us_cbsa > path[data-geoid='" + geoid + "']");
+      hoverOver(path[0]);
+    });
+    $(svg.node()).on("mouseout", "g.tl_2015_us_cbsa > *", function() {
+      svg.selectAll("g.tl_2015_us_cbsa > path").each(function() {
+        var path = d3.select(this);
+        if (path.attr("data-orgfill")) {
+          path.attr("fill", path.attr("data-orgfill"));
+        }
+      });
+    });
     $(sel).find(".data-picker-wrapper").append(makeDataPicker());
   }
 }; /*Interactive()*/

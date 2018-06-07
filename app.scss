@@ -5,6 +5,22 @@
     font-weight:inherit;
     line-height:inherit;
   }
+  button.zoomOut {
+    font-size:14pt;
+    font-weight:bold;
+    background-color:#EB9123;
+    color:#000;
+    border-radius:3pt;
+    border:1px solid #000;
+    cursor:pointer;
+    outline: none;
+  }
+  button.zoomOut:hover {
+    background-color:#F8D8B2;
+  }
+  button.zoomOut:active {
+    background-color:#ED1C24;
+  }
   .legendwrap {
     .dotExplainer {
       text-align:center;
