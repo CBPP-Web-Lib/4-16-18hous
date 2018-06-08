@@ -102,7 +102,7 @@ module.exports = function(sel, obj, $, d3) {
   m.zoomOut = function(x, y) {
     m.zoom(x,y,"out");
   };
-  var touchTimer;
+/*  var touchTimer;
   $(sel).on("touchstart", function(event) {
     if (typeof(touchTimer)!=="undefined") {
       m.dragOn = false;
@@ -113,40 +113,51 @@ module.exports = function(sel, obj, $, d3) {
     touchTimer = setTimeout(function() {
       touchTimer = undefined;
     },500);
-  });
+  });*/
 
-  /*
+
 
   var touchbase;
   var touchSorter = function(touches) {
     var r = {};
-    touches.sort(function(a, b) {
+    var touchArr = [];
+    for (var i = 0, ii = touches.length;i<ii;i++) {
+      touchArr.push(touches[i]);
+    }
+    touchArr.sort(function(a, b) {
       return a.pageX - b.pageX;
     });
-    r.leftTouch = touches[0];
-    r.rightTouch = touches[1];
-    touches.sort(function(a, b) {
+    r.leftTouch = touchArr[0].pageX;
+    r.rightTouch = touchArr[1].pageX;
+    touchArr.sort(function(a, b) {
       return a.pageY - b.pageY;
     });
-    r.topTouch = touches[0];
-    r.bottomTouch = touches[1];
+    r.topTouch = touchArr[0].pageY;
+    r.bottomTouch = touchArr[1].pageY;
+    return r;
   };
 
   $(sel).on("touchstart", function(event) {
+    if (!m.active_cbsa) {return true;}
     event.originalEvent.preventDefault();
     if (event.originalEvent.touches.length === 2) {
       touchbase = touchSorter(event.originalEvent.touches);
     }
   });
   $(sel).on("touchmove", function(event) {
+    if (!m.active_cbsa) {return true;}
     event.originalEvent.preventDefault();
     if (typeof(touchbase)==="undefined") {
       return;
     }
     if (event.originalEvent.touches.length === 2) {
       var current = touchSorter(event.originalEvent.touches);
-      var out_x = (touchbase.leftTouch.pageX) - current.leftTouch.pageX + (current.rightTouch.pageX - touchbase.rightTouch.pageX);
-      var out_y = (touchbase.leftTouch.pageY) - current.leftTouch.pageY + (current.rightTouch.pageY - touchbase.rightTouch.pageY);
+      var left_dx = touchbase.leftTouch - current.leftTouch;
+      var right_dx = touchbase.rightTouch - current.rightTouch;
+      var top_dy = touchbase.topTouch - current.topTouch;
+      var bottom_dy = touchbase.bottomTouch - current.bottomTouch;
+      var out_x = left_dx - right_dx;
+      var out_y = top_dy - bottom_dy;
       if (out_x + out_y > 40 || out_x + out_y < -40) {
         touchbase = undefined;
         var x = event.originalEvent.touches[0].pageX/2 +
@@ -164,8 +175,9 @@ module.exports = function(sel, obj, $, d3) {
     }
   });
   $(sel).on("touchend", function() {
+    if (!m.active_cbsa) {return true;}
     touchbase = undefined;
-  });*/
+  });
 
   function zoomFromPageCoords(pageX, pageY, direction) {
     var width = $(sel).width();

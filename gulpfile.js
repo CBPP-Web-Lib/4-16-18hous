@@ -4,6 +4,7 @@ var request = require("request");
 var decompress = require("gulp-decompress");
 var ogr2ogr = require("ogr2ogr");
 var topojson = require("topojson");
+var pako = require("pako");
 var geojson_bbox = require("geojson-bbox");
 var fips = require("./fips.json");
 var turf_area = require("@turf/area").default;
@@ -306,7 +307,8 @@ gl.gulp.task("simplify_water", [/*"ogr2ogr"*/], function(cb) {
         topo.objects.districts.geometries.forEach(function(el) {
           delete(el.properties);
         });
-        fs.writeFileSync("./build/water/" + f, JSON.stringify(topo));
+        f = f.replace(".json",".txt");
+        fs.writeFileSync("./build/water/" + f, pako.deflate(JSON.stringify(topo),{to:"string"}));
       });
       cb();
     });
@@ -480,8 +482,13 @@ gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], fun
                 scale:[settings.quantize,settings.quantize],
                 translate:[0,0]
               });
-
-              fs.writeFileSync(settings.dest + f, JSON.stringify(topo, null, settings.dest.indexOf("build")===-1 ? " " : null));
+              var compressedf = f.replace(".json", ".txt");
+              fs.writeFileSync(settings.dest + compressedf,
+                pako.deflate(
+                  JSON.stringify(topo, null, settings.dest.indexOf("build")===-1 ? " " : null),
+                  {to : "string"}
+                )
+              );
               console.log("wrote " + settings.dest + f);
             } catch (ex) {
               console.log(ex);

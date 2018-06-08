@@ -18,8 +18,8 @@ localforage.clear();
 var svg_path_data = {};
 var geo_data = {};
 var water_data = {type:"FeatureCollection","features":[]};
-var cb_2015_us_state_500k = require("./topojson/low/cb_2015_us_state_500k.json");
-var tl_2015_us_cbsa = require("./topojson/low/tl_2015_us_cbsa.json");
+var cb_2015_us_state_500k = JSON.parse(pako.inflate(require("./topojson/low/cb_2015_us_state_500k.txt"),{to:"string"}));
+var tl_2015_us_cbsa = JSON.parse(pako.inflate(require("./topojson/low/tl_2015_us_cbsa.txt"),{to:"string"}));
 var popup_html = require("./popup.html");
 var getBounds = require("svg-path-bounds");
 var legend_dot_svg = require("./legend_dot_svg.html");
@@ -47,15 +47,24 @@ var getJSONAndSaveInMemory = function(f, cb) {
 var getJSONAndSave = function(f, cb) {
   localforage.getItem(f, function(err, locald) {
     if (locald===null) {
-      $.getJSON(f, function(d) {
+      if (f.indexOf(".json")!==-1) {
+        $.getJSON(f, function(d) {
+          handle(d);
+        });
+      } else {
+        $.get(f, function(d) {
+          d = pako.inflate(d,{to:"string"});
+          d = JSON.parse(d);
+          handle(d);
+        });
+      }
+      var handle = function(d) {
         if (typeof(d)==="object" && d.compressed) {
           d = JSON.parse(pako.inflate(d.d, {to: "string"}));
         }
         localforage.setItem(f, d);
         cb(null, d);
-      }).fail(function() {
-        cb(err);
-      });
+      }
     } else {
       cb(null, locald);
     }
@@ -133,6 +142,10 @@ var Interactive = function(sel) {
     var offset = $(sel).find(".mapwrap").offset();
     var x = e.pageX - offset.left;
     var y = e.pageY - offset.top;
+    if (e.touches) {
+      x = e.touches[0].pageX - offset.left;
+      y = e.touches[0].pageY - offset.top;
+    }
     var px = x - x*popup_width;
     popup_outer.css("left", px + "px");
     popup_outer.css("top", y);
@@ -306,7 +319,7 @@ var Interactive = function(sel) {
           m.updateDrawData(svg);
         }
       }
-      getJSONAndSaveInMemory(URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".json", function(err, d) {
+      getJSONAndSaveInMemory(URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".txt", function(err, d) {
         var geo = topojson.feature(d, d.objects.districts);
         geo_data["tl_2010_tract_" + geoid] = {high:geo};
         loaded = true;
@@ -336,7 +349,7 @@ var Interactive = function(sel) {
         while (water_files[i].length<5) {
           water_files[i] = "0" + water_files[i];
         }
-        water_requests.push(new WaterRequest("./water/tl_2017_" + water_files[i] + "_areawater.json"));
+        water_requests.push(new WaterRequest("./water/tl_2017_" + water_files[i] + "_areawater.txt"));
       }
       Promise.all(water_requests).then(function() {
         water_loaded = true;
@@ -437,14 +450,20 @@ var Interactive = function(sel) {
             console.log(geoid, ex);
           }
         })
-        .on("mousemove", function(d) {
-          if (m.dragOn) return;
+        .on("mousemove touchstart touchmove", function(d) {
+          if (m.dragOn && d3.event.type==="mousemove") return true;
+          if (d3.event.touches) {
+            if (d3.event.touches.length > 1) {
+              return true;
+            }
+          }
           if (d.properties.csvData) {
             makePopup(d3.event, d);
             $(this).css("cursor","pointer");
             d3.select(this).attr("opacity",1);
             d3.select(this).attr("fill","#ED1C24");
           }
+          return true;
         })
         .on("mouseout", function(d) {
           if (d.properties.csvData) {
@@ -920,8 +939,8 @@ var Interactive = function(sel) {
     var height = $(svg.node()).height();
     var zoom = 1;
     while (true) {
-      var test_tl = get_tile_from_long_lat(bbox[0],bbox[3],zoom);
-      var test_br = get_tile_from_long_lat(bbox[2],bbox[1],zoom);
+      var test_tl = get_tile_from_long_lat(bbox[0],bbox[3],zoom, true);
+      var test_br = get_tile_from_long_lat(bbox[2],bbox[1],zoom, true);
       if (test_br[0] - test_tl[0] > width/256) {
         break;
       }
@@ -1178,21 +1197,21 @@ var Interactive = function(sel) {
 
   function makeZoomOutButton() {
     var button = $(document.createElement("button"));
-    button.text("Zoom Out");
+    button.text("National View");
     button.addClass("zoomOut");
     $(sel).find(".mapwrap").append(button);
-    button.on("click",function() {
-      if (m.zoomLevel===m.minZoom) {
+    button.on("click touchstart",function() {
+      //if (m.zoomLevel===m.minZoom) {
         zoomToCBSA(m.active_cbsa,"out", function() {
           setTimeout(function() {
             m.updateDrawData(svg)
           },50);
         });
         $(sel).find("button.zoomOut").remove();
-      } else {
+    /*  } else {
         var vb = svg.attr("viewBox").split(" ");
         m.zoomOut(vb[0]*1 + vb[2]*1/2, vb[1]*1 + vb[3]*1/2);
-      }
+      }*/
     });
   }
 
@@ -1250,6 +1269,38 @@ var Interactive = function(sel) {
     });
     $(sel).find(".data-picker-wrapper").append(makeDataPicker());
   }
+  function setupWindowResize() {
+    var resizeTimer = null;
+    var outstanding = false;
+    var windowResize = function() {
+      if (!m.active_cbsa) {return;}
+      if (m.zoomingToCBSA) {
+        outstanding = true;
+      }
+      if (resizeTimer!==null) {
+        clearTimeout(resizeTimer);
+      }
+      resizeTimer = setTimeout(function() {
+        resizeTimer = null;
+        fireResize();
+      }, 200);
+    };
+    var resizeCallback = function() {
+      if (outstanding) {
+        outstanding = false;
+        m.zoomingToCBSA = false;
+        windowResize();
+      } else {
+        m.updateDrawData(d3.select(sel + " .mapwrap > svg"));
+        outstanding = false;
+      }
+    };
+    var fireResize = function() {
+      zoomToCBSA(m.active_cbsa, "in", resizeCallback);
+    };
+    $(window).resize(windowResize);
+  }
+  setupWindowResize();
 }; /*Interactive()*/
 
 
