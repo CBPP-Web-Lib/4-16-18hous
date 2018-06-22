@@ -199,11 +199,10 @@ var Interactive = function(sel) {
 
       var doneDots = dot_data[z][geoid].length;
       if (!tract.properties.csvData) return;
-      var numDots = tract.properties.csvData[9]*1;
-      var dotRepresents = Math.ceil(Math.pow(2,m.maxZoom+3-z));
+      var numDots = 12*tract.properties.csvData[9]*1;
+      var dotRepresents = Math.ceil(12*Math.pow(2,m.maxZoom-z));
       m.dotRepresents = Math.max(12,dotRepresents);
-      m.dotScale = Math.max(1,12/dotRepresents);
-
+      m.dotScale = Math.max(1,12/(dotRepresents-4));
       numDots /= m.dotRepresents;
       numDots = Math.round(numDots);
       if (doneDots>=numDots) {
@@ -618,7 +617,7 @@ var Interactive = function(sel) {
     var dotExplainer = $(document.createElement("div"));
     dotExplainer.addClass("dotExplainer");
     dotExplainer.html("Each <div class='legend_dot_svg_ex'></div> represents " + m.dotRepresents + " household" +
-      (m.dotRepresents !== 1 ? "s" : "") + ".");
+      (m.dotRepresents !== 1 ? "s" : "") + " receiving vouchers.");
     $(sel).find(".legendwrap").empty().append(dotExplainer);
     $(sel).find(".legend_dot_svg_ex").html(legend_dot_svg);
     var gradientwrap = $(document.createElement("div"))

@@ -529,6 +529,10 @@ gl.gulp.task("split_data", ["buildDirectory"], function(cb) {
       split[cbsa] = {};
     }
     split[cbsa][tract] = r[tract];
+    /*do this to comply w/ HUD reporting requirements*/
+    for (var j = 9;j<=12;j++) {
+      r[tract][j] = Math.round(r[tract][j]/12);
+    }
   });
   fs.writeFileSync("./intermediate/names.json", JSON.stringify(name_lookup));
   fs.writeFileSync("./intermediate/data_by_tract.json", JSON.stringify(r, null, " "));
