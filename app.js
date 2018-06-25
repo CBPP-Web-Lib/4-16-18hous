@@ -23,6 +23,7 @@ var tl_2015_us_cbsa = JSON.parse(pako.inflate(require("./topojson/low/tl_2015_us
 var popup_html = require("./popup.html");
 var getBounds = require("svg-path-bounds");
 var legend_dot_svg = require("./legend_dot_svg.html");
+var dotExplainer = require("./dotExplainer.html");
 var waterIndex = require("./waterIndex.json");
 var dot_data = {};
 var water_uid = 0;
@@ -77,10 +78,11 @@ var Interactive = function(sel) {
   m.requests = [];
   new Figure.Figure(sel, {
     subtitle: "<div class=\"data-picker-wrapper\"></div>",
-    rows: [0.61,"fixed"]
+    rows: [0.61,"fixed","fixed"]
   });
   $(sel).find(".grid00").empty().addClass("mapwrap");
   $(sel).find(".grid01").empty().addClass("legendwrap");
+  $(sel).find(".grid02").empty().addClass("dotExplainwrap");
   URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
   var svg;
   m.zoomingToCBSA = false;
@@ -186,23 +188,35 @@ var Interactive = function(sel) {
     return pip;
   }
 
-  m.updateDotData = function(drawData) {
-    function update_dots_for_tract(tract) {
+  m.updateDotData = function(drawData, dot_dataset) {
+    function update_dots_for_tract(tract, dot_dataset) {
       var z = m.zoomLevel;
       var geoid = tract.properties.GEOID10;
       if (typeof(dot_data[z])==="undefined") {
         dot_data[z] = {};
       }
-      if (typeof(dot_data[z][geoid])==="undefined") {
-        dot_data[z][geoid] = [];
+      if (typeof(dot_data[z][dot_dataset])==="undefined") {
+        dot_data[z][dot_dataset] = {};
+      }
+      if (typeof(dot_data[z][dot_dataset][geoid])==="undefined") {
+        dot_data[z][dot_dataset][geoid] = [];
       }
 
-      var doneDots = dot_data[z][geoid].length;
+      var doneDots = dot_data[z][dot_dataset][geoid].length;
       if (!tract.properties.csvData) return;
-      var numDots = 12*tract.properties.csvData[9]*1;
-      var dotRepresents = Math.ceil(12*Math.pow(2,m.maxZoom-z));
-      m.dotRepresents = Math.max(12,dotRepresents);
-      m.dotScale = Math.max(1,12/(dotRepresents-4));
+      var numDots, minDotRepresents;
+      if (dot_dataset==="vouchers") {
+        numDots = 12*tract.properties.csvData[9]*1;
+        minDotRepresents = 12;
+      } else {
+        numDots = tract.properties.csvData[13]*1;
+        minDotRepresents = 1;
+      }
+      //console.log(numDots, tract.properties.GEOID10);
+      var dotRepresents = 3*Math.pow(2,m.maxZoom-1-z);
+      m.dotRepresents = Math.max(minDotRepresents,dotRepresents);
+      m.dotRepresents = Math.floor(m.dotRepresents);
+      m.dotScale = Math.max(1,minDotRepresents/dotRepresents);
       numDots /= m.dotRepresents;
       numDots = Math.round(numDots);
       if (doneDots>=numDots) {
@@ -236,7 +250,7 @@ var Interactive = function(sel) {
             }
           }
           if (!inWater) {
-            dot_data[z][geoid].push([x,y]);
+            dot_data[z][dot_dataset][geoid].push([x,y]);
             doneDots++;
             if (doneDots === numDots) {
             //  console.log("success for " + geoid);
@@ -247,15 +261,15 @@ var Interactive = function(sel) {
 
       }
     }
-    function update_dots_for_cbsa(tract_data) {
+    function update_dots_for_cbsa(tract_data, dot_dataset) {
       for (var i = 0, ii = tract_data.length; i<ii; i++) {
-        update_dots_for_tract(tract_data[i]);
+        update_dots_for_tract(tract_data[i], dot_dataset);
       }
     }
     for (var cbsa_layer_name in drawData.high) {
       if (drawData.high.hasOwnProperty(cbsa_layer_name)) {
         if (cbsa_layer_name!=="water") {
-          update_dots_for_cbsa(drawData.high[cbsa_layer_name]);
+          update_dots_for_cbsa(drawData.high[cbsa_layer_name], dot_dataset);
         }
       }
     }
@@ -573,9 +587,9 @@ var Interactive = function(sel) {
         }
       });
     });
-
-    m.updateDotData(drawData);
-    m.updateDots(drawData);
+    var dot_dataset = $(sel).find("input[name='dotDataset']:checked").val();
+    m.updateDotData(drawData, dot_dataset);
+    m.updateDots(drawData, dot_dataset);
     m.makeLegend();
   };
 
@@ -613,13 +627,30 @@ var Interactive = function(sel) {
       });
   }
 
+  m.makeDotExplainer = function(dotRepresents) {
+    if ($(sel).find(".dotExplainer").length===0) {
+      var theDotExplainer = $(document.createElement("div")).html(dotExplainer).attr("class","dotExplainer");
+      $(sel).find(".dotExplainwrap").append(theDotExplainer);
+    }
+
+    $(sel).find(".dotExplainer").find(".dotRepresents").html(dotRepresents);
+    $(sel).find(".dotExplainer").find(".dotRepresentsIsPlural").html(
+      dotRepresents !== 1 ? "s" : "");
+      $(sel).find(".legend_dot_svg_ex").html(legend_dot_svg);
+      d3.select(sel).select(".legend_dot_svg_ex.vouchers svg").select("circle").attr("fill","#ED1C24");
+      d3.select(sel).select(".legend_dot_svg_ex.affordable_units svg").select("circle").attr("fill","#0C61A4");
+  };
+
   m.makeLegend = function() {
     var dotExplainer = $(document.createElement("div"));
     dotExplainer.addClass("dotExplainer");
-    dotExplainer.html("Each <div class='legend_dot_svg_ex'></div> represents " + m.dotRepresents + " household" +
-      (m.dotRepresents !== 1 ? "s" : "") + " receiving vouchers.");
-    $(sel).find(".legendwrap").empty().append(dotExplainer);
-    $(sel).find(".legend_dot_svg_ex").html(legend_dot_svg);
+    dotExplainer.html("<input type='radio' name='dotDataset' value = 'vouchers' checked> Each " +
+      "<div class='legend_dot_svg_ex vouchers'></div> represents " + m.dotRepresents + " household" +
+      (m.dotRepresents !== 1 ? "s" : "") + " receiving vouchers.<br>" +
+      "<input type='radio' name='dotDataset' value='affordable_units'> Each " +
+      "<div class='legend_dot_svg_ex affordable_units'></div> represents " + m.dotRepresents +
+      " affordable rental unit" + (m.dotRepresents !== 1 ? "s" : "") + ".");
+    $(sel).find(".legendwrap").empty();
     var gradientwrap = $(document.createElement("div"))
       .attr("class","gradientwrap");
     var labelwrap = $(document.createElement("div"))
@@ -644,9 +675,10 @@ var Interactive = function(sel) {
       .attr("fill","url(#legend_gradient_def)");
     makeGradientText(m.gradientConfig[m.dataset], d3.select(labelwrap[0]));
     gradientwrap.append(titlewrap);
+    m.makeDotExplainer(m.dotRepresents);
   };
 
-  m.updateDots = function(d) {
+  m.updateDots = function(d, dot_dataset) {
     var view_dot_data = (function(dot_data, d) {
       var tracts = [];
       var j, jj;
@@ -659,7 +691,7 @@ var Interactive = function(sel) {
       }
       var r = [];
       for (var i = 0, ii = tracts.length; i<ii; i++) {
-        var tract_dots = dot_data[m.zoomLevel][tracts[i]];
+        var tract_dots = dot_data[m.zoomLevel][dot_dataset][tracts[i]];
         if (tract_dots) {
           for (j = 0, jj = tract_dots.length; j<jj; j++) {
             r.push(tract_dots[j]);
@@ -678,6 +710,7 @@ var Interactive = function(sel) {
       .data(view_dot_data, function(d) {
         return d[0]*d[1];
       });
+    var dotScaleM = Math.sqrt(m.dotScale);
     dots.enter()
       .append("circle")
       .attr("class","household")
@@ -685,7 +718,7 @@ var Interactive = function(sel) {
       .attr("stroke-width",circle_size/4)
       .attr("fill","#ED1C24")
       .merge(dots)
-      .attr("r",circle_size*m.dotScale)
+      .attr("r",circle_size*dotScaleM)
       .each(function(d) {
         var el = d3.select(this);
         var coords = m.projection(d);
@@ -1062,7 +1095,7 @@ var Interactive = function(sel) {
   //  var tilesLoaded = false;
     var zoomFinished = false;
     m.minZoom = zoom;
-    m.maxZoom = 12;
+    m.maxZoom = 15;
     m.getTiles({
       viewport: viewbox,
       width:width,
@@ -1267,6 +1300,9 @@ var Interactive = function(sel) {
       });
     });
     $(sel).find(".data-picker-wrapper").append(makeDataPicker());
+    $(sel).on("click","input[type='radio'][name='dotDataset']",function() {
+      m.updateDrawData(svg);
+    });
   }
   function setupWindowResize() {
     var resizeTimer = null;

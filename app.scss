@@ -21,10 +21,18 @@
   button.zoomOut:active {
     background-color:#ED1C24;
   }
-  .legendwrap {
-    .dotExplainer {
-      text-align:center;
+  .dotExplainer {
+    text-align:left;
+    .legend_dot_svg_ex {
+      display:inline-block;
+      width:8px;
+      height:8px;
+      svg {
+        position:relative;
+      }
     }
+  }
+  .legendwrap {
     display:none;
     font-family:"proxima-nova-condensed",sans-serif;
     .titlewrap {
@@ -66,14 +74,7 @@
         position:relative;
       }
     }
-    .legend_dot_svg_ex {
-      display:inline-block;
-      width:8px;
-      height:8px;
-      svg {
-        position:relative;
-      }
-    }
+
   }
   svg {
     width:100%;
