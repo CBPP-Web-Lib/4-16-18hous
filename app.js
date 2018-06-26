@@ -203,6 +203,7 @@ var Interactive = function(sel) {
       }
 
       var doneDots = dot_data[z][dot_dataset][geoid].length;
+      var dataAdjust = 0;
       if (!tract.properties.csvData) return;
       var numDots, minDotRepresents;
       if (dot_dataset==="vouchers") {
@@ -211,13 +212,21 @@ var Interactive = function(sel) {
       } else {
         numDots = tract.properties.csvData[13]*1;
         minDotRepresents = 1;
+        dataAdjust = 2;
       }
       //console.log(numDots, tract.properties.GEOID10);
-      var dotRepresents = 3*Math.pow(2,m.maxZoom-1-z);
-      m.dotRepresents = Math.max(minDotRepresents,dotRepresents);
-      m.dotRepresents = Math.floor(m.dotRepresents);
-      m.dotScale = Math.max(1,minDotRepresents/dotRepresents);
-      numDots /= m.dotRepresents;
+      var dotRepresents = 3*Math.pow(2,m.maxZoom-1-z+dataAdjust);
+      var baseDotRepresents = 3*Math.pow(2,m.maxZoom-1-z);
+      if (typeof(m.dotRepresents)==="undefined") {
+        m.dotRepresents = {};
+      }
+      if (typeof(m.dotScale)==="undefined") {
+        m.dotScale = {};
+      }
+      m.dotRepresents[dot_dataset] = Math.max(minDotRepresents,dotRepresents);
+      m.dotRepresents[dot_dataset] = Math.floor(m.dotRepresents[dot_dataset]);
+      m.dotScale[dot_dataset] = Math.max(1,m.dotRepresents[dot_dataset]/baseDotRepresents);
+      numDots /= m.dotRepresents[dot_dataset];
       numDots = Math.round(numDots);
       if (doneDots>=numDots) {
         return;
@@ -587,10 +596,21 @@ var Interactive = function(sel) {
         }
       });
     });
-    var dot_dataset = $(sel).find("input[name='dotDataset']:checked").val();
-    m.updateDotData(drawData, dot_dataset);
-    m.updateDots(drawData, dot_dataset);
+
+    m.updateDotData(drawData, "vouchers");
+    m.updateDotData(drawData, "affordable_units");
     m.makeLegend();
+    var dotUpdates = (function(d) {
+      var r = [];
+      for (var i = 0, ii = d.length; i<ii; i++) {
+        var ssel = "input[name='dotDataset'][value='"+d[i]+"']";
+        if ($(sel).find(ssel).prop("checked")) {
+          r.push(d[i]);
+        }
+      }
+      return r;
+    })(["vouchers","affordable_units"]);
+    m.updateDots(drawData, dotUpdates);
   };
 
   function makeGradientDef(conf, svg) {
@@ -628,28 +648,23 @@ var Interactive = function(sel) {
   }
 
   m.makeDotExplainer = function(dotRepresents) {
+    if (typeof(dotRepresents)==="undefined") {return;}
     if ($(sel).find(".dotExplainer").length===0) {
       var theDotExplainer = $(document.createElement("div")).html(dotExplainer).attr("class","dotExplainer");
       $(sel).find(".dotExplainwrap").append(theDotExplainer);
     }
-
-    $(sel).find(".dotExplainer").find(".dotRepresents").html(dotRepresents);
-    $(sel).find(".dotExplainer").find(".dotRepresentsIsPlural").html(
-      dotRepresents !== 1 ? "s" : "");
+    $(sel).find(".dotExplainer").find(".dotRepresents.vouchers").html(dotRepresents.vouchers);
+    $(sel).find(".dotExplainer").find(".dotRepresents.affordable_units").html(dotRepresents.affordable_units);
+    $(sel).find(".dotExplainer").find(".dotRepresentsIsPlural.vouchers").html(
+      dotRepresents.vouchers !== 1 ? "s" : "");
+    $(sel).find(".dotExplainer").find(".dotRepresentsIsPlural.affordable_units").html(
+      dotRepresents.affordable_units !== 1 ? "s" : "");
       $(sel).find(".legend_dot_svg_ex").html(legend_dot_svg);
       d3.select(sel).select(".legend_dot_svg_ex.vouchers svg").select("circle").attr("fill","#ED1C24");
-      d3.select(sel).select(".legend_dot_svg_ex.affordable_units svg").select("circle").attr("fill","#0C61A4");
+      d3.select(sel).select(".legend_dot_svg_ex.affordable_units svg").select("circle").attr("fill","#704c76");
   };
 
   m.makeLegend = function() {
-    var dotExplainer = $(document.createElement("div"));
-    dotExplainer.addClass("dotExplainer");
-    dotExplainer.html("<input type='radio' name='dotDataset' value = 'vouchers' checked> Each " +
-      "<div class='legend_dot_svg_ex vouchers'></div> represents " + m.dotRepresents + " household" +
-      (m.dotRepresents !== 1 ? "s" : "") + " receiving vouchers.<br>" +
-      "<input type='radio' name='dotDataset' value='affordable_units'> Each " +
-      "<div class='legend_dot_svg_ex affordable_units'></div> represents " + m.dotRepresents +
-      " affordable rental unit" + (m.dotRepresents !== 1 ? "s" : "") + ".");
     $(sel).find(".legendwrap").empty();
     var gradientwrap = $(document.createElement("div"))
       .attr("class","gradientwrap");
@@ -678,10 +693,10 @@ var Interactive = function(sel) {
     m.makeDotExplainer(m.dotRepresents);
   };
 
-  m.updateDots = function(d, dot_dataset) {
+  m.updateDots = function(d, dot_datasets) {
     var view_dot_data = (function(dot_data, d) {
       var tracts = [];
-      var j, jj;
+      var j, jj, k, kk;
       for (var cbsa in d.high) {
         if (d.high.hasOwnProperty(cbsa)) {
           for (j = 0, jj = d.high[cbsa].length; j<jj; j++) {
@@ -690,14 +705,20 @@ var Interactive = function(sel) {
         }
       }
       var r = [];
-      for (var i = 0, ii = tracts.length; i<ii; i++) {
-        var tract_dots = dot_data[m.zoomLevel][dot_dataset][tracts[i]];
-        if (tract_dots) {
-          for (j = 0, jj = tract_dots.length; j<jj; j++) {
-            r.push(tract_dots[j]);
+      for (k = 0, kk = dot_datasets.length;k<kk;k++) {
+        var dot_dataset = dot_datasets[k];
+        for (var i = 0, ii = tracts.length; i<ii; i++) {
+          var tract_dots = dot_data[m.zoomLevel][dot_dataset][tracts[i]];
+          if (tract_dots) {
+            for (j = 0, jj = tract_dots.length; j<jj; j++) {
+              r.push([tract_dots[j], dot_dataset]);
+            }
           }
         }
       }
+      r.sort(function(a, b) {
+        return b[1] < a[1];
+      });
       return r;
     })(dot_data, d);
     var circle_size = (function() {
@@ -708,20 +729,31 @@ var Interactive = function(sel) {
     })();
     var dots = svg.selectAll("circle.household")
       .data(view_dot_data, function(d) {
-        return d[0]*d[1];
+        return d[1] + (d[0][0]*d[0][1]);
       });
-    var dotScaleM = Math.sqrt(m.dotScale);
+    var dotScaleM = {};
+    for (var dot_dataset in m.dotScale) {
+      if (m.dotScale.hasOwnProperty(dot_dataset)) {
+        dotScaleM[dot_dataset] = Math.sqrt(m.dotScale[dot_dataset]);
+      }
+    }
     dots.enter()
       .append("circle")
       .attr("class","household")
       .attr("stroke","#000")
-      .attr("stroke-width",circle_size/4)
-      .attr("fill","#ED1C24")
+      .attr("stroke-width",function(d) {
+        return (d[1]==="vouchers" ? circle_size/4 : 0); 
+      })
+      .attr("fill",function(d) {
+        return (d[1]==="vouchers" ? "#ED1C24" : "#704c76");
+      })
       .merge(dots)
-      .attr("r",circle_size*dotScaleM)
+      .attr("r",function(d) {
+        return circle_size*dotScaleM[d[1]];
+      })
       .each(function(d) {
         var el = d3.select(this);
-        var coords = m.projection(d);
+        var coords = m.projection(d[0]);
         el.attr("cx", coords[0]);
         el.attr("cy", coords[1]);
       });
@@ -1300,7 +1332,7 @@ var Interactive = function(sel) {
       });
     });
     $(sel).find(".data-picker-wrapper").append(makeDataPicker());
-    $(sel).on("click","input[type='radio'][name='dotDataset']",function() {
+    $(sel).on("click","input[type='checkbox'][name='dotDataset']",function() {
       m.updateDrawData(svg);
     });
   }
