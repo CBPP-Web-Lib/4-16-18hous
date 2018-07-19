@@ -742,7 +742,7 @@ var Interactive = function(sel) {
       .attr("class","household")
       .attr("stroke","#000")
       .attr("stroke-width",function(d) {
-        return (d[1]==="vouchers" ? circle_size/4 : 0); 
+        return (d[1]==="vouchers" ? circle_size/4 : 0);
       })
       .attr("fill",function(d) {
         return (d[1]==="vouchers" ? "#ED1C24" : "#704c76");

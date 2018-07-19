@@ -23,6 +23,18 @@ function zeroPad(fips) {
 gl.gulp.task("cbpp_shared_lib", function(cb) {
   gl.get_cbpp_shared_libs(["CBPP_Figure"], cb);
 });
+gl.gulp.task("redlining_shapefiles", ["intermediate"], function(cb) {
+  if (!fs.existsSync("./intermediate/redlining.json")) {
+    var dest = fs.createWriteStream("./intermediate/redlining.json");
+    request("https://digitalscholarshiplab.carto.com/api/v2/sql?q=select%20*%20from%20digitalscholarshiplab.holc_polygons&format=GeoJSON")
+      .pipe(dest);
+    dest.on("finish", cb);
+  } else {
+    if (typeof(cb)==="function") {
+      cb();
+    }
+  }
+});
 gl.gulp.task("download_shapefiles", function(cb) {
   var files = [
     "https://www2.census.gov/geo/tiger/TIGER2015/CBSA/tl_2015_us_cbsa.zip",
