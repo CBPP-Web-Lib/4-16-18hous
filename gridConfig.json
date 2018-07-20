@@ -4,7 +4,8 @@
     "simplify":0.005,
     "dest":"./topojson/low/",
     "exclude" : [
-      "tl_2010"
+      "tl_2010",
+      "redlining"
     ]
   },
   "high": {

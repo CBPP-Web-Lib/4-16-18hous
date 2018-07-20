@@ -334,10 +334,12 @@ var Interactive = function(sel) {
       }
       var zoomed = false;
       var loaded = false;
+      var red_loaded = false;
       var water_loaded = false;
       function checkZoomAndLoad() {
-        if (zoomed && loaded && water_loaded) {
+        if (zoomed && loaded && water_loaded && red_loaded) {
           //applyData(csv, m.active_cbsa.properties.GEOID, []);
+          console.log("here");
           m.updateDrawData(svg);
         }
       }
@@ -345,6 +347,13 @@ var Interactive = function(sel) {
         var geo = topojson.feature(d, d.objects.districts);
         geo_data["tl_2010_tract_" + geoid] = {high:geo};
         loaded = true;
+        checkZoomAndLoad();
+      });
+      getJSONAndSaveInMemory(URL_BASE + "/topojson/high/redlining_"+geoid+".txt", function(err, d) {
+        var geo = topojson.feature(d, d.objects.districts);
+        console.log(geo);
+        geo_data["redlining_" + geoid] = {high:geo};
+        red_loaded = true;
         checkZoomAndLoad();
       });
       var water_files = waterIndex["tl_2010_tract_" + geoid + ".json"];
@@ -384,6 +393,7 @@ var Interactive = function(sel) {
     };
     svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
       if (layer==="water") {return;}
+      console.log(layer);
       var size = d3.select(this.parentNode).attr("class").split(" ")[1];
       var scaling ={"low":1,"high":0.1};
       var pathData = function() {

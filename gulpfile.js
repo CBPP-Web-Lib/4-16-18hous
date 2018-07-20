@@ -180,6 +180,34 @@ gl.gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
   fs.writeFileSync("./filtered/tl_2015_us_cbsa.json", JSON.stringify(clip_cbsa(cbsa), null, " "));
   cb();
 });
+gl.gulp.task("filter_redline", function(cb) {
+  gulp.watch();
+  var cbsas = JSON.parse(fs.readFileSync("./intermediate/cbsa_filtered_unclipped.json", "utf-8"));
+  var redlining = JSON.parse(fs.readFileSync("./intermediate/redlining.json","utf-8"));
+  cbsas.features.forEach(cbsa => {
+    var cbsa_id = cbsa.properties.GEOID;
+    var r = {
+      "type": "FeatureCollection",
+      "features": []
+    };
+    redlining.features.forEach(redline => {
+      var a = geojson_bbox(redline);
+      var b = geojson_bbox(cbsa);
+      /*x1, y1, x2, y2*/
+
+      if (!(
+          a[2] < b[0] ||
+          b[2] < a[0] ||
+          a[1] > b[3] ||
+          b[3] < a[1]
+        )) {
+        r.features.push(redline);
+      }
+    });
+    fs.writeFileSync("./filtered/redlining_"+cbsa_id+".json", JSON.stringify(r, null, " "));
+  }); 
+  cb(); 
+});
 gl.gulp.task("filter_geojson", ["ogr2ogr","split_data"], function(cb) {
   function existsInData(feature, data) {
     var geoid = feature.properties.GEOID10;
@@ -475,13 +503,14 @@ gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], fun
                 encoding: "utf-8"
               }));
               try {
+                console.log(f);
               var topo = topojson.topology({districts:geo}/*, 10000*/);
               for (var i = topo.objects.districts.geometries.length-1; i>=0; i--) {
                 var obj = topo.objects.districts.geometries[i].properties;
 
                 for (var prop in obj) {
                   if (obj.hasOwnProperty(prop)) {
-                    if (prop.indexOf("GEOID")===-1 && prop.indexOf("NAME")===-1) {
+                    if (prop.indexOf("GEOID")===-1 && prop.indexOf("NAME")===-1 && prop.indexOf("holc")===-1) {
                       delete (obj[prop]);
                     }
                   }
