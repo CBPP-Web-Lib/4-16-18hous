@@ -287,6 +287,7 @@ var Interactive = function(sel) {
   m.updateDrawData = function(svg) {
     drawData = filterToVisible(geo_data, svg.attr("viewBox"));
     //drawData = geo_data;
+    console.log(geo_data);
     drawData = (function(r) {
       for (var size in r) {
         if (r.hasOwnProperty(size)) {
@@ -447,6 +448,9 @@ var Interactive = function(sel) {
             }
             return 1*scaling[size];
           }
+          if (layer.indexOf("redlin")!==-1) {
+            return 2*scaling[size];
+          }
           return 0.5*scaling[size];
         })
         .merge(paths)
@@ -455,6 +459,9 @@ var Interactive = function(sel) {
             return "#D6E4F0";
           }
           if (layer==="national") {
+            return "none";
+          }
+          if (layer.indexOf("redlin")!==-1) {
             return "none";
           }
           if (layer.indexOf("tl_2010_tract")!==-1) {
@@ -528,6 +535,9 @@ var Interactive = function(sel) {
           if (layer.indexOf("cbsa")!==-1) {
             return "#0C61A4";
           }
+          if (layer.indexOf("redlin")!==-1) {
+            return "#f00";
+          }
           return "#000000";
         })
         .attr("stroke-opacity", function() {
@@ -539,6 +549,9 @@ var Interactive = function(sel) {
           }
           if (layer.indexOf("cbsa")!==-1) {
             return 0.3;
+          }
+          if (layer.indexOf("redlin")!==-1) {
+            return 1;
           }
           return 0;
         });

@@ -224,10 +224,10 @@ gl.gulp.task("filter_geojson", ["ogr2ogr","split_data"], function(cb) {
     }
     return -1;
   }
-  if (fs.existsSync("./filtered/tl_2010_tract_47900.json")) {
+  /*if (fs.existsSync("./filtered/tl_2010_tract_47900.json")) {
     cb();
     return;
-  }
+  }*/
   var r = {};
   var index = {};
   var tract_data = JSON.parse(fs.readFileSync("./intermediate/data_by_tract.json"));
@@ -268,6 +268,7 @@ gl.gulp.task("filter_geojson", ["ogr2ogr","split_data"], function(cb) {
       for (var file in index) {
         if (index.hasOwnProperty(file)) {
           fileIndex.push(file);
+          fileIndex.push(file.replace("tl_2010_tract_","redlining_"));
         }
       }
       fs.writeFileSync("./fileIndex.json", JSON.stringify(fileIndex, null, " "));
