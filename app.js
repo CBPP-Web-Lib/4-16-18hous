@@ -35,6 +35,12 @@ require("./app.css");
 //var data = require("./intermediate/data.json");
 //console.log(data);
 var drawData = {};
+var redlining_colors = {
+  "A":"#1b5315",
+  "B":"#494949",
+  "C":"#905813",
+  "D":"#6d0a0e"
+};
 var getJSONAndSaveInMemory = function(f, cb) {
   if (!localmemory[f]) {
     getJSONAndSave(f, function(err, d) {
@@ -82,12 +88,14 @@ var Interactive = function(sel) {
   });
   $(sel).find(".grid00").empty().addClass("mapwrap");
   $(sel).find(".grid01").empty().addClass("legendwrap");
-  $(sel).find(".grid02").empty().addClass("dotExplainwrap");
+  $(sel).find(".grid02").empty().append($(document.createElement("div")).addClass("dotExplainwrap"));
+  $(sel).find(".grid02").append($(document.createElement("div")).addClass("redliningLegend"));
   URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
   var svg;
   m.zoomingToCBSA = false;
   m.projection = d3.geoAlbers();
   m.dataset = "poverty_rate";
+  m.redliningOn = false;
   var path = d3.geoPath(m.projection);
   var defaultViewbox = [50, 5, 820, 820*$(sel + " .mapwrap").height()/$(sel + " .mapwrap").width()].join(" ");
 
@@ -287,7 +295,6 @@ var Interactive = function(sel) {
   m.updateDrawData = function(svg) {
     drawData = filterToVisible(geo_data, svg.attr("viewBox"));
     //drawData = geo_data;
-    console.log(geo_data);
     drawData = (function(r) {
       for (var size in r) {
         if (r.hasOwnProperty(size)) {
@@ -352,7 +359,6 @@ var Interactive = function(sel) {
       });
       getJSONAndSaveInMemory(URL_BASE + "/topojson/high/redlining_"+geoid+".txt", function(err, d) {
         var geo = topojson.feature(d, d.objects.districts);
-        console.log(geo);
         geo_data["redlining_" + geoid] = {high:geo};
         red_loaded = true;
         checkZoomAndLoad();
@@ -394,7 +400,6 @@ var Interactive = function(sel) {
     };
     svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
       if (layer==="water") {return;}
-      console.log(layer);
       var size = d3.select(this.parentNode).attr("class").split(" ")[1];
       var scaling ={"low":1,"high":0.1};
       var pathData = function() {
@@ -438,6 +443,7 @@ var Interactive = function(sel) {
         .attr("data-geoid",function(d) {
           return d.properties.GEOID;
         })
+        .merge(paths)
         .attr("stroke-width",function() {
           if (layer.indexOf("state")!==-1) {
             return 0.8*scaling[size];
@@ -449,11 +455,14 @@ var Interactive = function(sel) {
             return 1*scaling[size];
           }
           if (layer.indexOf("redlin")!==-1) {
-            return 2*scaling[size];
+            if (m.redliningOn) {
+              return 3*scaling[size]/Math.max(m.zoomLevel-7,1);
+            } else {
+              return 0;
+            }
           }
           return 0.5*scaling[size];
         })
-        .merge(paths)
         .attr("fill", function(d) {
           if (layer.indexOf("state")!==-1) {
             return "#D6E4F0";
@@ -525,7 +534,7 @@ var Interactive = function(sel) {
 
           return 0.7;
         })
-        .attr("stroke",function() {
+        .attr("stroke",function(d) {
           if (layer.indexOf("state")!==-1) {
             return "#fff";
           }
@@ -536,7 +545,7 @@ var Interactive = function(sel) {
             return "#0C61A4";
           }
           if (layer.indexOf("redlin")!==-1) {
-            return "#f00";
+            return redlining_colors[d.properties.holc_grade];
           }
           return "#000000";
         })
@@ -670,12 +679,47 @@ var Interactive = function(sel) {
       });
   }
 
-  m.makeDotExplainer = function(dotRepresents) {
-    if (typeof(dotRepresents)==="undefined") {return;}
-    if ($(sel).find(".dotExplainer").length===0) {
-      var theDotExplainer = $(document.createElement("div")).html(dotExplainer).attr("class","dotExplainer");
-      $(sel).find(".dotExplainwrap").append(theDotExplainer);
+  m.makeRedliningLegend = function(on) {
+    function makeEntry(letter) {
+      var label = $(document.createElement("div")).addClass("redliningLabel");
+      var box = $(document.createElement("div")).addClass("redliningBox");
+      label.text({
+        "A":"Best",
+        "B":"Still desireable",
+        "C":"Declining",
+        "D":"Hazardous"
+      }[letter]);
+      box.css("border","2px solid " + redlining_colors[letter]);
+      var r = $(document.createElement("div")).addClass("entry");
+      r.append(box, label);
+      return r;
     }
+    var wrap = $(sel).find(".redliningLegend").empty();
+    if (typeof(m.active_cbsa)==="undefined" || m.acitve_cbsa===null) {
+      return;
+    }
+   
+    var checkboxWrap = $(document.createElement("div")).addClass("checkboxWrap");
+    var checkbox = $(document.createElement("input")).attr("type","checkbox")
+      .prop("checked",on);
+    var checkboxLabel = $(document.createElement("div")).addClass("checkboxLabel")
+      .text("Show 1930s HOLC Neighborhood Risk Assessment Grades");
+    checkboxWrap.append(checkbox, checkboxLabel);
+    wrap.append(checkboxWrap);
+    var entryWrap = $(document.createElement("div")).addClass("entries");
+    var grades = ["A","B","C","D"];
+    for (var i = 0, ii = grades.length; i<ii; i++) {
+      entryWrap.append(makeEntry(grades[i]));
+    }
+    wrap.append(entryWrap);
+  };
+
+  m.makeDotExplainer = function(dotRepresents) {
+    $(sel).find(".dotExplainwrap").empty();
+    if (typeof(m.active_cbsa)==="undefined" || m.active_cbsa===null) return;
+    var theDotExplainer = $(document.createElement("div")).html(dotExplainer).attr("class","dotExplainer");
+    $(sel).find(".dotExplainwrap").append(theDotExplainer);
+    if (typeof(dotRepresents)==="undefined") {return;}
     $(sel).find(".dotExplainer").find(".dotRepresents.vouchers").html(dotRepresents.vouchers);
     $(sel).find(".dotExplainer").find(".dotRepresents.affordable_units").html(dotRepresents.affordable_units);
     $(sel).find(".dotExplainer").find(".dotRepresentsIsPlural.vouchers").html(
@@ -714,6 +758,7 @@ var Interactive = function(sel) {
     makeGradientText(m.gradientConfig[m.dataset], d3.select(labelwrap[0]));
     gradientwrap.append(titlewrap);
     m.makeDotExplainer(m.dotRepresents);
+    m.makeRedliningLegend(m.redliningOn);
   };
 
   m.updateDots = function(d, dot_datasets) {
@@ -1291,7 +1336,7 @@ var Interactive = function(sel) {
       //if (m.zoomLevel===m.minZoom) {
         zoomToCBSA(m.active_cbsa,"out", function() {
           setTimeout(function() {
-            m.updateDrawData(svg)
+            m.updateDrawData(svg);
           },50);
         });
         $(sel).find("button.zoomOut").remove();
@@ -1356,6 +1401,10 @@ var Interactive = function(sel) {
     });
     $(sel).find(".data-picker-wrapper").append(makeDataPicker());
     $(sel).on("click","input[type='checkbox'][name='dotDataset']",function() {
+      m.updateDrawData(svg);
+    });
+    $(sel).on("click", ".redliningLegend input[type='checkbox']", function() {
+      m.redliningOn = $(this).prop("checked");
       m.updateDrawData(svg);
     });
   }

@@ -76,6 +76,23 @@
     }
 
   }
+  .redliningLegend {
+    input[type="checkbox"], .checkboxLabel, .checkboxWrap, .redliningLabel {
+      display:inline;
+    }
+    .redliningLabel {
+      margin-right:20px;
+    }
+    .entry {
+      display:inline;
+      .redliningBox {
+        display:inline-block;
+        margin-right:5px;
+        height:16px;
+        width:24px;
+      }
+    }
+  }
   svg {
     width:100%;
     height:100%;
