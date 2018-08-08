@@ -45,6 +45,7 @@
   .legendwrap {
     display:none;
     font-family:"proxima-nova-condensed",sans-serif;
+    margin-top:10px;
     .titlewrap {
       bottom:0px;
       font-size:16pt;
@@ -84,25 +85,32 @@
         position:relative;
       }
     }
-
-  }
-  .redliningLegend {
-    input[type="checkbox"], .checkboxLabel, .checkboxWrap, .redliningLabel {
+    .legendBinLabel {
       display:inline;
     }
-    .redliningLabel {
+    .legendBinLabel {
       margin-right:20px;
+    }
+    .boxWrap {
+      text-align:center;
+      padding-bottom:2em;
+      position:relative; 
     }
     .entry {
       display:inline;
-      .redliningBox {
+      .legendBinBox {
         display:inline-block;
         margin-right:5px;
         height:16px;
         width:24px;
       }
+      
     }
+    
   }
+  
+  
+  
   svg {
     width:100%;
     height:100%;

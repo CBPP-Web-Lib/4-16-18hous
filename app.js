@@ -95,10 +95,8 @@ var Interactive = function(sel) {
   m.zoomingToCBSA = false;
   m.projection = d3.geoAlbers();
   m.dataset = "poverty_rate";
-  m.redliningOn = false;
   var path = d3.geoPath(m.projection);
   var fullUSViewbox = [50, 5, 820, 499].join(" ");
-  console.log(fullUSViewbox);
   function get_tile_from_long_lat(long, lat, zoom, exact) {
     var scale = 1 << zoom;
     var rounder = Math.floor;
@@ -148,7 +146,7 @@ var Interactive = function(sel) {
       var d = data[$(this).attr("name")];
       $(this).text(d[1](d[0]));
     });
-    var popup_width = 0.4;
+    var popup_width = Math.min(0.4,300/$(sel).width());
     var offset = $(sel).find(".mapwrap").offset();
     var x = e.pageX - offset.left;
     var y = e.pageY - offset.top;
@@ -285,7 +283,7 @@ var Interactive = function(sel) {
     }
     for (var cbsa_layer_name in drawData.high) {
       if (drawData.high.hasOwnProperty(cbsa_layer_name)) {
-        if (cbsa_layer_name!=="water") {
+        if (cbsa_layer_name.indexOf("tl_2010")!==-1) {
           update_dots_for_cbsa(drawData.high[cbsa_layer_name], dot_dataset);
         }
       }
@@ -294,7 +292,6 @@ var Interactive = function(sel) {
 
   m.updateDrawData = function(svg) {
     drawData = filterToVisible(geo_data, svg.attr("viewBox"));
-    //drawData = geo_data;
     drawData = (function(r) {
       for (var size in r) {
         if (r.hasOwnProperty(size)) {
@@ -346,8 +343,6 @@ var Interactive = function(sel) {
       var water_loaded = false;
       function checkZoomAndLoad() {
         if (zoomed && loaded && water_loaded && red_loaded) {
-          //applyData(csv, m.active_cbsa.properties.GEOID, []);
-          console.log("here");
           m.updateDrawData(svg);
         }
       }
@@ -455,13 +450,21 @@ var Interactive = function(sel) {
             return 1*scaling[size];
           }
           if (layer.indexOf("redlin")!==-1) {
-            if (m.redliningOn) {
-              return 3*scaling[size]/Math.max(m.zoomLevel-7,1);
-            } else {
-              return 0;
-            }
+            return 0;
           }
           return 0.5*scaling[size];
+        })
+        .attr("visibility", function(d) {
+          if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa" && m.active_cbsa) {
+            return "hidden";
+          }
+          if (m.dataset==="holc" && layer.indexOf("tl_2010_tract")!==-1) {
+            return "hidden";
+          }
+          if (m.dataset!=="holc" && layer.indexOf("redlin")!==-1) {
+            return "hidden";
+          }
+          return "visible";
         })
         .attr("fill", function(d) {
           if (layer.indexOf("state")!==-1) {
@@ -471,9 +474,14 @@ var Interactive = function(sel) {
             return "none";
           }
           if (layer.indexOf("redlin")!==-1) {
-            return "none";
+            if (m.dataset==="holc") {
+              return redlining_colors[d.properties.holc_grade];
+            }
           }
           if (layer.indexOf("tl_2010_tract")!==-1) {
+            if (m.dataset==="holc" && layer.indexOf("tl_2010_tract")!==-1) {
+              return "#cccccc";
+            }
             return fillFromData(d.properties.csvData);
           }
           if (m.active_cbsa) {
@@ -510,6 +518,8 @@ var Interactive = function(sel) {
             $(this).css("cursor","pointer");
             d3.select(this).attr("opacity",1);
             d3.select(this).attr("fill","#ED1C24");
+          } else {
+            $(sel).find(".popup-outer").remove();
           }
           return true;
         })
@@ -631,18 +641,21 @@ var Interactive = function(sel) {
 
     m.updateDotData(drawData, "vouchers");
     m.updateDotData(drawData, "affordable_units");
+
     m.makeLegend();
-    var dotUpdates = (function(d) {
-      var r = [];
-      for (var i = 0, ii = d.length; i<ii; i++) {
-        var ssel = "input[name='dotDataset'][value='"+d[i]+"']";
-        if ($(sel).find(ssel).prop("checked")) {
-          r.push(d[i]);
-        }
-      }
-      return r;
-    })(["vouchers","affordable_units"]);
+    var dotUpdates = m.getCheckedDots();
     m.updateDots(drawData, dotUpdates);
+  };
+
+  m.getCheckedDots = function() {
+    var r = [];
+    var checkboxes = $(sel).find("input[name='dotDataset']");
+    checkboxes.each(function() {
+      if ($(this).prop("checked")) {
+        r.push($(this).val());
+      }
+    });
+    return r;
   };
 
   function makeGradientDef(conf, svg) {
@@ -713,7 +726,6 @@ var Interactive = function(sel) {
     }
     wrap.append(entryWrap);
   };
-
   m.makeDotExplainer = function(dotRepresents) {
     $(sel).find(".dotExplainwrap").empty();
     if (typeof(m.active_cbsa)==="undefined" || m.active_cbsa===null) return;
@@ -732,35 +744,58 @@ var Interactive = function(sel) {
   };
 
   m.makeLegend = function() {
+    function makeEntry(bin) {
+      var label = $(document.createElement("div")).addClass("legendBinLabel");
+      var box = $(document.createElement("div")).addClass("legendBinBox");
+      label.text(bin.label);
+      box.css("background-color",bin.color);
+      var r = $(document.createElement("div")).addClass("entry");
+      r.append(box, label);
+      return r;
+    }
+    var checked_dots = m.getCheckedDots();
     $(sel).find(".legendwrap").empty();
     var gradientwrap = $(document.createElement("div"))
       .attr("class","gradientwrap");
     var labelwrap = $(document.createElement("div"))
       .attr("class","labelwrap");
     $(sel).find(".legendwrap").append(gradientwrap);
-    var legend_gradient_svg = d3.select(".gradientwrap").append("svg")
-      .attr("viewBox", "0 0 100 10")
-      .attr("preserveAspectRatio","none");
-    gradientwrap.append(labelwrap);
+   
+    
     var titlewrap = $(document.createElement("div"));
     titlewrap.addClass("titlewrap");
     titlewrap.text(m.gradientConfig[m.dataset].name);
-    makeGradientDef(m.gradientConfig[m.dataset].colors, legend_gradient_svg);
-    legend_gradient_svg.append("rect")
-      .attr("x",0)
-      .attr("y",0)
-      .attr("width",100)
-      .attr("height",10)
-      .attr("opacity",0.7)
-      .attr("class","legend_gradient_rect")
-      .attr("stroke","none")
-      .attr("fill","url(#legend_gradient_def)");
-    makeGradientText(m.gradientConfig[m.dataset], d3.select(labelwrap[0]));
+    var i, ii;
+    if (m.gradientConfig[m.dataset].bins) {
+      var boxwrap = $(document.createElement("div")).addClass("boxWrap");
+      for (i = 0, ii = m.gradientConfig[m.dataset].bins.length;i<ii;i++) {
+        boxwrap.append(makeEntry(m.gradientConfig[m.dataset].bins[i]));
+      }
+      gradientwrap.append(boxwrap);
+    } else {
+      var legend_gradient_svg = d3.select(".gradientwrap").append("svg")
+        .attr("viewBox", "0 0 100 10")
+        .attr("preserveAspectRatio","none");
+      gradientwrap.append(labelwrap);
+      makeGradientDef(m.gradientConfig[m.dataset].colors, legend_gradient_svg);
+      legend_gradient_svg.append("rect")
+        .attr("x",0)
+        .attr("y",0)
+        .attr("width",100)
+        .attr("height",10)
+        .attr("opacity",0.7)
+        .attr("class","legend_gradient_rect")
+        .attr("stroke","none")
+        .attr("fill","url(#legend_gradient_def)");
+      makeGradientText(m.gradientConfig[m.dataset], d3.select(labelwrap[0]));
+    }
     gradientwrap.append(titlewrap);
     m.makeDotExplainer(m.dotRepresents);
-    m.makeRedliningLegend(m.redliningOn);
+    for (i = 0, ii = checked_dots.length; i<ii; i++) {
+      $(sel).find("input[type='checkbox'][value='"+checked_dots[i] + "']").prop("checked",true);
+    }
+    //m.makeRedliningLegend(m.redliningOn);
   };
-
   m.updateDots = function(d, dot_datasets) {
     var view_dot_data = (function(dot_data, d) {
       var tracts = [];
@@ -906,12 +941,34 @@ var Interactive = function(sel) {
       ],
       labels: ["0%","100%"],
       dataIndex:6
+    },
+    "holc" : {
+      name:"1930s HOLC Risk Assessment Grades",
+      bins: (function() {
+        var names = {
+          "A":"Best",
+          "B":"Still Desireable",
+          "C":"Declining",
+          "D":"Hazardous"
+        };
+        var r = [];
+        for (var color in redlining_colors) {
+          if (redlining_colors.hasOwnProperty(color)) {
+            r.push({
+              label: names[color],
+              color: redlining_colors[color]
+            });
+          }
+        }
+        return r;
+      })()
     }
   };
   function fillFromData(d) {
     if (typeof(d)==="undefined") {
       return "#EB9123";
     }
+    if (m.dataset==="holc") {return "#cccccc";}
     d = d[m.gradientConfig[m.dataset].dataIndex];
     var gconf = m.gradientConfig[m.dataset].colors;
     var color;
@@ -1363,6 +1420,10 @@ var Interactive = function(sel) {
         select.append(option);
       }
     }
+    /*var holc_option = $(document.createElement("option"))
+      .val("holc")
+      .html("1930s HOLC Risk Assessment Grades");
+    select.append(holc_option);*/
     select.on("change", function() {
       m.dataset = $(this).val();
       m.updateDrawData(svg);
@@ -1407,10 +1468,6 @@ var Interactive = function(sel) {
     });
     $(sel).find(".data-picker-wrapper").append(makeDataPicker());
     $(sel).on("click","input[type='checkbox'][name='dotDataset']",function() {
-      m.updateDrawData(svg);
-    });
-    $(sel).on("click", ".redliningLegend input[type='checkbox']", function() {
-      m.redliningOn = $(this).prop("checked");
       m.updateDrawData(svg);
     });
     $(sel + " .mapwrap").append($(document.createElement("div")).attr("class","fullscreenButton")
