@@ -15,6 +15,16 @@
     cursor:pointer;
     outline: none;
   }
+  .fullscreenButton {
+    border:1px solid #aaa;
+    background-color:#eee;
+    z-index:500;
+    position:absolute;
+    bottom:5px;
+    right:5px;
+    padding:5px;
+    cursor:pointer;
+  }
   button.zoomOut:hover {
     background-color:#F8D8B2;
   }
@@ -110,6 +120,7 @@
     }
   }
   .mapwrap {
+    border:1px solid #aaa;
     overflow:hidden;
     .zoomOut {
       z-index:100;

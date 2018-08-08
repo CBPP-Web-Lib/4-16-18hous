@@ -97,8 +97,8 @@ var Interactive = function(sel) {
   m.dataset = "poverty_rate";
   m.redliningOn = false;
   var path = d3.geoPath(m.projection);
-  var defaultViewbox = [50, 5, 820, 820*$(sel + " .mapwrap").height()/$(sel + " .mapwrap").width()].join(" ");
-
+  var fullUSViewbox = [50, 5, 820, 499].join(" ");
+  console.log(fullUSViewbox);
   function get_tile_from_long_lat(long, lat, zoom, exact) {
     var scale = 1 << zoom;
     var rounder = Math.floor;
@@ -1236,7 +1236,7 @@ var Interactive = function(sel) {
     } else {
       svg.transition()
         .duration(1000)
-        .attr("viewBox", defaultViewbox);
+        .attr("viewBox", fullUSViewbox);
       removeTractsFromDrawData();
       svg.selectAll("g.size.low g.cb_2015_us_state_500k")
         .attr("opacity",0)
@@ -1258,10 +1258,16 @@ var Interactive = function(sel) {
         path = d3.geoPath(m.projection);
         if (direction==="in") {
 
-          $(sel).find(".legendwrap").slideDown(100);
+          $(sel).find(".legendwrap").slideDown(100, function() {
+            if ($(sel).hasClass("fullScreen")) {
+              makeFullScreen();
+            }
+          });
           makeZoomOutButton();
           zoomFinished = true;
           checkDisplay();
+          m.baseWidth = $(svg.node()).width();
+          m.baseVBWidth = svg.attr("viewBox").split(" ")[2];
           d3.select(sel).select(".tilewrap")
             .transition()
             .duration(750)
@@ -1377,8 +1383,8 @@ var Interactive = function(sel) {
 
   function DrawInitialMap() {
     svg = d3.select(sel + " .mapwrap").append("svg")
-      .attr("viewBox", defaultViewbox)
-      .attr("preserveAspectRatio", "none");
+      .attr("viewBox", fullUSViewbox)
+      .attr("preserveAspectRatio", "xMidYMid");
 
     m.updateDrawData(svg);
     require("./js/zoom.js")(sel + " .mapwrap", m, $, d3);
@@ -1407,35 +1413,131 @@ var Interactive = function(sel) {
       m.redliningOn = $(this).prop("checked");
       m.updateDrawData(svg);
     });
+    $(sel + " .mapwrap").append($(document.createElement("div")).attr("class","fullscreenButton")
+      .text("Expand")
+      .on("click",toggleFullScreen));
+  }
+
+  function makeFullScreen() {
+    $(sel).addClass("fullScreen");
+    $(sel).css("position","fixed");
+    $(sel).css("left","10px");
+    $(sel).css("right","10px");
+    $(sel).css("top","10px");
+    $(sel).css("left","10px");
+    $(sel).css("max-width","9999px");
+   
+    var space_for_map = $(window).height() - 
+      (
+        $(sel).find(".title").outerHeight() +
+        $(sel).find(".subtitle").outerHeight() +
+        $(sel).find(".notes").outerHeight() +
+        $(sel).find(".credit").outerHeight() +
+        $(sel).find(".cellWrap01").outerHeight() + 
+        $(sel).find(".cellWrap02").outerHeight()
+      );
+    space_for_map*=0.9;
+    var map_height_percent = space_for_map/$(window).width();
+    if (map_height_percent > 499/820) {
+      fullUSViewbox = [50, 5, 820, 820*map_height_percent].join(" ");
+    } else {
+      fullUSViewbox = [50, 5, 499/map_height_percent, 499].join(" ");
+    }
+    var vb = svg.attr("viewBox").split(" ");
+    vb[3] = vb[2]*map_height_percent;
+    svg.attr("viewBox",vb.join(" "));
+    $(sel).find(".fullscreenButton").text("Collapse");
+    if (m.active_cbsa) {
+      fixViewbox();
+    } else {
+      svg.attr("viewBox",fullUSViewbox);
+    }
+    $(sel).find(".mapwrap").parents(".cellWrap").css("padding-bottom",(map_height_percent*100)+"%");
+    m.updateDrawData(svg);
+    var newviewport = svg.attr("viewBox").split(" ");
+    m.getTiles({
+      viewport: newviewport,
+      width: $(sel).width(),
+      height: $(sel).height(),
+      projection: m.projection,
+      offset: m.offset_px_from_vb(newviewport, m.zoomLevel, m.projection),
+      onload: function() {
+        $(sel).find(".tilewrap").not("old").css("opacity",1);
+        $(sel).find(".tilewrap.old").remove();
+      }
+    });
+  }
+
+  function removeFullScreen() {
+    $(sel).removeClass("fullScreen");
+    $(sel).css("position","");
+    $(sel).css("left","");
+    $(sel).css("right","");
+    $(sel).css("top","");
+    $(sel).css("left","");
+    $(sel).css("max-width","940px");
+    var map_height_percent = 0.61;
+    var vb = svg.attr("viewBox").split(" ");
+    vb[3] = vb[2]*map_height_percent;
+    svg.attr("viewBox",vb.join(" "));
+    fullUSViewbox = [50, 5, 820, 499].join(" ");
+    if (m.active_cbsa) {
+      //m.baseVBWidth = vb[2];
+      //m.baseWidth = $(svg.node()).width();
+      fixViewbox();
+    } else {
+      svg.attr("viewBox",fullUSViewbox);
+    }
+    $(sel).find(".fullscreenButton").text("Expand");
+    $(sel).find(".mapwrap").parents(".cellWrap").css("padding-bottom",(map_height_percent*100)+"%");
+  }
+
+  function toggleFullScreen() {
+    if ($(sel).hasClass("fullScreen")) {
+      removeFullScreen();
+    } else {
+      makeFullScreen();
+    }
+  }
+
+  function fixViewbox() {
+    var width = $(svg.node()).width();
+    var frac = width/m.baseWidth;
+    var currentvb = svg.attr("viewBox").split(" ");
+    var newvb = [
+      currentvb[0],
+      currentvb[1],
+      m.baseVBWidth*frac,
+      m.baseVBWidth*currentvb[3]/currentvb[2]*frac
+    ];
+    svg.attr("viewBox", newvb.join(" "));
   }
   function setupWindowResize() {
-    var resizeTimer = null;
-    var outstanding = false;
     var windowResize = function() {
+      clearTimeout(m.windowResizeTimer);
+      m.windowResizeTimer = setTimeout(function() {
+        if (typeof(m.active_cbsa)==="undefined") {
+          return;
+        }
+        var newviewport = svg.attr("viewBox").split(" ");
+        m.getTiles({
+          viewport: newviewport,
+          width: $(sel).width(),
+          height: $(sel).height(),
+          projection: m.projection,
+          offset: m.offset_px_from_vb(newviewport, m.zoomLevel, m.projection),
+          onload: function() {
+            $(sel).find(".tilewrap").not("old").css("opacity",1);
+            $(sel).find(".tilewrap.old").remove();
+          }
+        });
+      },500);
+      if ($(sel).hasClass("fullScreen")) {
+        makeFullScreen();
+      }
       if (!m.active_cbsa) {return;}
-      if (m.zoomingToCBSA) {
-        outstanding = true;
-      }
-      if (resizeTimer!==null) {
-        clearTimeout(resizeTimer);
-      }
-      resizeTimer = setTimeout(function() {
-        resizeTimer = null;
-        fireResize();
-      }, 200);
-    };
-    var resizeCallback = function() {
-      if (outstanding) {
-        outstanding = false;
-        m.zoomingToCBSA = false;
-        windowResize();
-      } else {
-        m.updateDrawData(d3.select(sel + " .mapwrap > svg"));
-        outstanding = false;
-      }
-    };
-    var fireResize = function() {
-      zoomToCBSA(m.active_cbsa, "in", resizeCallback);
+      if (m.zoomingToCBSA) {return;}
+      fixViewbox();
     };
     $(window).resize(windowResize);
   }

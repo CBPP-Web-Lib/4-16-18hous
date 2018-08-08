@@ -36,6 +36,8 @@ module.exports = function(sel, obj, $, d3) {
     var tilesLoaded = false;
     var zoomedFully = false;
     var offset_px = m.offset_px_from_vb(newviewport, m.zoomLevel + db, m.projection);
+    m.baseWidth = $(svg.node()).width();
+    m.baseVBWidth = newwidth;
     m.getTiles({
       viewport: newviewport,
       z:m.zoomLevel + db,
