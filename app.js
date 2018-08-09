@@ -420,6 +420,13 @@ var Interactive = function(sel) {
         d3.select(this).remove();
       });
       d3.select(this).selectAll("text").remove();
+      var whichLayer = (function() {
+        if (layer.indexOf("state")!==-1) return "state";
+        if (layer.indexOf("cbsa")!==-1) return "cbsa";
+        if (layer.indexOf("redlin")!==-1) return "redline";
+        if (layer.indexOf("tl_2010_trac")!==-1) return "tract";
+        if (layer.indexOf("national")!==-1) return "national";
+      })();
       paths.enter()
         .append("path")
         .on("click", function(d) {
@@ -432,16 +439,16 @@ var Interactive = function(sel) {
         })
         .merge(paths)
         .attr("stroke-width",function() {
-          if (layer.indexOf("state")!==-1) {
+          if (whichLayer==="state") {
             return 0.8*scaling[size];
           }
-          if (layer.indexOf("cbsa")!==-1) {
+          if (whichLayer==="cbsa") {
             if (m.active_cbsa) {
               return 0;
             }
             return 1*scaling[size];
           }
-          if (layer.indexOf("redlin")!==-1) {
+          if (whichLayer==="redline") {
             return 0;
           }
           return 0.5*scaling[size];
@@ -450,28 +457,28 @@ var Interactive = function(sel) {
           if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa" && m.active_cbsa) {
             return "hidden";
           }
-          if (m.dataset==="holc" && layer.indexOf("tl_2010_tract")!==-1) {
+          if (m.dataset==="holc" && whichLayer==="tract") {
             return "hidden";
           }
-          if (m.dataset!=="holc" && layer.indexOf("redlin")!==-1) {
+          if (m.dataset!=="holc" && whichLayer==="redline") {
             return "hidden";
           }
           return "visible";
         })
         .attr("fill", function(d) {
-          if (layer.indexOf("state")!==-1) {
+          if (whichLayer==="state") {
             return "#D6E4F0";
           }
-          if (layer==="national") {
+          if (whichLayer==="national") {
             return "none";
           }
-          if (layer.indexOf("redlin")!==-1) {
+          if (whichLayer==="redline") {
             if (m.dataset==="holc") {
               return redlining_colors[d.properties.holc_grade];
             }
           }
-          if (layer.indexOf("tl_2010_tract")!==-1) {
-            if (m.dataset==="holc" && layer.indexOf("tl_2010_tract")!==-1) {
+          if (whichLayer==="tract") {
+            if (m.dataset==="holc") {
               return "#cccccc";
             }
             return fillFromData(d.properties.csvData);
@@ -529,45 +536,45 @@ var Interactive = function(sel) {
           }
         })
         .attr("fill-opacity", function() {
-          if (layer.indexOf("state")!==-1) {
+          if (whichLayer==="state") {
             return 1;
           }
 
           return 0.7;
         })
         .attr("stroke",function(d) {
-          if (layer.indexOf("state")!==-1) {
+          if (whichLayer==="state") {
             return "#fff";
           }
-          if (layer==="national") {
+          if (whichLayer==="national") {
             return "#0C61A4";
           }
-          if (layer.indexOf("cbsa")!==-1) {
+          if (whichLayer==="cbsa") {
             return "#0C61A4";
           }
-          if (layer.indexOf("redlin")!==-1) {
+          if (whichLayer==="redline") {
             return redlining_colors[d.properties.holc_grade];
           }
           return "#000000";
         })
         .attr("stroke-opacity", function() {
-          if (layer.indexOf("state")!==-1) {
+          if (whichLayer==="state") {
             return 1;
           }
-          if (layer==="national") {
+          if (whichLayer==="national") {
             return 1;
           }
-          if (layer.indexOf("cbsa")!==-1) {
+          if (whichLayer==="cbsa") {
             return 0.3;
           }
-          if (layer.indexOf("redlin")!==-1) {
+          if (whichLayer==="redline") {
             return 1;
           }
           return 0;
         });
 
       if (m.active_cbsa) {
-        if (layer.indexOf("tract")!==-1) {
+        if (whichLayer==="tract") {
           var d = d3.select(this).selectAll("path").data();
           if (d.length > 0) {
             var cbsa = m.active_cbsa.properties.GEOID;
