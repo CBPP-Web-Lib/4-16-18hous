@@ -32,8 +32,6 @@ geo_data.tl_2015_us_cbsa = {low: topojson.feature(tl_2015_us_cbsa, tl_2015_us_cb
 geo_data.water = {high: water_data};
 var URL_BASE;
 require("./app.css");
-//var data = require("./intermediate/data.json");
-//console.log(data);
 var drawData = {};
 var redlining_colors = {
   "A":"#1b5315",
@@ -138,7 +136,6 @@ var Interactive = function(sel) {
     var data = {
       cbsa: [d.properties.NAMELSAD10, f.t],
       distress: [d.properties.csvData[3], f.n],
-      //opportunity: [d.properties.csvData[1], f.n],
       poverty: [d.properties.csvData[1], f.p100],
       race: [d.properties.csvData[6], f.p]
     };
@@ -220,7 +217,6 @@ var Interactive = function(sel) {
         minDotRepresents = 1;
         dataAdjust = 2;
       }
-      //console.log(numDots, tract.properties.GEOID10);
       var dotRepresents = 3*Math.pow(2,m.maxZoom-1-z+dataAdjust);
       var baseDotRepresents = 3*Math.pow(2,m.maxZoom-1-z);
       if (typeof(m.dotRepresents)==="undefined") {
@@ -267,11 +263,7 @@ var Interactive = function(sel) {
           if (!inWater) {
             dot_data[z][dot_dataset][geoid].push([x,y]);
             doneDots++;
-            if (doneDots === numDots) {
-            //  console.log("success for " + geoid);
-            }
           }
-          //console.log(true);
         }
 
       }
@@ -525,7 +517,6 @@ var Interactive = function(sel) {
         })
         .on("mouseout", function(d) {
           if (d.properties.csvData) {
-            //d3.select(this).attr("opacity",0.5);
             $(this).css("cursor","auto");
             d3.select(this).attr("fill",fillFromData(d.properties.csvData));
             if (!d3.event.relatedTarget) {
@@ -627,14 +618,6 @@ var Interactive = function(sel) {
               cbsa_click(d);
             })
             .attr("font-family","proxima-nova-condensed,sans-serif");
-          /*textEl.selectAll("tspan")
-            .data(name)
-            .enter()
-            .append("tspan")
-            .text(function(d) {
-              return d;
-            })
-            .attr("dx",2);*/
         }
       });
     });
@@ -643,8 +626,7 @@ var Interactive = function(sel) {
     m.updateDotData(drawData, "affordable_units");
 
     m.makeLegend();
-    var dotUpdates = m.getCheckedDots();
-    m.updateDots(drawData, dotUpdates);
+    m.updateDots(drawData, checked_dots);
   };
 
   m.getCheckedDots = function() {
@@ -742,7 +724,7 @@ var Interactive = function(sel) {
       d3.select(sel).select(".legend_dot_svg_ex.vouchers svg").select("circle").attr("fill","#ED1C24");
       d3.select(sel).select(".legend_dot_svg_ex.affordable_units svg").select("circle").attr("fill","#704c76");
   };
-
+  var checked_dots = ["vouchers"];
   m.makeLegend = function() {
     function makeEntry(bin) {
       var label = $(document.createElement("div")).addClass("legendBinLabel");
@@ -753,7 +735,6 @@ var Interactive = function(sel) {
       r.append(box, label);
       return r;
     }
-    var checked_dots = m.getCheckedDots();
     $(sel).find(".legendwrap").empty();
     var gradientwrap = $(document.createElement("div"))
       .attr("class","gradientwrap");
@@ -794,7 +775,6 @@ var Interactive = function(sel) {
     for (i = 0, ii = checked_dots.length; i<ii; i++) {
       $(sel).find("input[type='checkbox'][value='"+checked_dots[i] + "']").prop("checked",true);
     }
-    //m.makeRedliningLegend(m.redliningOn);
   };
   m.updateDots = function(d, dot_datasets) {
     var view_dot_data = (function(dot_data, d) {
@@ -866,38 +846,21 @@ var Interactive = function(sel) {
   function filterToVisible(geo_data, viewbox) {
     var r = {};
     viewbox = viewbox.split(" ");
-    /*console.log(viewbox);
-    viewbox[0]-=viewbox[2]*0.2;
-    viewbox[1]-=viewbox[3]*0.2;
-    viewbox[2]*=1.4;
-    viewbox[3]*=1.4;
-    console.log(viewbox);*/
-    //console.log(m.projection([-72.67,41.76]));
     for (var layer in geo_data) {
       if (geo_data.hasOwnProperty(layer)) {
         for (var size in geo_data[layer]) {
           if (geo_data[layer].hasOwnProperty(size)) {
             if (!r[size]) r[size] = {};
-            /*if (!r[size][layer])*/ r[size][layer] = [];
+            r[size][layer] = [];
             for (var i = 0, ii = geo_data[layer][size].features.length; i<ii; i++) {
               var geoid = geo_data[layer][size].features[i].properties.GEOID ||
                 geo_data[layer][size].features[i].properties.GEOID10 ||
                 geo_data[layer][size].features[i].properties.WATERUID
               geoid*=1;
               var thispath;
-              /*if (!svg_path_data[geoid]) {
-                svg_path_data[geoid] = {};
-              }
-              if (!svg_path_data[geoid][size]) {*/
-                thispath = path(geo_data[layer][size].features[i]);
-            /*    svg_path_data[geoid][size] = thispath;
-              } else {
-                thispath = svg_path_data[geoid][size];
-              }*/
+              thispath = path(geo_data[layer][size].features[i]);
               if (thispath) {
-
                 var bbox = getBounds(thispath);
-
                 if (viewbox[0]*1 + viewbox[2]*1 > bbox[0] &&
                     viewbox[1]*1 + viewbox[3]*1 > bbox[1] &&
                     viewbox[0]*1 < bbox[2] &&
@@ -1071,11 +1034,6 @@ var Interactive = function(sel) {
     finished();
   };
   DrawInitialMap();
-  /*svg.on("click", function() {
-    //var vcoords = d3.mouse(this);
-    //var coords = m.projection.invert([vcoords[0], vcoords[1]]);
-    //console.log(Math.abs(coords[0])+"W",Math.abs(coords[1])+"N");
-  });*/
   function applyData(d, cbsa, pathData) {
     var selector = "g.tl_2010_tract_" + cbsa + " path";
     var paths = svg.selectAll(selector);
@@ -1249,7 +1207,6 @@ var Interactive = function(sel) {
     ];
 
     var offset_px = m.offset_px_from_vb(viewbox, zoom, destProjectionAdj);
-  //  var tilesLoaded = false;
     var zoomFinished = false;
     m.minZoom = zoom;
     m.maxZoom = 15;
@@ -1260,13 +1217,9 @@ var Interactive = function(sel) {
       z:zoom,
       offset:offset_px,
       projection: destProjectionAdj
-      /*onload:function() {
-        tilesLoaded = true;
-        checkDisplay();
-      }*/
     });
     function checkDisplay() {
-      if (zoomFinished /*&& tilesLoaded*/ && csvDataLoaded) {
+      if (zoomFinished && csvDataLoaded) {
         $(sel).find(".tilewrap").show();
         $(sel).find(".tilewrap").not("old").css("opacity",1);
         $(sel).find(".tilewrap.old").remove();
@@ -1338,14 +1291,9 @@ var Interactive = function(sel) {
             .attr("opacity",0)
             .style("visibility","hidden")
             .on("end", function() {
-              /*console.log(bbox);
-              console.log(projection([bbox[2],bbox[3]]));*/
               svg.select("g.layer.national").attr("opacity",0);
               m.zoomingToCBSA = false;
               svg.attr("data-viewbox-limit",svg.attr("viewBox"));
-              /*setTimeout(function() {
-                zoomToCBSA(cbsa,"out");
-              }, 1000);*/
             });
         } else {
           $(sel).find(".legendwrap").slideUp(100);
@@ -1396,17 +1344,12 @@ var Interactive = function(sel) {
     button.addClass("zoomOut");
     $(sel).find(".mapwrap").append(button);
     button.on("click touchstart",function() {
-      //if (m.zoomLevel===m.minZoom) {
-        zoomToCBSA(m.active_cbsa,"out", function() {
-          setTimeout(function() {
-            m.updateDrawData(svg);
-          },50);
-        });
-        $(sel).find("button.zoomOut").remove();
-    /*  } else {
-        var vb = svg.attr("viewBox").split(" ");
-        m.zoomOut(vb[0]*1 + vb[2]*1/2, vb[1]*1 + vb[3]*1/2);
-      }*/
+      zoomToCBSA(m.active_cbsa,"out", function() {
+        setTimeout(function() {
+          m.updateDrawData(svg);
+        },50);
+      });
+      $(sel).find("button.zoomOut").remove();
     });
   }
 
@@ -1420,16 +1363,9 @@ var Interactive = function(sel) {
         select.append(option);
       }
     }
-    /*var holc_option = $(document.createElement("option"))
-      .val("holc")
-      .html("1930s HOLC Risk Assessment Grades");
-    select.append(holc_option);*/
     select.on("change", function() {
       m.dataset = $(this).val();
       m.updateDrawData(svg);
-      /*m.updateDotData(drawData);
-      m.updateDots(drawData);
-      m.makeLegend();*/
     });
     return select;
   }
@@ -1468,6 +1404,7 @@ var Interactive = function(sel) {
     });
     $(sel).find(".data-picker-wrapper").append(makeDataPicker());
     $(sel).on("click","input[type='checkbox'][name='dotDataset']",function() {
+      checked_dots = m.getCheckedDots();
       m.updateDrawData(svg);
     });
     $(sel + " .mapwrap").append($(document.createElement("div")).attr("class","fullscreenButton")
@@ -1483,7 +1420,7 @@ var Interactive = function(sel) {
     $(sel).css("top","10px");
     $(sel).css("left","10px");
     $(sel).css("max-width","9999px");
-   
+    $(sel).find(".title, .notes, .credit").hide();
     var space_for_map = $(window).height() - 
       (
         $(sel).find(".title").outerHeight() +
@@ -1493,8 +1430,8 @@ var Interactive = function(sel) {
         $(sel).find(".cellWrap01").outerHeight() + 
         $(sel).find(".cellWrap02").outerHeight()
       );
-    space_for_map*=0.9;
-    var map_height_percent = space_for_map/$(window).width();
+    space_for_map+=50;
+    var map_height_percent = space_for_map/($(sel).width());
     if (map_height_percent > 499/820) {
       fullUSViewbox = [50, 5, 820, 820*map_height_percent].join(" ");
     } else {
@@ -1533,14 +1470,13 @@ var Interactive = function(sel) {
     $(sel).css("top","");
     $(sel).css("left","");
     $(sel).css("max-width","940px");
+    $(sel).find(".title, .notes, .credit").show();
     var map_height_percent = 0.61;
     var vb = svg.attr("viewBox").split(" ");
     vb[3] = vb[2]*map_height_percent;
     svg.attr("viewBox",vb.join(" "));
     fullUSViewbox = [50, 5, 820, 499].join(" ");
     if (m.active_cbsa) {
-      //m.baseVBWidth = vb[2];
-      //m.baseWidth = $(svg.node()).width();
       fixViewbox();
     } else {
       svg.attr("viewBox",fullUSViewbox);
