@@ -12,8 +12,10 @@
     "d3": "^4.8.0",
     "fs": "0.0.1-security",
     "geojson-bbox": "0.0.0",
+    "cbpp_colorgen": "github:CenterOnBudget/CBPP_Colorgen",
     "jquery": "^1.12.4",
     "localforage": "^1.7.2",
+    "node-php-server": "^0.1.2",
     "pako": "^1.0.6",
     "point-in-polygon": "^1.0.1",
     "promise-polyfill": "^7.1.2",
@@ -27,6 +29,8 @@
     "browserify-css": "^0.14.0",
     "browserify-shim": "*",
     "browserify-zlib": "*",
+    "child-process": "^1.0.2",
+    "cbpp_shared_gulp": "github:CenterOnBudget/cbpp_shared_gulp",
     "deepcopy": "^1.0.0",
     "exposify": "*",
     "gulp": "*",
@@ -52,8 +56,7 @@
     "watchify": "*"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "node postinstall.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Nick Kasprak",
   "license": "ISC"

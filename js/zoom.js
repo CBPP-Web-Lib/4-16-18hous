@@ -9,8 +9,8 @@ module.exports = function(sel, obj, $, d3) {
     if (m.zoomingToCBSA) return;
     if (m.zooming) return;
     if (m.dragOn) return;
-    if (m.zoomingToCBSA) return;
     if (!m.active_cbsa) {return;}
+    if (m.dragging) {return;}
     var oz = direction==="in" ? 2: 0.5;
     var db = direction==="in" ? 1 : -1;
     if (m.zoomLevel + db > m.maxZoom) {
@@ -80,7 +80,7 @@ module.exports = function(sel, obj, $, d3) {
     var wleft = tilewrap.css("left").replace("px","")*(xscaling-1);
     var wtop = tilewrap.css("top").replace("px","")*(yscaling - 1);
     $(sel).find(".tilewrap").addClass("old");
-    $(sel).find(".tilewrap.old img").each(function() {
+    $(sel).find(".tilewrap.old img, .tilewrap.old canvas").each(function() {
       var top = $(this).css("top").replace("px","");
       var left = $(this).css("left").replace("px","");
       left*=xscaling;

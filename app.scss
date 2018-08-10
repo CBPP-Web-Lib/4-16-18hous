@@ -141,6 +141,7 @@
       height:0;
       position:absolute;
       overflow:visible;
+      z-index:10;
     }
     .popup-wrap {
       position:absolute;
@@ -188,7 +189,9 @@
     height:100%;
     top:0;
     left:0;
-    img {
+    z-index:5;
+    pointer-events:none;
+    img, canvas {
       position:absolute;
       width:256px;
       height:256px;

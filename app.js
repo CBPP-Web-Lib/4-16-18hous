@@ -1,20 +1,18 @@
 /*globals require, document, console, window, Promise*/
 (function() {
 "use strict";
-if (typeof(Promise)==="undefined") {
-  var Promise = require("promise-polyfill");
-}
+require("babel-polyfill");
 var $ = require("jquery");
 var d3 = require("d3");
 var topojson = require("topojson");
 var Figure = require("./CBPP_Figure")($);
 var GridConfig = require("./gridConfig.json");
 var FileIndex = require("./fileIndex.json");
-var localforage = require("localforage");
+//var localforage = require("localforage");
 var geojson_bbox = require("geojson-bbox");
 var localmemory = {};
 var pako = require("pako");
-localforage.clear();
+//localforage.clear();
 var svg_path_data = {};
 var geo_data = {};
 var water_data = {type:"FeatureCollection","features":[]};
@@ -23,8 +21,11 @@ var tl_2015_us_cbsa = JSON.parse(pako.inflate(require("./topojson/low/tl_2015_us
 var popup_html = require("./popup.html");
 var getBounds = require("svg-path-bounds");
 var legend_dot_svg = require("./legend_dot_svg.html");
+var colorgen = require("cbpp_colorgen");
 var dotExplainer = require("./dotExplainer.html");
 var waterIndex = require("./waterIndex.json");
+var img_to_canvas = require("./img_to_canvas.js")($); 
+var bins = require("./intermediate/bins.json");
 var dot_data = {};
 var water_uid = 0;
 geo_data.cb_2015_us_state_500k = {low: topojson.feature(cb_2015_us_state_500k, cb_2015_us_state_500k.objects.districts)};
@@ -50,30 +51,35 @@ var getJSONAndSaveInMemory = function(f, cb) {
   }
 };
 var getJSONAndSave = function(f, cb) {
-  localforage.getItem(f, function(err, locald) {
-    if (locald===null) {
+  //localforage.getItem(f, function(err, locald) {
+    //if (locald===null) {
       if (f.indexOf(".json")!==-1) {
         $.getJSON(f, function(d) {
           handle(d);
         });
       } else {
-        $.get(f, function(d) {
-          d = pako.inflate(d,{to:"string"});
-          d = JSON.parse(d);
-          handle(d);
+        $.ajax({
+          url: f,
+          type:"GET",
+          mimeType: 'text/plain',
+          success: function(d) {
+            d = pako.inflate(d,{to:"string"});
+            d = JSON.parse(d);
+            handle(d);
+          }
         });
       }
       var handle = function(d) {
         if (typeof(d)==="object" && d.compressed) {
           d = JSON.parse(pako.inflate(d.d, {to: "string"}));
         }
-        localforage.setItem(f, d);
+        //localforage.setItem(f, d);
         cb(null, d);
       }
-    } else {
-      cb(null, locald);
-    }
-  });
+   // } else {
+    //  cb(null, locald);
+   // }
+  //});
 
 };
 var Interactive = function(sel) {
@@ -512,11 +518,15 @@ var Interactive = function(sel) {
               return true;
             }
           }
+          var hoverColor = "#ED1C24";
+          if (typeof(m.gradientConfig[m.dataset].hoverColor)!=="undefined") {
+            hoverColor = m.gradientConfig[m.dataset].hoverColor;
+          }
           if (d.properties.csvData) {
             makePopup(d3.event, d);
             $(this).css("cursor","pointer");
             d3.select(this).attr("opacity",1);
-            d3.select(this).attr("fill","#ED1C24");
+            d3.select(this).attr("fill",hoverColor);
           } else {
             $(sel).find(".popup-outer").remove();
           }
@@ -536,11 +546,11 @@ var Interactive = function(sel) {
           }
         })
         .attr("fill-opacity", function() {
-          if (whichLayer==="state") {
+          //if (whichLayer==="state") {
             return 1;
-          }
+          //}
 
-          return 0.7;
+          //return 0.7;
         })
         .attr("stroke",function(d) {
           if (whichLayer==="state") {
@@ -754,6 +764,7 @@ var Interactive = function(sel) {
     titlewrap.addClass("titlewrap");
     titlewrap.text(m.gradientConfig[m.dataset].name);
     var i, ii;
+
     if (m.gradientConfig[m.dataset].bins) {
       var boxwrap = $(document.createElement("div")).addClass("boxWrap");
       for (i = 0, ii = m.gradientConfig[m.dataset].bins.length;i<ii;i++) {
@@ -882,29 +893,55 @@ var Interactive = function(sel) {
     }
     return r;
   }
+
+  var binDefGen = function(startColor, endColor, dataIndex, labelFormatter) {
+    if (typeof(labelFormatter)==="undefined") {
+      labelFormatter = function(n) {return n;};
+    }
+    var r = [];
+    var colors = colorgen(startColor,endColor,8);
+    for (var i = 0, ii = bins[dataIndex].length-1;i<ii;i++) {
+      r.push({
+        label: labelFormatter(bins[dataIndex][i]) + " - " + labelFormatter(bins[dataIndex][i+1]),
+        color: colors[i],
+        min: bins[dataIndex][i],
+        max: bins[dataIndex][i+1]
+      });
+    }
+    return r;
+  };
+
   m.gradientConfig = {
     "poverty_rate" : {
       name:"Poverty Rate",
-      colors: [
+      /*colors: [
         [0, [214, 228, 240, 1]],
         [5, [12, 97, 164, 1]],
         [40, [235, 145, 35, 1]]
-      ],
+      ],*/
+      hoverColor: "#5590BF",
+      bins: binDefGen("#FCEEDE","#ED1C24",1),
       labels: ["0%","","40% or more"],
       dataIndex: 1
     },
     "distress" : {
       name:"Distress Index",
-      colors: [
+      /*colors: [
         [-5, [12,97,164,1]],
         [0, [255,255,255,1]],
         [30, [237,28,36,1]]
       ],
-      labels: ["-5","0","30"],
+      labels: ["-5","0","30"],*/
+      bins: binDefGen("#ccdbd5","#0b4a1b",3, function(n) {
+        return Math.round(n*100)/100;
+      }),
       dataIndex: 3
     },
     "nonwhite" : {
       name:"Non-white percentage",
+      bins: binDefGen("#d3e7f1","#532e67",6, function(n) {
+        return Math.round(n*1000)/10 + "%";
+      }),
       colors: [
         [0,[200,200,200,1]],
         [1,[15,99,33,1]]
@@ -940,24 +977,33 @@ var Interactive = function(sel) {
     }
     if (m.dataset==="holc") {return "#cccccc";}
     d = d[m.gradientConfig[m.dataset].dataIndex];
-    var gconf = m.gradientConfig[m.dataset].colors;
-    var color;
-    if (d < gconf[0][0]) {
-      color = gconf[0][1];
-    } else if (d >= gconf[gconf.length-1][0]) {
-      color = gconf[gconf.length-1][1];
-    } else {
-      for (var i = 0, ii = gconf.length-1;i<ii;i++) {
-        if (d >= gconf[i][0] && d < gconf[i+1][0]) {
-          var p = (d - gconf[i][0])/(gconf[i+1][0] - gconf[i][0]);
-          color = [];
-          for (var j = 0; j<4;j++) {
-            color[j] = p*(gconf[i+1][1][j] - gconf[i][1][j]) + gconf[i][1][j];
+    if (typeof(m.gradientConfig[m.dataset].bins)==="undefined") {
+      var gconf = m.gradientConfig[m.dataset].colors;
+      var color;
+      if (d < gconf[0][0]) {
+        color = gconf[0][1];
+      } else if (d >= gconf[gconf.length-1][0]) {
+        color = gconf[gconf.length-1][1];
+      } else {
+        for (var i = 0, ii = gconf.length-1;i<ii;i++) {
+          if (d >= gconf[i][0] && d < gconf[i+1][0]) {
+            var p = (d - gconf[i][0])/(gconf[i+1][0] - gconf[i][0]);
+            color = [];
+            for (var j = 0; j<4;j++) {
+              color[j] = p*(gconf[i+1][1][j] - gconf[i][1][j]) + gconf[i][1][j];
+            }
           }
         }
       }
+      return "rgba("+color.join(",")+")";
+    } else {
+      for (var k = 0, kk = m.gradientConfig[m.dataset].bins.length;k<kk;k++) {
+        var bin = m.gradientConfig[m.dataset].bins[k];
+        if (d>=bin.min && d<bin.max || (k===kk-1 && d<=bin.max)) {
+          return bin.color;
+        }
+      }
     }
-    return "rgba("+color.join(",")+")";
   }
   m.getTiles = function(config) {
     if (!m.active_cbsa) {return;}
@@ -1008,9 +1054,11 @@ var Interactive = function(sel) {
     var br = [Math.ceil(tl[0]+width/256), Math.ceil(tl[1] + height/256)];
     var img;
     var finished = function() {
-      tilewrap.find("img").css("visibility","visible");
+      //tilewrap.find("canvas").css("visibility","visible");
       m.outstandingTiles = false;
-      if (typeof(config.onload)==="function") {config.onload();}
+      if (typeof(config.onload)==="function") {
+        config.onload();
+      }
     };
     var requests = 0;
     var errorHandler = function() {
@@ -1020,25 +1068,33 @@ var Interactive = function(sel) {
         $(this).attr("src", url);
       }
     };
+    var imageOnload = function() {
+      requests--;
+      var canvas = img_to_canvas(this);
+      $(canvas).css("visibility","visible");
+      if (requests===0) {
+        finished();
+      }
+    };
     for (var x = tl[0]; x<=br[0];x++) {
       for (var y = tl[1]; y<=br[1];y++) {
         requests++;
-        var ext = ".png";
+        var r = "1";
         if (window.devicePixelRatio>1) {
-          ext = "@2x.png";
+          r = "2";
         }
-        var url = "https://stamen-tiles.a.ssl.fastly.net/toner/"+z + "/" + x+"/"+y + ext;
+        var url = URL_BASE + "/image_proxy/get_stamen.php?z="+z+"&x="+x+"&y="+y+"&r="+r; 
         img = $(document.createElement("img"))
           .attr("src", url)
           .css("left",(x-tl[0])*256 + "px")
           .css("top",(y-tl[1])*256 + "px")
           .css("visibility","hidden")
-          .on("error", errorHandler);
+          .on("error", errorHandler)
+          .on("load", imageOnload);
         tilewrap.append(img);
       }
     }
     m.zoomLevel = z;
-    finished();
   };
   DrawInitialMap();
   function applyData(d, cbsa, pathData) {
@@ -1381,7 +1437,9 @@ var Interactive = function(sel) {
   function hoverOver(path) {
     path = d3.select(path);
     path.attr("data-orgfill", path.attr("fill"));
-    path.attr("fill","#B9292F");
+    var hoverColor = "#B9292F";
+    
+    path.attr("fill",hoverColor);
   }
 
 
@@ -1456,6 +1514,8 @@ var Interactive = function(sel) {
     $(sel).find(".mapwrap").parents(".cellWrap").css("padding-bottom",(map_height_percent*100)+"%");
     m.updateDrawData(svg);
     var newviewport = svg.attr("viewBox").split(" ");
+    $(sel).find(".tilewrap").addClass("old");
+    
     m.getTiles({
       viewport: newviewport,
       width: $(sel).width(),
@@ -1463,10 +1523,14 @@ var Interactive = function(sel) {
       projection: m.projection,
       offset: m.offset_px_from_vb(newviewport, m.zoomLevel, m.projection),
       onload: function() {
+        m.zooming = false;
+        m.dragging = false;
         $(sel).find(".tilewrap").not("old").css("opacity",1);
         $(sel).find(".tilewrap.old").remove();
       }
     });
+    m.zooming = true;
+    m.dragging = true;
   }
 
   function removeFullScreen() {
@@ -1520,6 +1584,8 @@ var Interactive = function(sel) {
           return;
         }
         var newviewport = svg.attr("viewBox").split(" ");
+        $(sel).find(".tilewrap").addClass("old");
+        
         m.getTiles({
           viewport: newviewport,
           width: $(sel).width(),
@@ -1527,10 +1593,14 @@ var Interactive = function(sel) {
           projection: m.projection,
           offset: m.offset_px_from_vb(newviewport, m.zoomLevel, m.projection),
           onload: function() {
+            m.zooming = false;
+            m.dragging = false;
             $(sel).find(".tilewrap").not("old").css("opacity",1);
             $(sel).find(".tilewrap.old").remove();
           }
         });
+        m.zooming = true;
+        m.dragging = true;
       },500);
       if ($(sel).hasClass("fullScreen")) {
         makeFullScreen();

@@ -1,5 +1,5 @@
 /*globals require, Promise*/
-var gl = require("./CBPP_shared_gulp/gulplib.js")(), gulp = gl.gulp, fs = gl.fs;
+var gl = require("cbpp_shared_gulp")(), gulp = gl.gulp, fs = gl.fs;
 var request = require("request");
 var decompress = require("gulp-decompress");
 var ogr2ogr = require("ogr2ogr");
@@ -8,7 +8,7 @@ var pako = require("pako");
 var geojson_bbox = require("geojson-bbox");
 var fips = require("./fips.json");
 var turf_area = require("@turf/area").default;
-
+var phpServer = require("node-php-server");
 /*newer turf seems to have problems with intersects and multipolygons so need old as well*/
 var turf = require("turf");
 //var truncate = require("@turf/truncate").default;
@@ -588,4 +588,70 @@ gl.gulp.task("split_data", ["buildDirectory"], function(cb) {
   cb();
 
 
+});
+
+gulp.task("copyProxy", function() {
+  gulp.src(['./image_proxy/**/*']).pipe(gulp.dest('./build/image_proxy'));
+});
+
+gulp.task("server", function(cb) {
+  var http = require('http');
+  var fs = require("fs");
+  var exec = require("child_process").exec;
+  var server = http.createServer(function(req, res) {
+    try {
+      var file = req.url.split("?")[0];
+      var ext = file.split(".")[file.split(".").length-1];
+      if (ext==="php") {
+        var command = "php-cgi " + __dirname + "/build" + file + " " + req.url.split("?")[1].split("&").join(" ");
+        exec(command, function(err, f) {
+          var queryString = req.url.split("?")[1].split("&");
+          var r = {};
+          queryString.forEach(function(v) {
+            var n = v.split("=")[0];
+            var val = v.split("=")[1];
+            r[n] = val;
+          });
+          file = "./build/image_proxy/cache/"+r.z + "_" + r.x + "_" + r.y + (r.r===2 ? "@2x.png" : ".png");
+          fs.readFile(file, function(err, file) {
+            if (err) {
+              res.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+              return;
+            }
+            res.writeHead(200, {
+              'Cache-Control': 'no-cache'
+            });
+            res.write(file);
+            res.end();
+          });
+        });
+      } else {
+        fs.readFile("./build" + file, function (err, file) {
+          if (err) {
+            res.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+            return;
+          }
+          res.writeHead(200, {
+            'Cache-Control': 'no-cache'
+          });
+          res.write(file);
+          res.end();
+        });
+      }
+    } catch (ex) {
+      res.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+    }
+  });
+  server.on('clientError', function (err, socket) {
+    socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+  });
+  server.listen(8000);
+  cb(); 
+});
+gulp.task("binData", ["intermediate"], function() {
+  var binner = require("./binData.js");
+  var bins = binner(JSON.parse(fs.readFileSync("./intermediate/data.json","utf-8")).data.tract_data, 8);
+  bins.splice(2, 1);
+  bins = bins.slice(1);
+  fs.writeFileSync("./intermediate/bins.json",JSON.stringify(bins),"utf-8");
 });

@@ -36,6 +36,8 @@ module.exports = function(sel, m, $, d3) {
 		if (!m.active_cbsa) {return;}
 		if (m.zoomingToCBSA) {return;}
 		if (m.dragOn===false) {return;}
+		if (m.dragging) {return;}
+		m.dragging = true;
 		m.dragOn = false;
 		delete(m.dragBase);
     $(sel).find(".tilewrap").addClass("old");
@@ -49,8 +51,9 @@ module.exports = function(sel, m, $, d3) {
 			viewport: viewport,
 			offset: offset_px,
       onload: function() {
+				m.dragging = false;
 				$(sel).find(".tilewrap").not("old").css("opacity",1);
-        $(sel).find(".tilewrap.old").remove();
+				$(sel).find(".tilewrap.old").remove();
       }
     });
 	});
