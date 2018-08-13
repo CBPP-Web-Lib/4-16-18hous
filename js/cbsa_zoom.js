@@ -130,16 +130,16 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
       .style("visibility","hidden")
       .on("end", function() {
         m.svg.select("g.layer.national").attr("opacity",0);
-        m.zoomingToCBSA = false;
-        m.dragging = false;
+        m.removeLock("zoomingToCBSA");
+        m.removeLock("dragging");
         m.svg.attr("data-viewbox-limit",m.svg.attr("viewBox"));
       });
   };
 
   m.zoomToCBSA = function(cbsa, direction, cb) {
     if (!direction) {direction = "in";}
-    if (m.zoomingToCBSA) {return false;}
-    m.zoomingToCBSA = true;
+    if (m.locked()) {return false;}
+    m.setLock("zoomingToCBSA");
     var csvDataLoaded = false;
     g.getJSONAndSaveInMemory(g.URL_BASE + "/data/" + cbsa.properties.GEOID + ".json", function(err, d) {
       csvDataLoaded = true;
@@ -216,7 +216,7 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
         m.projection = projectInterpolate(orgProjection, destProjection, p, direction, startScale, destScale, center, orgcenter);
         m.path = d3.geoPath(m.projection);
         zoomFinished = true;
-        m.zoomingToCBSA = false;
+        m.removeLock("zoomingToCBSA");
         if (direction==="in") {
           m.CBSAZoomInDone();
           checkDisplay();

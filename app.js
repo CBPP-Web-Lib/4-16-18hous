@@ -15,7 +15,6 @@ var cb_2015_us_state_500k = JSON.parse(pako.inflate(require("./topojson/low/cb_2
 var tl_2015_us_cbsa = JSON.parse(pako.inflate(require("./topojson/low/tl_2015_us_cbsa.txt"),{to:"string"}));
 var GridConfig = require("./gridConfig.json");
 var FileIndex = require("./fileIndex.json");
-console.log(FileIndex);
 var waterIndex = require("./waterIndex.json");
 var build_tile_functions = require("./js/tile_functions.js");
 var build_geo_functions = require("./js/geo_functions.js");
@@ -27,6 +26,7 @@ var build_data_config = require("./js/data_config.js");
 var build_cbsa_zoom_functions = require("./js/cbsa_zoom.js");
 var build_resize = require("./js/resize.js");
 var build_fullscreen = require("./js/fullscreen.js");
+var build_locking = require("./js/locking.js");
 require("./app.css");
 
 /*global storage/cache object for requested JSON data*/
@@ -100,7 +100,6 @@ var Interactive = function(sel) {
     $(sel).find(".grid02").empty().append($(document.createElement("div")).addClass("dotExplainwrap"));
     $(sel).find(".grid02").append($(document.createElement("div")).addClass("redliningLegend"));
     URL_BASE = g.URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
-    m.zoomingToCBSA = false;
     m.projection = d3.geoAlbers();
     m.dataset = "poverty_rate";
     m.checked_dots = ["vouchers"];
@@ -131,6 +130,7 @@ var Interactive = function(sel) {
   build_popup($, m, sel); 
   build_data_config($, m);
   build_cbsa_zoom_functions($, d3, m, sel, g, geojson_bbox);
+  build_locking(m);
   m.DrawInitialMap();
   build_fullscreen($, d3, m, sel);
   build_resize($, d3, m, sel);

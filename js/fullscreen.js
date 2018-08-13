@@ -2,7 +2,6 @@ module.exports = function($, d3, m, sel) {
 
   m.makeFullScreen = function() {
     var svg = m.svg;
-    console.log("full");
     $(sel).addClass("fullScreen");
     $(sel).css("position","fixed");
     $(sel).css("left","10px");
@@ -47,19 +46,11 @@ module.exports = function($, d3, m, sel) {
       height: $(sel).height(),
       projection: m.projection,
       offset: m.offset_px_from_vb(newviewport, m.zoomLevel, m.projection),
-      requestsSent: function() {
-        setImmediate(function() {
-          m.zooming = false;
-          m.dragging = false;
-        });
-      },
       onload: function() {
         $(sel).find(".tilewrap").not("old").css("opacity",1);
         $(sel).find(".tilewrap.old").remove();
       }
     });
-    m.zooming = true;
-    m.dragging = true;
   };
 
 

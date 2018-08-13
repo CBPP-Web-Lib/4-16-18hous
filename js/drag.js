@@ -1,10 +1,9 @@
 module.exports = function(sel, m, $, d3) {
 	$(sel + " svg").bind('mousedown touchstart', function(e) {
-		if (m.outstandingTiles) {return;}
-		if (m.dragging) {return;}
-		if (m.zooming) {return;}
-		if (m.zoomingToCBSA) {return;}
-		if (!m.active_cbsa) {return;}
+		if (!m.active_cbsa) return;
+		if (m.locked("outstandingTiles")) {
+			return;
+		}
 		$(sel).find(".tilewrap.old").remove();
 		if ($(sel).find(".tilewrap").length===0) {return;}
 		if (e.originalEvent.touches) {
@@ -13,7 +12,7 @@ module.exports = function(sel, m, $, d3) {
 				return;
 			}
 		}
-		m.dragOn = true;
+		m.setLock("dragOn");
 		$(sel).find(".popup-outer").remove();
     m.offset = $(sel).offset();
 		var x = e.pageX - m.offset.left,
@@ -30,17 +29,15 @@ module.exports = function(sel, m, $, d3) {
       $(sel).find(".tilewrap").not("old").css("left").replace("px","")*1,
       $(sel).find(".tilewrap").not("old").css("top").replace("px","")*1
     ];
-		//return false;
 	});
 	$(sel + " svg").bind("mouseup touchend", function(e) {
-		console.log(e);
-		/*if (m.dragOn===false) {return;}
-		if (m.dragging) {return;}
-		if (m.zooming) {return;}
-		if (!m.active_cbsa) {return;}
-		if (m.zoomingToCBSA) {return;}*/
-		m.dragging = true;
-		m.dragOn = false;
+		if (m.getLock("dragOn")===false) {
+			return;
+		} else {
+			m.removeLock("dragOn");
+		}
+		if (m.locked()) {return;}
+		m.setLock("dragging");
 		delete(m.dragBase);
     $(sel).find(".tilewrap").addClass("old");
 		m.updateDrawData(d3.select(sel + " svg"));
@@ -53,7 +50,7 @@ module.exports = function(sel, m, $, d3) {
 			viewport: viewport,
 			offset: offset_px,
 			requestsSent: function() {
-				m.dragging = false;
+				m.removeLock("dragging");
 			},
       onload: function() {
 				$(sel).find(".tilewrap").not("old").css("opacity",1);
@@ -62,16 +59,18 @@ module.exports = function(sel, m, $, d3) {
     });
 	});
 	$(sel + " svg").bind('mouseout', function(e) {
-		if ($.contains($(sel)[0],e.relatedTarget)) {
+		if ($.contains($(sel)[0],e.relatedTarget) || 
+			$(e.relatedTarget).hasClass("popup") || 
+			$(e.relatedTarget).parents(".popup").length>0) {
 			return;
 		} else {
-			m.dragOn = false;
+			m.removeLock("dragOn");
 			delete(m.dragBase);
 		}
 	});
 	$(sel + " svg").bind('mousemove touchmove', function(e) {
     m.offset = $(sel).offset();
-		if (m.dragOn===true) {
+		if (m.getLock("dragOn")) {
 			e = e.originalEvent;
 			var x = e.pageX - m.offset.left,
 			y = e.pageY - m.offset.top;

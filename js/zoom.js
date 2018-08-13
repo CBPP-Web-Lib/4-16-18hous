@@ -1,17 +1,13 @@
 module.exports = function(sel, obj, $, d3) {
   var m = obj;
   var zoomCallbacks = [];
-  m.zooming = false;
+  m.removeLock("zooming");
   m.onZoom = function(cb) {
     zoomCallbacks.push(cb);
   };
   m.zoom = function(x,y,direction) {
-    console.log(m);
-    if (m.zoomingToCBSA) return;
-    if (m.zooming) return;
-    if (m.dragOn) return;
-    if (!m.active_cbsa) {return;}
-    if (m.dragging) {return;}
+    if (!m.active_cbsa) return;
+    if (m.locked("outstandingTiles")) return;
     var oz = direction==="in" ? 2: 0.5;
     var db = direction==="in" ? 1 : -1;
     if (m.zoomLevel + db > m.maxZoom) {
@@ -20,7 +16,7 @@ module.exports = function(sel, obj, $, d3) {
     if (m.zoomLevel + db < m.minZoom) {
       return;
     }
-    m.zooming = true;
+    m.setLock("zooming");
     var svg = d3.select(sel).select("svg");
     var width = $(sel).width();
     var height = $(sel).height();
@@ -67,7 +63,7 @@ module.exports = function(sel, obj, $, d3) {
         m.updateDrawData(svg);
         zoomedFully=true;
         checkFade();
-        m.zooming = false;
+        m.removeLock("zooming");
       });
 
   };
@@ -76,7 +72,7 @@ module.exports = function(sel, obj, $, d3) {
     var yoffset = (newviewport[1] - oldviewport[1])*(height/newviewport[3]);
     var xscaling = oldviewport[3]/newviewport[3];
     var yscaling = oldviewport[2]/newviewport[2];
-    var tilewrap = $(sel).find(".tilewrap");
+    var tilewrap = $(sel).find(".tilewrap").last();
     var wleft = tilewrap.css("left").replace("px","")*(xscaling-1);
     var wtop = tilewrap.css("top").replace("px","")*(yscaling - 1);
     $(sel).find(".tilewrap").addClass("old");
@@ -104,20 +100,6 @@ module.exports = function(sel, obj, $, d3) {
   m.zoomOut = function(x, y) {
     m.zoom(x,y,"out");
   };
-/*  var touchTimer;
-  $(sel).on("touchstart", function(event) {
-    if (typeof(touchTimer)!=="undefined") {
-      m.dragOn = false;
-      zoomFromPageCoords(event.originalEvent.touches[0].pageX, event.originalEvent.touches[0].pageY, "in");
-      event.preventDefault();
-      return;
-    }
-    touchTimer = setTimeout(function() {
-      touchTimer = undefined;
-    },500);
-  });*/
-
-
 
   var touchbase;
   var touchSorter = function(touches) {

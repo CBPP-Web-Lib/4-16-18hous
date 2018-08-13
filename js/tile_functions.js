@@ -26,8 +26,8 @@ module.exports = function($, d3, m, sel, g) {
   };
   m.getTiles = function(config) {
     if (!m.active_cbsa) {return;}
-    if (m.outstandingTiles) {return;}
-    m.outstandingTiles = true;
+    //if (m.getLock("outstandingTiles")) {return;}
+    m.setLock("outstandingTiles");
     if (typeof(config)==="undefined") {
       config={};
     }
@@ -49,17 +49,17 @@ module.exports = function($, d3, m, sel, g) {
     var final_tl_latlong = config.projection.invert([config.viewport[0], config.viewport[1]]);
     var tl = m.get_tile_from_long_lat(final_tl_latlong[0], final_tl_latlong[1], z);
     var tilewrap = $(sel).find(".tilewrap");
-    var oldtilewrap = $(sel).find(".tilewrap.old");
-    if (oldtilewrap.length===0) {
-      if (tilewrap.length===0) {
+    var oldtilewrap = $(sel).find(".tilewrap.old").last();
+    //if (oldtilewrap.length===0) {
+      //if (tilewrap.length===0) {
         tilewrap = $(document.createElement("div")).addClass("tilewrap");
         $(sel).find(".mapwrap").prepend(tilewrap);
-      }
-      oldtilewrap = tilewrap;
-    } else {
-      tilewrap = $(document.createElement("div")).addClass("tilewrap");
-      oldtilewrap.after(tilewrap);
-    }
+      //}
+      //oldtilewrap = tilewrap;
+    //} else {
+     // tilewrap = $(document.createElement("div")).addClass("tilewrap");
+     // oldtilewrap.after(tilewrap);
+    //}
     if (!offset) {
       offset = [
         oldtilewrap.css("left").replace("px","")*1,
@@ -74,7 +74,7 @@ module.exports = function($, d3, m, sel, g) {
     var img;
     var finished = function() {
       //tilewrap.find("canvas").css("visibility","visible");
-      m.outstandingTiles = false;
+      m.removeLock("outstandingTiles");
       if (typeof(config.onload)==="function") {
         config.onload();
       }
@@ -106,7 +106,17 @@ module.exports = function($, d3, m, sel, g) {
         .css("top",(y-tl[1])*256 + "px")
         .css("visibility","hidden")
         .on("error", errorHandler)
-        .on("load", imageOnload);
+        .on("load", function() {
+          var img = this;
+         /* if (Math.random()<0.2) {
+            console.log("fake fail");
+            setTimeout(function() {
+              imageOnload.call(img);
+            }, 500); 
+          } else {*/
+            imageOnload.call(img);
+          //}
+        });
     }
     for (var x = tl[0]; x<=br[0];x++) {
       for (var y = tl[1]; y<=br[1];y++) {

@@ -57,9 +57,12 @@ module.exports = function(
         return "layer " + d;
       });
     var cbsa_click = function(d) {
-      if (m.zoomingToCBSA) {
+      if (m.locked()) {
         return false;
       }
+      //if (m.zoomingToCBSA) {
+      //  return false;
+     // }
       var geoid = d.properties.GEOID;
       if (m.active_cbsa) {
         m.removeTractsFromGeoData();
@@ -557,7 +560,7 @@ module.exports = function(
     $(sel + " .mapwrap").append($(document.createElement("div")).attr("class","fullscreenButton")
       .text("Expand")
       .on("click",function() {
-        m.toggleFullScreen()
+        m.toggleFullScreen();
       }));
   };
 

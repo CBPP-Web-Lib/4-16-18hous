@@ -38,7 +38,7 @@ module.exports = function($, m) {
     }
     select.on("change", function() {
       m.dataset = $(this).val();
-      m.updateDrawData(svg);
+      m.updateDrawData(m.svg);
     });
     return select;
   };
