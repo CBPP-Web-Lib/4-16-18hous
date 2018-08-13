@@ -1,4 +1,5 @@
 #hous4-16-18 {
+  
   select, option {
     font-family:inherit;
     font-size:inherit;
@@ -123,7 +124,7 @@
     text.label {
       cursor:pointer;
     }
-    circle.household {
+    circle.household, g.layer.cb_2015_us_state_500k {
       pointer-events:none;
     }
   }
@@ -195,6 +196,15 @@
       position:absolute;
       width:256px;
       height:256px;
+    }
+  }
+  @media (max-width:500px) {
+    .subtitle, .legendwrap, .dotExplainer, .legendwrap .titlewrap {
+      font-size:10pt;
+    }
+    .legendBinBox {
+      height:8px;
+      width:10px;
     }
   }
 }

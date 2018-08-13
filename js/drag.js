@@ -1,6 +1,7 @@
 module.exports = function(sel, m, $, d3) {
 	$(sel + " svg").bind('mousedown touchstart', function(e) {
 		if (m.outstandingTiles) {return;}
+		if (m.dragging) {return;}
 		if (m.zooming) {return;}
 		if (m.zoomingToCBSA) {return;}
 		if (!m.active_cbsa) {return;}
@@ -32,11 +33,12 @@ module.exports = function(sel, m, $, d3) {
 		//return false;
 	});
 	$(sel + " svg").bind("mouseup touchend", function(e) {
+		console.log(e);
+		/*if (m.dragOn===false) {return;}
+		if (m.dragging) {return;}
 		if (m.zooming) {return;}
 		if (!m.active_cbsa) {return;}
-		if (m.zoomingToCBSA) {return;}
-		if (m.dragOn===false) {return;}
-		if (m.dragging) {return;}
+		if (m.zoomingToCBSA) {return;}*/
 		m.dragging = true;
 		m.dragOn = false;
 		delete(m.dragBase);
@@ -50,8 +52,10 @@ module.exports = function(sel, m, $, d3) {
 			projection:m.projection,
 			viewport: viewport,
 			offset: offset_px,
-      onload: function() {
+			requestsSent: function() {
 				m.dragging = false;
+			},
+      onload: function() {
 				$(sel).find(".tilewrap").not("old").css("opacity",1);
 				$(sel).find(".tilewrap.old").remove();
       }

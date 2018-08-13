@@ -17,3 +17,4 @@ filtered/
 geojson_water/
 water_simple/
 image_proxy/cache
+phptest/test.php

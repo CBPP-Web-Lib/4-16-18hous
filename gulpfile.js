@@ -612,10 +612,12 @@ gulp.task("server", function(cb) {
             var val = v.split("=")[1];
             r[n] = val;
           });
-          file = "./build/image_proxy/cache/"+r.z + "_" + r.x + "_" + r.y + (r.r===2 ? "@2x.png" : ".png");
+          file = "./build/image_proxy/cache/"+r.z + "_" + r.x + "_" + r.y + (r.r*1===2 ? "@2x.png" : ".png");
           fs.readFile(file, function(err, file) {
             if (err) {
-              res.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+              res.statusCode = 404;
+              res.write('Not found');
+              res.end();
               return;
             }
             res.writeHead(200, {

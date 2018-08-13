@@ -6,6 +6,7 @@ module.exports = function(sel, obj, $, d3) {
     zoomCallbacks.push(cb);
   };
   m.zoom = function(x,y,direction) {
+    console.log(m);
     if (m.zoomingToCBSA) return;
     if (m.zooming) return;
     if (m.dragOn) return;
@@ -47,7 +48,6 @@ module.exports = function(sel, obj, $, d3) {
       offset: offset_px,
       onload: function() {
         tilesLoaded = true;
-        $(sel).find(".tilewrap").not(".old").css("visibility","hidden");
         checkFade();
       }
     });
@@ -57,7 +57,6 @@ module.exports = function(sel, obj, $, d3) {
         $(sel).find(".tilewrap").not(".old").css("visibility","visible").fadeIn(100, function() {
           $(sel).find(".tilewrap.old").remove();
         });
-        m.zooming = false;
       }
     }
     svg.transition()
@@ -68,6 +67,7 @@ module.exports = function(sel, obj, $, d3) {
         m.updateDrawData(svg);
         zoomedFully=true;
         checkFade();
+        m.zooming = false;
       });
 
   };
