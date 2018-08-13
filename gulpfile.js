@@ -268,7 +268,9 @@ gl.gulp.task("filter_geojson", ["ogr2ogr","split_data"], function(cb) {
       for (var file in index) {
         if (index.hasOwnProperty(file)) {
           fileIndex.push(file);
-          fileIndex.push(file.replace("tl_2010_tract_","redlining_"));
+          if (file.indexOf("tl_2010_tract")!==-1) {
+            fileIndex.push(file.replace("tl_2010_tract_","redlining_"));
+          }
         }
       }
       fs.writeFileSync("./fileIndex.json", JSON.stringify(fileIndex, null, " "));
