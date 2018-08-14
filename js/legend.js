@@ -84,19 +84,36 @@ module.exports = function($, d3, m, sel) {
       dotRepresents.vouchers !== 1 ? "s" : "");
     $(sel).find(".dotExplainer").find(".dotRepresentsIsPlural.affordable_units").html(
       dotRepresents.affordable_units !== 1 ? "s" : "");
-      $(sel).find(".legend_dot_svg_ex").html(legend_dot_svg);
-      d3.select(sel).select(".legend_dot_svg_ex.vouchers svg").select("circle").attr("fill","#ED1C24");
-      d3.select(sel).select(".legend_dot_svg_ex.affordable_units svg").select("circle").attr("fill","#704c76");
+    $(sel).find(".legend_dot_svg_ex").html(legend_dot_svg);
+    d3.select(sel).select(".legend_dot_svg_ex.vouchers svg").select("circle").attr("fill","#18374f")
+      .attr("stroke","#dddddd");
+    d3.select(sel).select(".legend_dot_svg_ex.affordable_units svg").select("circle").attr("fill","#dddddd")
+      .attr("stroke","#0c97a4");
   };
 
   m.makeLegend = function() {
-    function makeEntry(bin) {
+    function makeEntry(bin, final) {
+      if (typeof(final)==="undefined") {
+        final = false;
+      }
       var label = $(document.createElement("div")).addClass("legendBinLabel");
-      var box = $(document.createElement("div")).addClass("legendBinBox");
-      label.text(bin.label);
-      box.css("background-color",bin.color);
+      if (m.gradientConfig[m.dataset].binLabel==="central") {
+        label.addClass("central");
+      }
+      var labelInner = $(document.createElement("div"));
+      labelInner.text(bin.label);
+      label.append(labelInner);
       var r = $(document.createElement("div")).addClass("entry");
-      r.append(box, label);
+      if (!final) {
+        var box = $(document.createElement("div")).addClass("legendBinBox");
+        box.css("background-color",bin.color);
+        box.css("width",
+          Math.round(100/(m.gradientConfig[m.dataset].bins.length - (m.gradientConfig[m.dataset].binLabel!=="central" ? 1 : 0))
+        )+"%");
+        r.append(box, label);
+      } else {
+        r.append(label);
+      }
       return r;
     }
     $(sel).find(".legendwrap").empty();
@@ -105,7 +122,7 @@ module.exports = function($, d3, m, sel) {
     var labelwrap = $(document.createElement("div"))
       .attr("class","labelwrap");
     $(sel).find(".legendwrap").append(gradientwrap);
-  
+    
     
     var titlewrap = $(document.createElement("div"));
     titlewrap.addClass("titlewrap");
@@ -114,7 +131,12 @@ module.exports = function($, d3, m, sel) {
 
     if (m.gradientConfig[m.dataset].bins) {
       var boxwrap = $(document.createElement("div")).addClass("boxWrap");
-      for (i = 0, ii = m.gradientConfig[m.dataset].bins.length;i<ii;i++) {
+      for (i = 0, ii = m.gradientConfig[m.dataset].bins.length-1;i<ii;i++) {
+        boxwrap.append(makeEntry(m.gradientConfig[m.dataset].bins[i]));
+      }
+      if (m.gradientConfig[m.dataset].binLabel!=="central") {
+        boxwrap.append(makeEntry(m.gradientConfig[m.dataset].bins[i],"final"));
+      } else {
         boxwrap.append(makeEntry(m.gradientConfig[m.dataset].bins[i]));
       }
       gradientwrap.append(boxwrap);

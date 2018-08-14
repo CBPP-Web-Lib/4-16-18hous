@@ -2,18 +2,30 @@ var colorgen = require("cbpp_colorgen");
 var bins = require("../intermediate/bins.json");
 
 module.exports = function($, m) {
-  var binDefGen = function(startColor, endColor, dataIndex, labelFormatter) {
+  var binDefGen = function(startColor, endColor, dataIndex, labelFormatter, customBins, customColors, extraBin) {
     if (typeof(labelFormatter)==="undefined") {
       labelFormatter = function(n) {return n;};
     }
     var r = [];
-    var colors = colorgen(startColor,endColor,8);
-    for (var i = 0, ii = bins[dataIndex].length-1;i<ii;i++) {
+    var theseBins = bins[dataIndex];
+    if (typeof(customBins)!=="undefined") {
+      theseBins = customBins;
+    }
+    var colors = colorgen(startColor,endColor,theseBins.length-1);
+    if (typeof(customColors)!=="undefined") {
+      colors = customColors;
+    }
+    for (var i = 0, ii = theseBins.length-1;i<ii;i++) {
       r.push({
-        label: labelFormatter(bins[dataIndex][i]) + " - " + labelFormatter(bins[dataIndex][i+1]),
+        label: labelFormatter(theseBins[i]),
         color: colors[i],
-        min: bins[dataIndex][i],
-        max: bins[dataIndex][i+1]
+        min: theseBins[i],
+        max: theseBins[i+1]
+      });
+    }
+    if (extraBin) {
+      r.push({
+        label: labelFormatter(theseBins[ii])
       });
     }
     return r;
@@ -52,28 +64,31 @@ module.exports = function($, m) {
         [40, [235, 145, 35, 1]]
       ],*/
       hoverColor: "#5590BF",
-      bins: binDefGen("#FCEEDE","#ED1C24",1),
+      bins: binDefGen("#FCEEDE",/*"#ED1C24"*/"#ee7478",1, function(n) {
+        return n + "%";
+      }, undefined, undefined, true),
       labels: ["0%","","40% or more"],
       dataIndex: 1
     },
-    "distress" : {
-      name:"Distress Index",
+    "opportunity" : {
+      name:"Opportunity Index",
       /*colors: [
         [-5, [12,97,164,1]],
         [0, [255,255,255,1]],
         [30, [237,28,36,1]]
       ],
       labels: ["-5","0","30"],*/
-      bins: binDefGen("#ccdbd5","#0b4a1b",3, function(n) {
-        return Math.round(n*100)/100;
-      }),
-      dataIndex: 3
+      bins: binDefGen("#ccdbd5",/*"#0b4a1b"*/"#5b8866",5, function(n) {
+        return Math.ceil(n);
+      },[-0.5,0.5,1.5,2.5,3.5,4.5,5.5]),
+      binLabel:"central",
+      dataIndex: 5
     },
     "nonwhite" : {
       name:"Non-white percentage",
-      bins: binDefGen("#d3e7f1","#532e67",6, function(n) {
+      bins: binDefGen("#d3e7f1",/*"#532e67"*/"#7a5e89",6, function(n) {
         return Math.round(n*1000)/10 + "%";
-      }),
+      }, undefined, colorgen("#d7cabd","#a3876a",4).concat(colorgen("#b2b2f8","#6a6aa3",4)), true),
       colors: [
         [0,[200,200,200,1]],
         [1,[15,99,33,1]]
@@ -83,6 +98,7 @@ module.exports = function($, m) {
     },
     "holc" : {
       name:"1930s HOLC Risk Assessment Grades",
+      binLabel:"central",
       bins: (function() {
         var names = {
           "A":"Best",

@@ -144,6 +144,7 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
     g.getJSONAndSaveInMemory(g.URL_BASE + "/data/" + cbsa.properties.GEOID + ".json", function(err, d) {
       csvDataLoaded = true;
       m.csv[cbsa.properties.GEOID] = d;
+      m.getDotDeflator(m.csv, cbsa.properties.GEOID);
       checkDisplay();
     });
     var zoomSideways = false;
@@ -170,7 +171,9 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
       startScale = 10000/(org_bbox[2] - org_bbox[0]);
       $(sel).find(".tilewrap").hide();
     }
+    $(m.dotsSVG.node()).show();
     if (direction==="out") {
+      $(m.dotsSVG.node()).hide();
       m.active_cbsa = undefined;
       var swap = destProjection;
       destProjection = orgProjection;
@@ -246,7 +249,7 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
     button.on("click touchstart",function() {
       m.zoomToCBSA(m.active_cbsa,"out", function() {
         setTimeout(function() {
-          m.updateDrawData(m.svg);
+          m.updateDrawData();
         },50);
       });
       $(sel).find("button.zoomOut").remove();

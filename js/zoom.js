@@ -55,12 +55,16 @@ module.exports = function(sel, obj, $, d3) {
         });
       }
     }
+    m.dotsSVG.transition()
+      .duration(750)
+      .ease(d3.easeLinear)
+      .attr("viewBox", newviewport.join(" "));
     svg.transition()
       .duration(750)
       .ease(d3.easeLinear)
       .attr("viewBox", newviewport.join(" "))
       .on("end", function() {
-        m.updateDrawData(svg);
+        m.updateDrawData();
         zoomedFully=true;
         checkFade();
         m.removeLock("zooming");

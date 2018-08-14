@@ -574,7 +574,7 @@ gl.gulp.task("split_data", ["buildDirectory"], function(cb) {
     }
     split[cbsa][tract] = r[tract];
     /*do this to comply w/ HUD reporting requirements*/
-    for (var j = 9;j<=12;j++) {
+    for (var j = 8;j<=10;j++) {
       r[tract][j] = Math.round(r[tract][j]/12);
     }
   });
@@ -622,9 +622,10 @@ gulp.task("server", function(cb) {
               res.end();
               return;
             }
-            res.writeHead(200, {
-              'Cache-Control': 'no-cache'
-            });
+            var headers = {
+              'Cache-Control':'no-cache'
+            };
+            res.writeHead(200, headers);
             res.write(file);
             res.end();
           });
@@ -635,9 +636,13 @@ gulp.task("server", function(cb) {
             res.end('HTTP/1.1 400 Bad Request\r\n\r\n');
             return;
           }
-          res.writeHead(200, {
-            'Cache-Control': 'no-cache'
-          });
+          var headers = {
+            'Cache-Control':'no-cache'
+          };
+          if (ext === "json") {
+            headers['Content-Type'] = 'application/json';
+          }
+          res.writeHead(200, headers);
           res.write(file);
           res.end();
         });
@@ -654,7 +659,7 @@ gulp.task("server", function(cb) {
 });
 gulp.task("binData", ["intermediate"], function() {
   var binner = require("./binData.js");
-  var bins = binner(JSON.parse(fs.readFileSync("./intermediate/data.json","utf-8")).data.tract_data, 8);
+  var bins = binner(JSON.parse(fs.readFileSync("./intermediate/data.json","utf-8")).data.tract_data);
   bins.splice(2, 1);
   bins = bins.slice(1);
   fs.writeFileSync("./intermediate/bins.json",JSON.stringify(bins),"utf-8");

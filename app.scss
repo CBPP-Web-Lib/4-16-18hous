@@ -58,6 +58,7 @@
       position:relative;
       width:80%;
       left:10%;
+      white-space:nowrap;
       .labelwrap {
         height:1.5em;
         position:relative;
@@ -87,23 +88,34 @@
       }
     }
     .legendBinLabel {
-      display:inline;
+      position:absolute;
+      left:0px;
+      text-align:center;
+      top:18px;
+      div {
+        position:relative;
+        left:-50%;
+      }
     }
-    .legendBinLabel {
-      margin-right:20px;
+    .legendBinLabel.central {
+      width:100%;
+      div {
+        width:100%;
+        left:0%;
+      }
     }
     .boxWrap {
       text-align:center;
-      padding-bottom:2em;
+      padding-bottom:3em;
       position:relative; 
     }
     .entry {
+      position:relative;
       display:inline;
       .legendBinBox {
         display:inline-block;
-        margin-right:5px;
         height:16px;
-        width:24px;
+        width:12%;
       }
       
     }
@@ -127,6 +139,11 @@
     circle.household, g.layer.cb_2015_us_state_500k {
       pointer-events:none;
     }
+  }
+  svg.dotsSVG {
+    pointer-events:none;
+    z-index:10;
+    opacity:0.75;
   }
   .mapwrap {
     border:1px solid #aaa;

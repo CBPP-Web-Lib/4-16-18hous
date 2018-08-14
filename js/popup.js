@@ -19,7 +19,7 @@ module.exports = function($, m, sel) {
     };
     var data = {
       cbsa: [d.properties.NAMELSAD10, f.t],
-      distress: [d.properties.csvData[3], f.n],
+      opportunity: [d.properties.csvData[5], f.n],
       poverty: [d.properties.csvData[1], f.p100],
       race: [d.properties.csvData[6], f.p]
     };

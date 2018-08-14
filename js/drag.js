@@ -40,7 +40,7 @@ module.exports = function(sel, m, $, d3) {
 		m.setLock("dragging");
 		delete(m.dragBase);
     $(sel).find(".tilewrap").addClass("old");
-		m.updateDrawData(d3.select(sel + " svg"));
+		m.updateDrawData();
 		var viewport = d3.select(sel).select("svg").attr("viewBox").split(" ");
 		var offset_px = m.offset_px_from_vb(viewport, m.zoomLevel, m.projection);
     m.getTiles({
@@ -100,6 +100,7 @@ module.exports = function(sel, m, $, d3) {
       $(sel).find(".tilewrap").css("top").replace("px","")*1
     ];
     viewport = viewport.join(" ");
-    svg.attr("viewBox", viewport);
+		svg.attr("viewBox", viewport);
+		m.dotsSVG.attr("viewBox", viewport);
   };
 };

@@ -19,7 +19,8 @@ module.exports = function(
   var textOffsets = require("../textOffsets.json");
   var svg_path_data = {};
   
-  m.updateDrawData = function(svg) {
+  m.updateDrawData = function() {
+    var svg = m.svg;
     drawData = filterToVisible(geo_data, svg.attr("viewBox"));
     drawData = (function(r) {
       for (var size in r) {
@@ -74,7 +75,7 @@ module.exports = function(
       var water_loaded = false;
       function checkZoomAndLoad() {
         if (zoomed && loaded && water_loaded && red_loaded) {
-          m.updateDrawData(svg);
+          m.updateDrawData();
         }
       }
       g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".txt", function(err, d) {
@@ -425,6 +426,7 @@ module.exports = function(
 
   m.CBSAZoomSVGUpdate = function(direction, viewbox) {
     var svg = m.svg;
+    var dotsSVG = m.dotsSVG;
     svg.selectAll("circle.household").remove();
     svg.selectAll("text.label")
       .attr("opacity",0)
@@ -440,8 +442,14 @@ module.exports = function(
     svg.transition() 
         .duration(1000)
         .attr("viewBox", viewbox.join(" "));
+    dotsSVG.transition()
+        .duration(1000)
+        .attr("viewBox", viewbox.join(" "));
     } else {
       svg.transition()
+        .duration(1000)
+        .attr("viewBox", m.fullUSViewbox);
+      dotsSVG.transition()
         .duration(1000)
         .attr("viewBox", m.fullUSViewbox);
       m.removeTractsFromGeoData();
@@ -532,8 +540,11 @@ module.exports = function(
     var svg = m.svg = d3.select(sel + " .mapwrap").append("svg")
       .attr("viewBox", m.fullUSViewbox)
       .attr("preserveAspectRatio", "xMidYMid");
-
-    m.updateDrawData(svg);
+    m.dotsSVG = d3.select(sel + " .mapwrap").append("svg")
+      .attr("viewBox",m.fullUSViewbox)
+      .attr("preserveAspectRatio", "xMidYMid")
+      .attr("class","dotsSVG");
+    m.updateDrawData();
     require("./zoom.js")(sel + " .mapwrap", m, $, d3);
     require("./drag.js")(sel + " .mapwrap", m, $, d3);
     $(svg.node()).on("mouseover", "g.tl_2015_us_cbsa > path", function() {
@@ -555,7 +566,7 @@ module.exports = function(
     $(sel).find(".data-picker-wrapper").append(m.makeDataPicker());
     $(sel).on("click","input[type='checkbox'][name='dotDataset']",function() {
       m.checked_dots = m.getCheckedDots();
-      m.updateDrawData(svg);
+      m.updateDrawData();
     });
     $(sel + " .mapwrap").append($(document.createElement("div")).attr("class","fullscreenButton")
       .text("Expand")

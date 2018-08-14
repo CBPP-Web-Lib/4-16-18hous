@@ -29,14 +29,16 @@ module.exports = function($, d3, m, sel) {
     var vb = svg.attr("viewBox").split(" ");
     vb[3] = vb[2]*map_height_percent;
     svg.attr("viewBox",vb.join(" "));
+    m.dotsSVG.attr("viewBox",vb.join(" "));
     $(sel).find(".fullscreenButton").text("Collapse");
     if (m.active_cbsa) {
       m.fixViewbox();
     } else {
       svg.attr("viewBox",m.fullUSViewbox);
+      m.dotsSVG.attr("viewBox",m.fullUSViewbox);
     }
     $(sel).find(".mapwrap").parents(".cellWrap").css("padding-bottom",(map_height_percent*100)+"%");
-    m.updateDrawData(svg);
+    m.updateDrawData();
     var newviewport = svg.attr("viewBox").split(" ");
     $(sel).find(".tilewrap").addClass("old");
     
@@ -74,6 +76,7 @@ module.exports = function($, d3, m, sel) {
       m.fixViewbox();
     } else {
       svg.attr("viewBox",m.fullUSViewbox);
+      m.dotsSVG.attr("viewBox", m.fullUSViewbox);
     }
     $(sel).find(".fullscreenButton").text("Expand");
     $(sel).find(".mapwrap").parents(".cellWrap").css("padding-bottom",(map_height_percent*100)+"%");
@@ -99,5 +102,6 @@ module.exports = function($, d3, m, sel) {
       m.baseVBWidth*currentvb[3]/currentvb[2]*frac
     ];
     svg.attr("viewBox", newvb.join(" "));
+    m.dotsSVG.attr("viewBox", newvb.join(" "));
   };
 };

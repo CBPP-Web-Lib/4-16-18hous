@@ -2,6 +2,33 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
   var exports = {};
   var dot_data = {};
 
+  m.getDotDeflator = function(csv, geoid) {
+    var data = csv[geoid];
+    if (typeof(m.dot_deflator)==="undefined") {
+      m.dot_deflator = {};
+    }
+    if (typeof(m.dot_deflator[geoid])!=="undefined") {
+      return m.dot_deflator[geoid];
+    }
+    var total_vouchers = 0;
+    //var total_affordable = 0;
+    var row;
+    for (var tract in data) {
+      if (data.hasOwnProperty(tract)) {
+        if (Math.random()<0.01) {
+          console.log(row);
+        }
+        row = data[tract];
+        total_vouchers += row[8]*1;
+        //total_affordable += row[11];
+      }
+    }
+    m.dot_deflator[geoid] = {
+      "vouchers": Math.ceil(total_vouchers/5000),
+      "affordable_units":Math.ceil(total_vouchers/5000)
+    };
+  };
+
   m.updateDots = function(d, dot_datasets) {
     var view_dot_data = (function(dot_data, d) {
       var tracts = [];
@@ -34,9 +61,9 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       var viewport = m.svg.attr("viewBox").split(" ");
       var px_width = $(sel).find(".mapwrap").width();
       var svg_coords_width = viewport[2];
-      return 1.5*svg_coords_width/px_width;
+      return 2.5*svg_coords_width/px_width;
     })();
-    var dots = m.svg.selectAll("circle.household")
+    var dots = m.dotsSVG.selectAll("circle.household")
       .data(view_dot_data, function(d) {
         return d[1] + (d[0][0]*d[0][1]);
       });
@@ -49,16 +76,18 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
     dots.enter()
       .append("circle")
       .attr("class","household")
-      .attr("stroke","#000")
+      .attr("stroke",function(d) {
+        return d[1]==="vouchers" ? "#dddddd" : "#0c97a4";
+      })
       .attr("stroke-width",function(d) {
-        return (d[1]==="vouchers" ? circle_size/4 : 0);
+        return (circle_size*dotScaleM[d[1]])/3;
       })
       .attr("fill",function(d) {
-        return (d[1]==="vouchers" ? "#ED1C24" : "#704c76");
+        return (d[1]==="vouchers" ? "#18374f" : "#dddddd");
       })
       .merge(dots)
       .attr("r",function(d) {
-        return circle_size*dotScaleM[d[1]];
+        return circle_size*dotScaleM[d[1]] - (d[1]==="vouchers" ? 0 : (circle_size*dotScaleM[d[1]])/3);
       })
       .each(function(d) {
         var el = d3.select(this);
@@ -72,6 +101,11 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
     function update_dots_for_tract(tract, dot_dataset) {
       var z = m.zoomLevel;
       var geoid = tract.properties.GEOID10;
+      var cbsa_geoid = m.active_cbsa.properties.GEOID;
+      var deflator = m.dot_deflator[cbsa_geoid][dot_dataset];
+      if (typeof(deflator)==="undefined") {
+        deflator = 1;
+      }
       if (typeof(dot_data[z])==="undefined") {
         dot_data[z] = {};
       }
@@ -79,7 +113,7 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
         dot_data[z][dot_dataset] = {};
       }
       if (typeof(dot_data[z][dot_dataset][geoid])==="undefined") {
-        dot_data[z][dot_dataset][geoid] = [];
+        dot_data[z][dot_dataset][geoid] = []; 
       }
 
       var doneDots = dot_data[z][dot_dataset][geoid].length;
@@ -87,15 +121,17 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       if (!tract.properties.csvData) return;
       var numDots, minDotRepresents;
       if (dot_dataset==="vouchers") {
-        numDots = 12*tract.properties.csvData[9]*1;
+        numDots = 12*tract.properties.csvData[8]*1;
         minDotRepresents = 12;
       } else {
-        numDots = tract.properties.csvData[13]*1;
+        numDots = tract.properties.csvData[11]*1; 
         minDotRepresents = 1;
         dataAdjust = 2;
       }
       var dotRepresents = 3*Math.pow(2,m.maxZoom-1-z+dataAdjust);
-      var baseDotRepresents = 3*Math.pow(2,m.maxZoom-1-z);
+      dotRepresents *= deflator;
+      //dotRepresents = Math.min(Math.pow(2,6+m.maxZoom-1-z), dotRepresents);
+      var baseDotRepresents = 3*Math.pow(2,m.maxZoom-1-z)*m.dot_deflator[cbsa_geoid].vouchers;
       if (typeof(m.dotRepresents)==="undefined") {
         m.dotRepresents = {};
       }
@@ -104,7 +140,7 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       }
       m.dotRepresents[dot_dataset] = Math.max(minDotRepresents,dotRepresents);
       m.dotRepresents[dot_dataset] = Math.floor(m.dotRepresents[dot_dataset]);
-      m.dotScale[dot_dataset] = Math.max(1,m.dotRepresents[dot_dataset]/baseDotRepresents);
+      m.dotScale[dot_dataset] = m.dotRepresents[dot_dataset]/baseDotRepresents;
       numDots /= m.dotRepresents[dot_dataset];
       numDots = Math.round(numDots);
       if (doneDots>=numDots) {
@@ -122,8 +158,8 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       while (doneDots < numDots && j<10000) {
         j++;
         if (j===10000) {
-          console.log("error - had trouble drawing dots for " + geoid);
-          console.log(doneDots, numDots, bbox, tract);
+          /*console.log("error - had trouble drawing dots for " + geoid);
+          console.log(doneDots, numDots, bbox, tract);*/
         }
         var xrange = bbox[2] - bbox[0];
         var yrange = bbox[3] - bbox[1];
