@@ -55,10 +55,11 @@ module.exports = function(sel, obj, $, d3) {
         });
       }
     }
-    m.dotsSVG.transition()
+    $(m.dotsSVG.node()).hide();
+    /*m.dotsSVG.transition()
       .duration(750)
       .ease(d3.easeLinear)
-      .attr("viewBox", newviewport.join(" "));
+      .attr("viewBox", newviewport.join(" "));*/
     svg.transition()
       .duration(750)
       .ease(d3.easeLinear)
@@ -68,6 +69,8 @@ module.exports = function(sel, obj, $, d3) {
         zoomedFully=true;
         checkFade();
         m.removeLock("zooming");
+        m.dotsSVG.attr("viewBox",newviewport.join(" "));
+        $(m.dotsSVG.node()).show();
       });
 
   };
