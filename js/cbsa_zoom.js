@@ -140,11 +140,16 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
     if (!direction) {direction = "in";}
     if (m.locked()) {return false;}
     m.setLock("zoomingToCBSA");
-    var csvDataLoaded = false;
+    var csvDataLoaded = false, binDataLoaded = false;
     g.getJSONAndSaveInMemory(g.URL_BASE + "/data/" + cbsa.properties.GEOID + ".json", function(err, d) {
       csvDataLoaded = true;
       m.csv[cbsa.properties.GEOID] = d;
       m.getDotDeflator(m.csv, cbsa.properties.GEOID);
+      checkDisplay();
+    });
+    g.getJSONAndSaveInMemory(g.URL_BASE + "/data/bin_" + cbsa.properties.GEOID + ".json", function(err, d) {
+      m.cbsaBins[cbsa.properties.GEOID] = d;
+      binDataLoaded = true;
       checkDisplay();
     });
     var zoomSideways = false;
@@ -200,7 +205,8 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
       projection: destProjectionAdj
     });
     function checkDisplay() {
-      if (zoomFinished && csvDataLoaded) {
+      if (zoomFinished && csvDataLoaded && binDataLoaded) {
+        m.makeGradientConfig();
         $(sel).find(".tilewrap").show();
         $(sel).find(".tilewrap").not("old").css("opacity",1);
         $(sel).find(".tilewrap.old").remove();

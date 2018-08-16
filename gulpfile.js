@@ -578,6 +578,10 @@ gl.gulp.task("split_data", ["buildDirectory"], function(cb) {
       r[tract][j] = Math.round(r[tract][j]/12);
     }
   });
+
+  //setTimeout(function(){},86400000);
+
+ 
   fs.writeFileSync("./intermediate/names.json", JSON.stringify(name_lookup));
   fs.writeFileSync("./intermediate/data_by_tract.json", JSON.stringify(r, null, " "));
   makeDirectory("./build/data", function() {
@@ -589,7 +593,24 @@ gl.gulp.task("split_data", ["buildDirectory"], function(cb) {
   });
   cb();
 
+});
 
+gulp.task("binCBSA", ["intermediate","split_data"], function() {
+  var binner = require("./binData.js");
+  var names= require("./intermediate/names.json");
+  for (var cbsa in names) {
+    if (names.hasOwnProperty(cbsa)) {
+      var data = JSON.parse(fs.readFileSync("./build/data/"+cbsa+".json","utf-8"));
+      var dArr = [];
+      for (var tract in data) {
+        if (data.hasOwnProperty(tract)) {
+          dArr.push(data[tract]);
+        }
+      }
+      var bins = binner(dArr, false, {"nonwhite":6}, cbsa);
+      fs.writeFileSync("./build/data/bin_"+cbsa+".json", JSON.stringify(bins));
+    }
+  }
 });
 
 gulp.task("copyProxy", function() {
@@ -657,10 +678,38 @@ gulp.task("server", function(cb) {
   server.listen(8000);
   cb(); 
 });
+
+gulp.task("minorityconc", ["data","split_data"], function() {
+  var data = require("./intermediate/data.json").data.minority_threshhold;
+  var names = invert(require('./intermediate/names.json'));
+  function invert(o) {
+    var r = {};
+    for (var key in o) {
+      if (o.hasOwnProperty(key)) {
+        r[o[key]] = key;
+      }
+    }
+    return r;
+  }
+  var threshholds = {};
+  for (var i = 0, ii = data.length; i<ii;i++) {
+    for (var cbsa in names) {
+      if (names.hasOwnProperty(cbsa)) {
+        if (cbsa.indexOf(data[i][0])!==-1 || data[i][0].indexOf(cbsa)!==-1) {
+          threshholds[names[cbsa]] = data[i][1];
+        }
+      }
+    }
+  }
+  fs.writeFileSync("./intermediate/thresholds.json", JSON.stringify(threshholds, null, " "), "utf-8");
+});
+
 gulp.task("binData", ["intermediate"], function() {
   var binner = require("./binData.js");
-  var bins = binner(JSON.parse(fs.readFileSync("./intermediate/data.json","utf-8")).data.tract_data);
+  console.log(JSON.parse(fs.readFileSync("./intermediate/data.json","utf-8")).data.tract_data);
+  var bins = binner(JSON.parse(fs.readFileSync("./intermediate/data.json","utf-8")).data.tract_data, true, {"nonwhite":8}, null);
   bins.splice(2, 1);
   bins = bins.slice(1);
   fs.writeFileSync("./intermediate/bins.json",JSON.stringify(bins),"utf-8");
+  setTimeout(function(){},86400000);
 });

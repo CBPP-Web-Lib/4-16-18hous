@@ -106,6 +106,7 @@ var Interactive = function(sel) {
     m.path = d3.geoPath(m.projection);
     m.fullUSViewbox = [50, 5, 820, 499].join(" ");
     m.csv = {};
+    m.cbsaBins = {};
   }
 
   initialize();

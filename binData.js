@@ -1,15 +1,33 @@
 var numBins = 8;
+var thresholds = require("./intermediate/thresholds.json");
 
 var config = {
-  6: {
-    dataSplit: 0.5,
+  "nonwhite": {
+    dataSplit: function(cbsa) {
+      if (cbsa===null) {return 0.5;}
+      return thresholds[cbsa];
+    },
     binSplit: 4
   }
 };
 
-module.exports = function(data) {
+module.exports = function(data, hasHeaders, specialOptions, cbsa) {
   var bins = [];
   var data_by_col = [];
+  if (typeof(specialOptions)==="undefined") {
+    specialOptions = {};
+  }
+  var configByCol = {};
+  for (var columnName in specialOptions) {
+    if (specialOptions.hasOwnProperty(columnName)) {
+      configByCol[specialOptions[columnName]] = config[columnName];
+    }
+  }
+  console.log(specialOptions);
+  console.log(configByCol);
+  if (typeof(hasHeaders)==="undefined") {
+    hasHeaders = true;
+  }
   data.forEach((row, i)=> {
     if (i===0) return;
     row.forEach((cell,j)=> {
@@ -28,14 +46,14 @@ module.exports = function(data) {
     });
     var l = col.length;
     var n;
-    var c = config[j-2];
+    var c = configByCol[j];
     if (typeof(c)!=="undefined") {
       if (typeof(c.dataSplit)!=="undefined") {
-       
+        var dataSplit = c.dataSplit(cbsa);
         console.log(c);
         var l1=0, l2=0;
         for (var i = 0, ii = col.length;i<ii;i++) {
-          if (col[i] < c.dataSplit) {
+          if (col[i] < dataSplit) {
             l1++;
           } else {
             l2++;

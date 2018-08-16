@@ -15,12 +15,9 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
     var row;
     for (var tract in data) {
       if (data.hasOwnProperty(tract)) {
-        if (Math.random()<0.01) {
-          console.log(row);
-        }
         row = data[tract];
         total_vouchers += row[8]*1;
-        //total_affordable += row[11];
+        //total_affordable += row[11]; 
       }
     }
     m.dot_deflator[geoid] = {
