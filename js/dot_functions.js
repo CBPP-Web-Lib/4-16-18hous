@@ -1,3 +1,7 @@
+Math.log10 = Math.log10 || function(x) {
+  return Math.log(x) * Math.LOG10E;
+};
+
 module.exports = function($, d3, m, sel, geojson_bbox) {
   var exports = {};
   var dot_data = {};
@@ -74,17 +78,17 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       .append("circle")
       .attr("class","household")
       .attr("stroke",function(d) {
-        return d[1]==="vouchers" ? "#dddddd" : "#0c97a4";
+        return d[1]==="vouchers" ? "#333333" : "#B9292F";
       })
       .attr("stroke-width",function(d) {
         return (circle_size*dotScaleM[d[1]])/3;
       })
       .attr("fill",function(d) {
-        return (d[1]==="vouchers" ? "#18374f" : "#dddddd");
+        return (d[1]==="vouchers" ? "#EB9123" : "none");
       })
       .merge(dots)
       .attr("r",function(d) {
-        return circle_size*dotScaleM[d[1]] - (d[1]==="vouchers" ? 0 : (circle_size*dotScaleM[d[1]])/3);
+        return circle_size*dotScaleM[d[1]]/* - (d[1]==="vouchers" ? 0 : (circle_size*dotScaleM[d[1]])/3)*/;
       })
       .each(function(d) {
         var el = d3.select(this);
@@ -98,11 +102,6 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
     function update_dots_for_tract(tract, dot_dataset) {
       var z = m.zoomLevel;
       var geoid = tract.properties.GEOID10;
-      var cbsa_geoid = m.active_cbsa.properties.GEOID;
-      var deflator = m.dot_deflator[cbsa_geoid][dot_dataset];
-      if (typeof(deflator)==="undefined") {
-        deflator = 1;
-      }
       if (typeof(dot_data[z])==="undefined") {
         dot_data[z] = {};
       }
@@ -111,38 +110,33 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       }
       if (typeof(dot_data[z][dot_dataset][geoid])==="undefined") {
         dot_data[z][dot_dataset][geoid] = []; 
+      } else {
+        return;
       }
 
-      var doneDots = dot_data[z][dot_dataset][geoid].length;
-      var dataAdjust = 0;
+      //var doneDots = dot_data[z][dot_dataset][geoid].length;
+      var doneDots = 0;
+     
       if (!tract.properties.csvData) return;
-      var numDots, minDotRepresents;
+      var numDots;
       if (dot_dataset==="vouchers") {
         numDots = 12*tract.properties.csvData[8]*1;
-        minDotRepresents = 12;
       } else {
         numDots = tract.properties.csvData[11]*1; 
-        minDotRepresents = 1;
-        dataAdjust = 2;
+        
       }
-      var dotRepresents = 3*Math.pow(2,m.maxZoom-1-z+dataAdjust);
-      dotRepresents *= deflator;
-      //dotRepresents = Math.min(Math.pow(2,6+m.maxZoom-1-z), dotRepresents);
-      var baseDotRepresents = 3*Math.pow(2,m.maxZoom-1-z)*m.dot_deflator[cbsa_geoid].vouchers;
-      if (typeof(m.dotRepresents)==="undefined") {
-        m.dotRepresents = {};
-      }
-      if (typeof(m.dotScale)==="undefined") {
-        m.dotScale = {};
-      }
-      m.dotRepresents[dot_dataset] = Math.max(minDotRepresents,dotRepresents);
-      m.dotRepresents[dot_dataset] = Math.floor(m.dotRepresents[dot_dataset]);
-      m.dotScale[dot_dataset] = m.dotRepresents[dot_dataset]/baseDotRepresents;
+      
+     
       numDots /= m.dotRepresents[dot_dataset];
-      numDots = Math.round(numDots);
+      var leftOver = numDots%1;
+      numDots = Math.floor(numDots);
+      if (Math.random()<leftOver) {
+        numDots++;
+      }
       if (doneDots>=numDots) {
         return;
       }
+      
       var bbox = geojson_bbox(tract);
       var j = 0;
       var water_checks = [];
@@ -178,7 +172,41 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
 
       }
     }
+    function roundOff(n) {
+      var figs = Math.pow(10,Math.round(Math.log10(n)));
+      n = Math.ceil(n/figs)*figs;
+      return n;
+    }
     function update_dots_for_cbsa(tract_data, dot_dataset) {
+      var cbsa_geoid = m.active_cbsa.properties.GEOID;
+      var deflator = m.dot_deflator[cbsa_geoid][dot_dataset];
+      if (typeof(deflator)==="undefined") {
+        deflator = 1;
+      }
+      var z = m.zoomLevel;
+      var dataAdjust = 0;
+      if (dot_dataset==="vouchers") {
+        minDotRepresents = 12;
+      } else {
+        minDotRepresents = 1;
+        dataAdjust = 2;
+      }
+      var dotRepresents = 3*Math.pow(2,m.maxZoom+1-z+dataAdjust);
+      dotRepresents *= deflator;
+      var minDotRepresents;
+      var baseDotRepresents = 3*Math.pow(2,m.maxZoom+1-z)*m.dot_deflator[cbsa_geoid].vouchers;
+      if (typeof(m.dotRepresents)==="undefined") {
+        m.dotRepresents = {};
+      }
+      if (typeof(m.dotScale)==="undefined") {
+        m.dotScale = {};
+      }
+      m.dotRepresents[dot_dataset] = Math.max(minDotRepresents,dotRepresents);
+      m.dotRepresents[dot_dataset] = Math.floor(m.dotRepresents[dot_dataset]);
+      m.dotRepresents[dot_dataset] = roundOff(m.dotRepresents[dot_dataset]);
+      baseDotRepresents = roundOff(baseDotRepresents);
+      //m.dotScale[dot_dataset] = m.dotRepresents[dot_dataset]/baseDotRepresents;
+      m.dotScale[dot_dataset] = 1;
       for (var i = 0, ii = tract_data.length; i<ii; i++) {
         update_dots_for_tract(tract_data[i], dot_dataset);
       }

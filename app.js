@@ -108,9 +108,7 @@ var Interactive = function(sel) {
     m.csv = {};
     m.cbsaBins = {};
   }
-
   initialize();
-
   build_tile_functions($, d3, m, sel, g);
   build_geo_functions($, d3, m, sel);
   build_dot_functions($, d3, m, sel, geojson_bbox);
@@ -139,7 +137,7 @@ var Interactive = function(sel) {
 }; /*Interactive()*/
 
 
-$(document).ready(function() {
+Figure.whenReady = function() {
   return new Interactive("#hous4-16-18");
-});
+};
 })();

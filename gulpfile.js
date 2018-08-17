@@ -626,7 +626,7 @@ gulp.task("server", function(cb) {
       var file = req.url.split("?")[0];
       var ext = file.split(".")[file.split(".").length-1];
       if (ext==="php") {
-        var command = "php-cgi " + __dirname + "/build" + file + " " + req.url.split("?")[1].split("&").join(" ");
+        var command = "php-cgi \"" + __dirname + "/build" + file + "\" " + req.url.split("?")[1].split("&").join(" ");
         exec(command, function(err, f) {
           var queryString = req.url.split("?")[1].split("&");
           var r = {};

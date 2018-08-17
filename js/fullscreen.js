@@ -12,15 +12,19 @@ module.exports = function($, d3, m, sel) {
     $(sel).find(".title, .notes, .credit").hide();
     var space_for_map = $(window).height() - 
       (
-        $(sel).find(".title").outerHeight() +
-        $(sel).find(".subtitle").outerHeight() +
-        $(sel).find(".notes").outerHeight() +
-        $(sel).find(".credit").outerHeight() +
+       // $(sel).find(".title").outerHeight() +
+        $(sel).find(".subtitle").outerHeight() + 38 +
+       // $(sel).find(".notes").outerHeight() +
+        //$(sel).find(".credit").outerHeight() +
         $(sel).find(".cellWrap01").outerHeight() + 
-        $(sel).find(".cellWrap02").outerHeight()
+        $(sel).find(".cellWrap02").outerHeight() + 20
       );
-    space_for_map+=50;
-    var map_height_percent = space_for_map/($(sel).width());
+    console.log(
+      $(sel).find(".subtitle").outerHeight(),
+      $(sel).find(".cellWrap01").outerHeight(),
+      $(sel).find(".cellWrap02").outerHeight()
+    );
+    var map_height_percent = space_for_map/($(sel).outerWidth());
     if (map_height_percent > 499/820) {
       m.fullUSViewbox = [50, 5, 820, 820*map_height_percent].join(" ");
     } else {

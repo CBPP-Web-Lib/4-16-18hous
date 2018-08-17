@@ -23,8 +23,6 @@ module.exports = function(data, hasHeaders, specialOptions, cbsa) {
       configByCol[specialOptions[columnName]] = config[columnName];
     }
   }
-  console.log(specialOptions);
-  console.log(configByCol);
   if (typeof(hasHeaders)==="undefined") {
     hasHeaders = true;
   }
@@ -84,7 +82,7 @@ module.exports = function(data, hasHeaders, specialOptions, cbsa) {
         bins[j].push(col[Math.floor(n/numBins*l)]);
       }
     }
-    bins[j].push(col[col.length-1]);
+    bins[j].push(col[col.length-1]+0.01);
   });
   return bins;
 };

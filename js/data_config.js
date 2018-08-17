@@ -29,7 +29,7 @@ module.exports = function($, m) {
     }
     if (extraBin) {
       r.push({
-        label: labelFormatter(theseBins[ii])
+        label: labelFormatter(theseBins[ii]-0.01)
       });
     }
     return r;
@@ -70,10 +70,10 @@ module.exports = function($, m) {
           [5, [12, 97, 164, 1]],
           [40, [235, 145, 35, 1]]
         ],*/
-        hoverColor: "#5590BF",
-        bins: binDefGen("#FCEEDE",/*"#ED1C24"*/"#ee7478",1, function(n) {
+        hoverColor: "#EB9123",
+        bins: binDefGen("#edeeef",/*"#ED1C24"*/"#0c61a4",1, function(n) {
           return n + "%";
-        }, undefined, undefined, true),
+        }, [0,10,20,30,40,100.01], undefined, true),
         labels: ["0%","","40% or more"],
         dataIndex: 1
       },
@@ -85,9 +85,12 @@ module.exports = function($, m) {
           [30, [237,28,36,1]]
         ],
         labels: ["-5","0","30"],*/
-        bins: binDefGen("#ccdbd5",/*"#0b4a1b"*/"#5b8866",5, function(n) {
+        bins: binDefGen("#d2dae0",/*"#0b4a1b"*/"#266975",5, function(n) {
+          if (n<1.5) {
+            return "0 - 1";
+          }
           return Math.ceil(n);
-        },[-0.5,0.5,1.5,2.5,3.5,4.5,5.5]),
+        },[-0.5,1.5,2.5,3.5,4.5,5.5]),
         binLabel:"central",
         dataIndex: 5
       },

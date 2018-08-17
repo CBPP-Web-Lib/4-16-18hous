@@ -1,7 +1,6 @@
 module.exports = function($, d3, m, sel) {
   function setupWindowResize() {
     var windowResize = function() {
-      console.log("here");
       clearTimeout(m.windowResizeTimer);
       m.windowResizeTimer = setTimeout(function() {
         if (typeof(m.active_cbsa)==="undefined") {

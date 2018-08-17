@@ -34,10 +34,18 @@
   }
   .dotExplainer {
     text-align:left;
+    width:50%;
+    .line {
+      
+      position:relative;
+      text-indent:-24px;
+      padding-left:24px;
+    }
     .legend_dot_svg_ex {
       display:inline-block;
       width:8px;
       height:8px;
+      text-indent:0px;
       svg {
         position:relative;
       }
@@ -54,11 +62,36 @@
       position:absolute;
       width:100%;
     }
+    .titlewrap[data-dataset='nonwhite'] {
+      right:25%;
+    }
     .gradientwrap {
       position:relative;
       width:80%;
       left:10%;
       white-space:nowrap;
+      .minorityConcExp {
+        width:50%;
+        left:50%;
+        text-align:center;
+        position:absolute;
+        top:32pt;
+        height:8pt;
+        border:2px solid #000;
+        border-top:0px;
+        .exp {
+          position:relative;
+          font-size:11pt;
+          white-space:normal;
+          display:inline-block;
+          text-align:center;
+          background-color:#fff;
+          top:-2pt;
+          padding:5px;
+          max-width:80%;
+          box-sizing:border-box;
+        }
+      }
       .labelwrap {
         height:1.5em;
         position:relative;
@@ -143,7 +176,7 @@
   svg.dotsSVG {
     pointer-events:none;
     z-index:10;
-    opacity:0.75;
+    //opacity:0.75;
   }
   .mapwrap {
     border:1px solid #aaa;

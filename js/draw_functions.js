@@ -467,7 +467,7 @@ module.exports = function(
   };
 
   m.resetCBSALowRes = function() {
-    m.svg.selectAll("g.layer.tl_2015_us_cbsa path")
+    m.svg.selectAll("g.layer.tl_2015_us_cbsa path, g.layer.cb_2015_us_state_500k path")
       .style("visibility","visible")
       .transition()
       .duration(100)

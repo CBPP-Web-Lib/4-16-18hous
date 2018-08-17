@@ -120,7 +120,8 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
       .transition()
       .duration(750)
       .style("opacity",1);
-    var toFadeOut = "g.size.low g.cb_2015_us_state_500k, g.size.low path[data-geoid='"+m.active_cbsa.properties.GEOID+"']";
+    //var toFadeOut = "g.size.low g.cb_2015_us_state_500k, g.size.low path[data-geoid='"+m.active_cbsa.properties.GEOID+"']";
+    var toFadeOut = "g.size.low g.cb_2015_us_state_500k, g.size.low path";
     m.svg.selectAll(toFadeOut)
       .attr("opacity",1)
       .style("visibility","visible")
@@ -195,7 +196,7 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
     var offset_px = m.offset_px_from_vb(viewbox, zoom, destProjectionAdj);
     var zoomFinished = false;
     m.minZoom = zoom;
-    m.maxZoom = 15;
+    m.maxZoom = 13;
     m.getTiles({
       viewport: viewbox,
       width:width,

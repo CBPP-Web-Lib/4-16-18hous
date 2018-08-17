@@ -36,6 +36,7 @@ module.exports = function($, d3, m, sel) {
       .html(function(d, i) {
         return "<div>" + conf.labels[i] + "</div>";
       });
+    
   }
 
   m.makeRedliningLegend = function(on) {
@@ -85,10 +86,12 @@ module.exports = function($, d3, m, sel) {
     $(sel).find(".dotExplainer").find(".dotRepresentsIsPlural.affordable_units").html(
       dotRepresents.affordable_units !== 1 ? "s" : "");
     $(sel).find(".legend_dot_svg_ex").html(legend_dot_svg);
-    d3.select(sel).select(".legend_dot_svg_ex.vouchers svg").select("circle").attr("fill","#18374f")
-      .attr("stroke","#dddddd");
-    d3.select(sel).select(".legend_dot_svg_ex.affordable_units svg").select("circle").attr("fill","#dddddd")
-      .attr("stroke","#0c97a4");
+
+
+    d3.select(sel).select(".legend_dot_svg_ex.vouchers svg").select("circle").attr("fill","#EB9123")
+      .attr("stroke","#333333");
+    d3.select(sel).select(".legend_dot_svg_ex.affordable_units svg").select("circle").attr("fill","#ffffff")
+      .attr("stroke","#B9292F");
   };
 
   m.makeLegend = function() {
@@ -108,8 +111,8 @@ module.exports = function($, d3, m, sel) {
         var box = $(document.createElement("div")).addClass("legendBinBox");
         box.css("background-color",bin.color);
         box.css("width",
-          Math.round(100/(m.gradientConfig[m.dataset].bins.length - (m.gradientConfig[m.dataset].binLabel!=="central" ? 1 : 0))
-        )+"%");
+          Math.round(1000/(m.gradientConfig[m.dataset].bins.length - (m.gradientConfig[m.dataset].binLabel!=="central" ? 1 : 0))
+        )/10+"%");
         r.append(box, label);
       } else {
         r.append(label);
@@ -126,6 +129,7 @@ module.exports = function($, d3, m, sel) {
     
     var titlewrap = $(document.createElement("div"));
     titlewrap.addClass("titlewrap");
+    titlewrap.attr("data-dataset",m.dataset);
     titlewrap.text(m.gradientConfig[m.dataset].name);
     var i, ii;
 
@@ -158,6 +162,17 @@ module.exports = function($, d3, m, sel) {
       makeGradientText(m.gradientConfig[m.dataset], d3.select(labelwrap[0]));
     }
     gradientwrap.append(titlewrap);
+    if (m.dataset==="nonwhite") {
+      var minorityCExp = $(document.createElement("div"))
+        .addClass("minorityConcExp");
+      var exp = $(document.createElement("div"))
+        .html("HUD-Defined Minority-Concentrated Neighborhood")
+        .addClass("exp");
+      minorityCExp.append(exp);
+      gradientwrap.append(minorityCExp);
+    } else {
+      $(sel).find(".minorityConcExp").remove();
+    }
     m.makeDotExplainer(m.dotRepresents);
     for (i = 0, ii = m.checked_dots.length; i<ii; i++) {
       $(sel).find("input[type='checkbox'][value='"+m.checked_dots[i] + "']").prop("checked",true);
