@@ -23,6 +23,7 @@ module.exports = function($) {
     }
     $(canvas).attr("style",inline_styles);
     $(image).replaceWith(canvas);
+    $(canvas).attr("data-src",$(image).attr("src"));
     return canvas;
   };
 

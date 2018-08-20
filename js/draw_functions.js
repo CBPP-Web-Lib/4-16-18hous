@@ -18,7 +18,74 @@ module.exports = function(
   var getBounds = require("svg-path-bounds");
   var textOffsets = require("../textOffsets.json");
   var svg_path_data = {};
-  
+  var cbsa_click = function(d) {
+    if (m.locked()) {
+      return false;
+    }
+    //if (m.zoomingToCBSA) {
+    //  return false;
+   // }
+    var geoid = d.properties.GEOID;
+    if (m.active_cbsa) {
+      m.removeTractsFromGeoData();
+      m.resetCBSALowRes();
+    }
+    var zoomed = false;
+    var loaded = false;
+    var red_loaded = false;
+    var water_loaded = false;
+    function checkZoomAndLoad() {
+      if (zoomed && loaded && water_loaded && red_loaded) {
+        m.updateDrawData();
+      }
+    }
+    g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".txt", function(err, d) {
+      var geo = topojson.feature(d, d.objects.districts);
+      geo_data["tl_2010_tract_" + geoid] = {high:geo};
+      loaded = true;
+      checkZoomAndLoad();
+    });
+    g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/redlining_"+geoid+".txt", function(err, d) {
+      var geo = topojson.feature(d, d.objects.districts);
+      geo_data["redlining_" + geoid] = {high:geo};
+      red_loaded = true;
+      checkZoomAndLoad();
+    });
+    var water_files = waterIndex["tl_2010_tract_" + geoid + ".json"];
+    var WaterRequest = function(file) {
+      return new Promise(function(resolve, reject) {
+        if (typeof(water_data[file])!=="undefined") {
+          resolve();
+        } else {
+          g.getJSONAndSaveInMemory(file, function(err, d) {
+            var waterFeatures = topojson.feature(d, d.objects.districts).features;
+            for (var i = 0, ii = waterFeatures.length; i<ii; i++) {
+              waterFeatures[i].bbox = geojson_bbox(waterFeatures[i]);
+              waterFeatures[i].properties.WATERUID = water_uid;
+              water_uid++;
+            }
+            water_data.features = water_data.features.concat(waterFeatures);
+            resolve();
+          });
+        }
+      });
+    };
+    var water_requests = [];
+    for (var i = 0, ii = water_files.length; i<ii; i++) {
+      while (water_files[i].length<5) {
+        water_files[i] = "0" + water_files[i];
+      }
+      water_requests.push(new WaterRequest("./water/tl_2017_" + water_files[i] + "_areawater.txt"));
+    }
+    Promise.all(water_requests).then(function() {
+      water_loaded = true;
+      checkZoomAndLoad();
+    });
+    m.zoomToCBSA(d, "in", function() {
+      zoomed = true;
+      checkZoomAndLoad();
+    });
+  };
   m.updateDrawData = function() {
     var svg = m.svg;
     drawData = filterToVisible(geo_data, svg.attr("viewBox"));
@@ -57,74 +124,7 @@ module.exports = function(
       .attr("class", function(d) {
         return "layer " + d;
       });
-    var cbsa_click = function(d) {
-      if (m.locked()) {
-        return false;
-      }
-      //if (m.zoomingToCBSA) {
-      //  return false;
-     // }
-      var geoid = d.properties.GEOID;
-      if (m.active_cbsa) {
-        m.removeTractsFromGeoData();
-        m.resetCBSALowRes();
-      }
-      var zoomed = false;
-      var loaded = false;
-      var red_loaded = false;
-      var water_loaded = false;
-      function checkZoomAndLoad() {
-        if (zoomed && loaded && water_loaded && red_loaded) {
-          m.updateDrawData();
-        }
-      }
-      g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".txt", function(err, d) {
-        var geo = topojson.feature(d, d.objects.districts);
-        geo_data["tl_2010_tract_" + geoid] = {high:geo};
-        loaded = true;
-        checkZoomAndLoad();
-      });
-      g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/redlining_"+geoid+".txt", function(err, d) {
-        var geo = topojson.feature(d, d.objects.districts);
-        geo_data["redlining_" + geoid] = {high:geo};
-        red_loaded = true;
-        checkZoomAndLoad();
-      });
-      var water_files = waterIndex["tl_2010_tract_" + geoid + ".json"];
-      var WaterRequest = function(file) {
-        return new Promise(function(resolve, reject) {
-          if (typeof(water_data[file])!=="undefined") {
-            resolve();
-          } else {
-            g.getJSONAndSaveInMemory(file, function(err, d) {
-              var waterFeatures = topojson.feature(d, d.objects.districts).features;
-              for (var i = 0, ii = waterFeatures.length; i<ii; i++) {
-                waterFeatures[i].bbox = geojson_bbox(waterFeatures[i]);
-                waterFeatures[i].properties.WATERUID = water_uid;
-                water_uid++;
-              }
-              water_data.features = water_data.features.concat(waterFeatures);
-              resolve();
-            });
-          }
-        });
-      };
-      var water_requests = [];
-      for (var i = 0, ii = water_files.length; i<ii; i++) {
-        while (water_files[i].length<5) {
-          water_files[i] = "0" + water_files[i];
-        }
-        water_requests.push(new WaterRequest("./water/tl_2017_" + water_files[i] + "_areawater.txt"));
-      }
-      Promise.all(water_requests).then(function() {
-        water_loaded = true;
-        checkZoomAndLoad();
-      });
-      m.zoomToCBSA(d, "in", function() {
-        zoomed = true;
-        checkZoomAndLoad();
-      });
-    };
+    
     svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
       if (layer==="water") {return;}
       var size = d3.select(this.parentNode).attr("class").split(" ")[1];
@@ -169,7 +169,7 @@ module.exports = function(
       })();
       paths.enter()
         .append("path")
-        .on("click", function(d) {
+        .on("click touchstart", function(d) {
           if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa") {
             cbsa_click(d);
           }
@@ -246,6 +246,7 @@ module.exports = function(
           }
         })
         .on("mousemove touchstart touchmove", function(d) {
+          d3.event.preventDefault();
           if (m.dragOn && d3.event.type==="mousemove") return true;
           if (d3.event.touches) {
             if (d3.event.touches.length > 1) {
@@ -256,7 +257,7 @@ module.exports = function(
           if (typeof(m.gradientConfig[m.dataset].hoverColor)!=="undefined") {
             hoverColor = m.gradientConfig[m.dataset].hoverColor;
           }
-          if (d.properties.csvData) {
+          if (d.properties.csvData && !m.locked()) {
             m.makePopup(d3.event, d);
             $(this).css("cursor","pointer");
             d3.select(this).attr("opacity",1);
@@ -267,6 +268,7 @@ module.exports = function(
           return true;
         })
         .on("mouseout", function(d) {
+          d3.event.preventDefault();
           if (d.properties.csvData) {
             $(this).css("cursor","auto");
             d3.select(this).attr("fill",fillFromData(d.properties.csvData));
@@ -278,6 +280,16 @@ module.exports = function(
               $(sel).find(".popup-outer").remove();
             }
           }
+        })
+        .on("touchstart", function() {
+          clearTimeout(m.touchEndTimer);
+        })
+        .on("touchend", function(d) {
+          var el = this;
+          m.touchEndTimer = setTimeout(function() {
+            $(sel).find(".popup-outer").remove();
+            d3.select(el).attr("fill",fillFromData(d.properties.csvData));
+          }, 500);
         })
         .attr("fill-opacity", function() {
           //if (whichLayer==="state") {
@@ -365,7 +377,7 @@ module.exports = function(
             .attr("fill","#0C61A4")
             .attr("font-size",10)
             .text(name)
-            .on("click", function() {
+            .on("click touchstart", function() {
               cbsa_click(d);
             })
             .attr("font-family","proxima-nova-condensed,sans-serif");
@@ -417,7 +429,7 @@ module.exports = function(
   m.removeTractsFromGeoData = function() {
     for (var file in geo_data) {
       if (geo_data.hasOwnProperty(file)) {
-        if (file.indexOf("tl_2010_tract_")!==-1) {
+        if (file.indexOf("tl_2010_tract_")!==-1 || file.indexOf("redlining_")!==-1) {
           geo_data[file] = undefined;
         }
       }
@@ -569,10 +581,40 @@ module.exports = function(
       m.updateDrawData();
     });
     $(sel + " .mapwrap").append($(document.createElement("div")).attr("class","fullscreenButton")
-      .text("Expand")
-      .on("click",function() {
+      .html(require("../fullscreen_svg.txt"))
+      .on("click touchstart",function() {
         m.toggleFullScreen();
       }));
+    m.makeCBSADropdown(FileIndex);
+  };
+
+  m.makeCBSADropdown = function() {
+    var data = geo_data.tl_2015_us_cbsa.low.features;
+    data.sort(function(a, b) {
+      return a.properties.NAME > b.properties.NAME;
+    });
+    var select = $(document.createElement("select"));
+    var option;
+    for (var i = 0, ii = data.length; i<ii; i++) {
+      option = $(document.createElement("option"))
+        .text(data[i].properties.NAME)
+        .attr("value",data[i].properties.GEOID)
+        .data("cbsa",data[i]);
+      select.append(option);
+    }
+    select.on("change", function() {
+      $(sel).find(".dotsSVG").empty();
+      $(sel).find(".tilewrap").remove();
+      var el = $(this).find("option:selected");
+      if (typeof(m.active_cbsa)==="undefined") {
+        cbsa_click(el.data("cbsa"));
+      } else {
+        m.zoomToCBSA(m.active_cbsa,"out", function() {
+          cbsa_click(el.data("cbsa"));
+        });
+      }
+    });
+    $(sel).find(".cbsa-picker-wrapper").append(select);
   };
 
   return exports;

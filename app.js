@@ -92,13 +92,29 @@ var Interactive = function(sel) {
   /*initial tasks and config*/
   function initialize() {
     new Figure.Figure(sel, {
-      subtitle: "<div class=\"data-picker-wrapper\"></div>",
+      subtitle: "<div class=\"cbsa-picker-wrapper\"><span class='label'>Pick a metro area or click on the map below: </div><div class=\"data-picker-wrapper\"></div>",
       rows: [0.61,"fixed","fixed"]
     });
     $(sel).find(".grid00").empty().addClass("mapwrap");
     $(sel).find(".grid01").empty().addClass("legendwrap");
     $(sel).find(".grid02").empty().append($(document.createElement("div")).addClass("dotExplainwrap"));
     $(sel).find(".grid02").append($(document.createElement("div")).addClass("redliningLegend"));
+    var s1 =  $(sel).find(".dotExplainwrap").parents(".afterBreak");
+    var s2 = $(sel).find(".legendwrap").parents(".afterBreak");
+    var toGroup = s1.add(s2);
+    toGroup.wrapAll("<div class='fixedGroup'>");
+    $(sel).find(".fixedGroup").wrapInner("<div class='fixedInner'></div>");
+    $(sel).find(".fixedGroup").append("<div class='legendSlideDown'>");
+    $(sel).find(".legendSlideDown").html("&#9660;").wrap("<div class='legendSlideDownPositioner'>");
+    $(sel).find(".legendSlideDownPositioner").on("click touchstart", function() {
+      var el = $(this).find(".legendSlideDown");
+      if ($(el).hasClass("legendSlideUp")) {
+        m.slideLegendUp();
+      } else {
+        m.slideLegendDown();
+      }
+    });
+    $(sel).find(".beforeBreak").remove();
     URL_BASE = g.URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
     m.projection = d3.geoAlbers();
     m.dataset = "poverty_rate";

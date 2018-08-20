@@ -1,5 +1,4 @@
 #hous4-16-18 {
-  
   select, option {
     font-family:inherit;
     font-size:inherit;
@@ -23,8 +22,49 @@
     position:absolute;
     bottom:5px;
     right:5px;
-    padding:5px;
+    padding:2px;
     cursor:pointer;
+    line-height:0.8;
+  }
+  .fullscreenButton:hover {
+    background-color:#aaa;
+  }
+  .fullscreenButton:active {
+    background-color:#666;
+  }
+  .legendSlideDown {
+    display:none;
+  }
+  div.zoom_tiles {
+    position:absolute;
+    font-weight:400;
+    font-size:18pt;
+    border-radius:50%;
+    padding:8pt;
+    border:2px solid #000;
+    left:10px;
+    width:12px;
+    height:12px;
+    line-height:12px;
+    background-color:#fff;
+    z-index:500;
+    text-align:center;
+    cursor:pointer;
+  }
+  div.zoom_tiles:hover {
+    background-color:#aaa;
+  }
+  div.zoom_tiles:active {
+    background-color:#666;
+    color:#fff;
+    border-color:#fff;
+  }
+  div.zoom_tiles_in {
+    top:50px;
+  }
+  div.zoom_tiles_out {
+    top:100px;
+    line-height:9px;
   }
   button.zoomOut:hover {
     background-color:#F8D8B2;
@@ -168,6 +208,10 @@
     }
     text.label {
       cursor:pointer;
+      -webkit-user-select: none; /* Safari */        
+      -moz-user-select: none; /* Firefox */
+      -ms-user-select: none; /* IE10+/Edge */
+      user-select: none; /* Standard */
     }
     circle.household, g.layer.cb_2015_us_state_500k {
       pointer-events:none;
@@ -248,7 +292,7 @@
       height:256px;
     }
   }
-  @media (max-width:500px) {
+  @media (max-width:750px) {
     .subtitle, .legendwrap, .dotExplainer, .legendwrap .titlewrap {
       font-size:10pt;
     }
@@ -256,5 +300,59 @@
       height:8px;
       width:10px;
     }
+  }
+}
+
+#hous4-16-18.fullScreen {
+  h3.subtitle {
+    position:fixed;
+    top:0px;
+    margin-left:10px;
+    z-index:1000;
+  }
+  .legendSlideDownPositioner {
+    position:absolute;
+    width:0px;
+    height:0px;
+    left:50%;
+    top:0px;
+    overflow:visible;
+  }
+  .legendSlideDown {
+    display:block;
+    position:absolute;
+    bottom:0px;
+    background-color:#ddd;
+    padding:5px;
+    padding-left:30px;
+    padding-right:30px;
+    text-align:center;
+    cursor:pointer;
+  }
+  .zoomOut {
+    top:100px;
+  }
+  div.zoom_tiles_in {
+    top:150px;
+  }
+  div.zoom_tiles_out {
+    top:200px;
+  }
+  .cbsa-picker-wrapper .label {
+    display:none;
+  }
+  div.fixedGroup {
+    position:fixed;
+    bottom:10px;
+    width:60%;
+    left:15%;
+    z-index:2000;
+    border: 1px solid #eee;
+    padding:10px;
+    background-color:#fff;
+    opacity:0.9;
+  }
+  div.fixedInner {
+    overflow:hidden;
   }
 }

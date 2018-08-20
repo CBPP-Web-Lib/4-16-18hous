@@ -114,6 +114,7 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
       }
     });
     m.makeZoomOutButton();
+    m.makeZoomButtons();
     m.baseWidth = $(m.svg.node()).width();
     m.baseVBWidth = m.svg.attr("viewBox").split(" ")[2];
     d3.select(sel).select(".tilewrap")
@@ -133,7 +134,7 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
         m.svg.select("g.layer.national").attr("opacity",0);
         m.removeLock("zoomingToCBSA");
         m.removeLock("dragging");
-        m.svg.attr("data-viewbox-limit",m.svg.attr("viewBox"));
+        //m.svg.attr("data-viewbox-limit",m.svg.attr("viewBox"));
       });
   };
 
@@ -160,6 +161,7 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
       org_bbox = geojson_bbox(m.active_cbsa);
     }
     m.active_cbsa = cbsa;
+    $(sel).find(".cbsa-picker-wrapper select").val(m.active_cbsa.properties.GEOID);
     var bbox = geojson_bbox(cbsa);
     var orgcenter = [-96.6,38.7];
     var center = [(bbox[2]-bbox[0])/2+bbox[0],(bbox[3]-bbox[1])/2+bbox[1]];
@@ -171,15 +173,16 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
     var destProjection = d3.geoMercator;
     var startScale = orgProjection().scale();
     var destScale = 10000/(bbox[2]-bbox[0]);
-    if (zoomSideways) {
+   /*if (zoomSideways) {
       orgProjection = destProjection;
       orgcenter = [(org_bbox[0] + org_bbox[2])/2, (org_bbox[1] + org_bbox[3])/2];
       startScale = 10000/(org_bbox[2] - org_bbox[0]);
       $(sel).find(".tilewrap").hide();
-    }
+    }*/
     $(m.dotsSVG.node()).show();
     if (direction==="out") {
       $(m.dotsSVG.node()).hide();
+      $(sel).find("button.zoomOut, div.zoom_tiles").remove();
       m.active_cbsa = undefined;
       var swap = destProjection;
       destProjection = orgProjection;
@@ -243,7 +246,7 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
         m.projection = projectInterpolate(orgProjection, destProjection, p, direction, startScale, destScale, center, orgcenter);
         m.path = d3.geoPath(m.projection);
       }
-      d3.selectAll("path")
+      m.svg.selectAll("path")
         .attr("d", m.path);
     });
   };
@@ -259,7 +262,6 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
           m.updateDrawData();
         },50);
       });
-      $(sel).find("button.zoomOut").remove();
     });
   };
 

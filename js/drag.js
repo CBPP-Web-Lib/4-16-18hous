@@ -4,6 +4,20 @@ module.exports = function(sel, m, $, d3) {
 		if (m.locked("outstandingTiles")) {
 			return;
 		}
+		var x, y;
+		m.offset = $(sel).offset();
+		if (e.type==="touchstart") {
+			if (e.originalEvent.touches.length > 1) {
+				return;
+			}
+			x = e.originalEvent.touches[0].pageX - m.offset.left;
+			y = e.originalEvent.touches[0].pageY - m.offset.top;
+			m.touchBase = [x,y];
+		} else {
+			x = e.pageX - m.offset.left,
+			y = e.pageY - m.offset.top;
+		}
+		m.dragBase = [x,y];
 		$(sel).find(".tilewrap.old").remove();
 		if ($(sel).find(".tilewrap").length===0) {return;}
 		if (e.originalEvent.touches) {
@@ -12,33 +26,17 @@ module.exports = function(sel, m, $, d3) {
 				return;
 			}
 		}
-		m.setLock("dragOn");
+		m.dragPossible = true;
 		$(sel).find(".popup-outer").remove();
-    m.offset = $(sel).offset();
-		var x = e.pageX - m.offset.left,
-		y = e.pageY - m.offset.top;
-		if (e.type==="touchstart") {
-			if (e.originalEvent.touches.length > 1) {
-				return;
-			}
-			x = e.originalEvent.touches[0].pageX - m.offset.left;
-			y = e.originalEvent.touches[0].pageY - m.offset.top;
-		}
-		m.dragBase = [x,y];
     m.offsetBase = [
       $(sel).find(".tilewrap").not("old").css("left").replace("px","")*1,
       $(sel).find(".tilewrap").not("old").css("top").replace("px","")*1
     ];
 	});
-	$(sel + " svg").bind("mouseup touchend", function(e) {
-		if (m.getLock("dragOn")===false) {
-			return;
-		} else {
-			m.removeLock("dragOn");
-		}
-		if (m.locked()) {return;}
+	m.finishDrag = function() {
 		m.setLock("dragging");
 		delete(m.dragBase);
+		m.dragPossible = false;
     $(sel).find(".tilewrap").addClass("old");
 		m.updateDrawData();
 		var viewport = d3.select(sel).select("svg").attr("viewBox").split(" ");
@@ -57,6 +55,15 @@ module.exports = function(sel, m, $, d3) {
 				$(sel).find(".tilewrap.old").remove();
       }
     });
+	};
+	$(sel + " svg").bind("mouseup touchend", function(e) {
+		if (m.getLock("dragOn")===false) {
+			return;
+		} else {
+			m.removeLock("dragOn");
+		}
+		if (m.locked()) {return;}
+		m.finishDrag();
 	});
 	$(sel + " svg").bind('mouseout', function(e) {
 		if ($.contains($(sel)[0],e.relatedTarget) || 
@@ -65,19 +72,26 @@ module.exports = function(sel, m, $, d3) {
 			return;
 		} else {
 			m.removeLock("dragOn");
+			m.dragPossible = false;
 			delete(m.dragBase);
 		}
 	});
 	$(sel + " svg").bind('mousemove touchmove', function(e) {
-    m.offset = $(sel).offset();
-		if (m.getLock("dragOn")) {
-			e = e.originalEvent;
-			var x = e.pageX - m.offset.left,
-			y = e.pageY - m.offset.top;
-			if (e.type==="touchmove") {
-				x = e.touches[0].pageX - m.offset.left;
-				y = e.touches[0].pageY - m.offset.top;
+		if (!m.dragPossible) {return;}
+		m.offset = $(sel).offset();
+		e = e.originalEvent;
+		var x = e.pageX - m.offset.left,
+		y = e.pageY - m.offset.top;
+		if (e.type==="touchmove") {
+			x = e.touches[0].pageX - m.offset.left;
+			y = e.touches[0].pageY - m.offset.top;
+			if (Math.abs(x - m.touchBase[0])>20 || Math.abs(y - m.touchBase[1]) > 20) {
+				m.setLock("dragOn");
 			}
+		} else {
+			m.setLock("dragOn");
+		}
+		if (m.getLock("dragOn")) {
 			m.drag(x,y);
 		}
 	});

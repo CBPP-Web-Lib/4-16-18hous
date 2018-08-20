@@ -83,9 +83,11 @@ module.exports = function($, d3, m, sel, g) {
     var errorHandler = function() {
       var url = $(this).attr("src");
       if (url.indexOf("r=2")!==-1) {
+        var styles = $(this).attr("style");
         $(this).remove();
         url = url.replace("r=2","r=1");
         var img = $(document.createElement("img"));
+        img.attr("style",styles);
         img.attr("src",url);
         applyAttrs(img);
         tilewrap.append(img);

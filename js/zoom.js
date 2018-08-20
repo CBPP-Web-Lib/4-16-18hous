@@ -71,6 +71,7 @@ module.exports = function(sel, obj, $, d3) {
         m.removeLock("zooming");
         m.dotsSVG.attr("viewBox",newviewport.join(" "));
         $(m.dotsSVG.node()).show();
+        m.hideDependingOnZoom();
       });
 
   };
@@ -125,6 +126,7 @@ module.exports = function(sel, obj, $, d3) {
     });
     r.topTouch = touchArr[0].pageY;
     r.bottomTouch = touchArr[1].pageY;
+    console.log(r);
     return r;
   };
 
@@ -149,6 +151,9 @@ module.exports = function(sel, obj, $, d3) {
       var bottom_dy = touchbase.bottomTouch - current.bottomTouch;
       var out_x = left_dx - right_dx;
       var out_y = top_dy - bottom_dy;
+      m.dragPossible = false;
+      m.removeLock("dragOn");
+      m.dragBase = undefined;
       if (out_x + out_y > 40 || out_x + out_y < -40) {
         touchbase = undefined;
         var x = event.originalEvent.touches[0].pageX/2 +
@@ -183,6 +188,34 @@ module.exports = function(sel, obj, $, d3) {
       m.zoomOut(x, y);
     }
   }
+
+
+  m.makeZoomButtons = function() {
+    function makeButton(direction) {
+      var button = $(document.createElement("div"));
+      button.text(direction==="in" ? "+" : "-");
+      button.addClass("zoom_tiles zoom_tiles_" + direction);
+      $(sel).append(button);
+      button.on("click touchstart",function() {
+        var width = $(sel).width();
+        var height = $(sel).height();
+        m.zoom(width/2,height/2,direction);
+      });
+    }
+    makeButton("in");
+    makeButton("out");
+    m.hideDependingOnZoom();
+  };
+
+  m.hideDependingOnZoom = function() {
+    $(sel).find(".zoom_tiles").show();
+    if (m.zoomLevel <= m.minZoom) {
+      $(sel).find(".zoom_tiles_out").hide();
+    }
+    if (m.zoomLevel >= m.maxZoom) {
+      $(sel).find(".zoom_tiles_in").hide();
+    }
+  };
 
   $(window).bind('mousewheel DOMMouseScroll', function(event) {
     if (m.scrollEventsBlocked) {
