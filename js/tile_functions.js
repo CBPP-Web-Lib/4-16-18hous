@@ -49,6 +49,18 @@ module.exports = function($, d3, m, sel, g) {
     var final_tl_latlong = config.projection.invert([config.viewport[0], config.viewport[1]]);
     var tl = m.get_tile_from_long_lat(final_tl_latlong[0], final_tl_latlong[1], z);
     var tilewrap = $(sel).find(".tilewrap");
+    var existingTiles = indexExisting($(sel).find(".tilewrap img"));
+    var existingCanvas = indexExisting($(sel).find(".tilewrap canvas"));
+    function indexExisting(list) {
+      var r = {};
+      list.each(function() {
+        var attr = "src";
+        if (this.tagName.toLowerCase()==="canvas") {attr="data-src";}
+        var src = $(this).attr(attr);
+        r[src] = this;
+      });
+      return r;
+    }
     var oldtilewrap = $(sel).find(".tilewrap.old").last();
     //if (oldtilewrap.length===0) {
       //if (tilewrap.length===0) {
@@ -107,6 +119,7 @@ module.exports = function($, d3, m, sel, g) {
       img.css("left",(x-tl[0])*256 + "px")
         .css("top",(y-tl[1])*256 + "px")
         .css("visibility","hidden")
+        .attr("crossorigin",true)
         .on("error", errorHandler)
         .on("load", function() {
           var img = this;
@@ -128,10 +141,27 @@ module.exports = function($, d3, m, sel, g) {
           r = "2";
         }
         var url = g.URL_BASE + "/image_proxy/get_stamen.php?z="+z+"&x="+x+"&y="+y+"&r="+r;
-        img = $(document.createElement("img"))
-          .attr("src", url);
-        applyAttrs(img);
-        tilewrap.append(img);
+        if (existingTiles[url]) {
+          img = $(existingTiles[url]).detach();
+          img = img[0];
+        } else if (existingCanvas[url]) {
+          img = null;
+          var canvas = $(existingCanvas[url]).detach();
+          canvas.css("left",(x-tl[0])*256 + "px")
+            .css("top",(y-tl[1])*256 + "px");
+          tilewrap.append(canvas);
+          requests--;
+          if (requests===0) {
+            finished();
+          }
+        } else {
+          img = $(document.createElement("img"))
+            .attr("src", url);
+        }
+        if (img) {
+          applyAttrs(img);
+          tilewrap.append(img);
+        }
       }
     }
     if (typeof(config.requestsSent)==="function") {

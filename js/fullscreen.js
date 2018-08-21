@@ -2,29 +2,27 @@ module.exports = function($, d3, m, sel) {
 
   m.makeFullScreen = function() {
     var svg = m.svg;
+    if (m.locked()) return;
     $(sel).addClass("fullScreen");
     $(sel).css("position","fixed");
-    $(sel).css("left","10px");
-    $(sel).css("right","10px");
-    $(sel).css("top","10px");
-    $(sel).css("left","10px");
+    $(sel).css("left","0px");
+    $(sel).css("right","0px");
+    $(sel).css("top","0px");
+    $(sel).css("left","0px");
     $(sel).css("max-width","9999px");
     $(sel).find(".title, .notes, .credit").hide();
-    var space_for_map = $(window).height() - 20; /*- 
-      (
-       // $(sel).find(".title").outerHeight() +
-        $(sel).find(".subtitle").outerHeight() + 38 +
-       // $(sel).find(".notes").outerHeight() +
-        //$(sel).find(".credit").outerHeight() +
-        $(sel).find(".cellWrap01").outerHeight() + 
-        $(sel).find(".cellWrap02").outerHeight() + 20
-      );*/
+    var space_for_map = $(window).height();
     var map_height_percent = space_for_map/($(sel).outerWidth());
+    var padding = 0.15;
+    var width, height;
     if (map_height_percent > 499/820) {
-      m.fullUSViewbox = [50, 5, 820, 820*map_height_percent].join(" ");
+      height = 820*map_height_percent*(1+padding);
+      width = height/map_height_percent;
     } else {
-      m.fullUSViewbox = [50, 5, 499/map_height_percent, 499].join(" ");
+      height = 499*(1+padding);
+      width = height/map_height_percent;
     }
+    m.fullUSViewbox = [50-((width-820)/2), 5-height*padding, width, height].join(" ");
     var vb = svg.attr("viewBox").split(" ");
     vb[3] = vb[2]*map_height_percent;
     svg.attr("viewBox",vb.join(" "));

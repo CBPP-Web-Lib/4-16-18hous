@@ -75,7 +75,7 @@ module.exports = function(
       while (water_files[i].length<5) {
         water_files[i] = "0" + water_files[i];
       }
-      water_requests.push(new WaterRequest("./water/tl_2017_" + water_files[i] + "_areawater.txt"));
+      water_requests.push(new WaterRequest(g.URL_BASE + "/water/tl_2017_" + water_files[i] + "_areawater.txt"));
     }
     Promise.all(water_requests).then(function() {
       water_loaded = true;
@@ -92,14 +92,25 @@ module.exports = function(
     drawData = (function(r) {
       for (var size in r) {
         if (r.hasOwnProperty(size)) {
+          var topo, merged;
           if (size==="low") {
             if (!r[size].national) {
-              var topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k[size]}, 50000);
-              var merged = topojson.merge(topo, topo.objects.districts.geometries);
+              topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k[size]}, 50000);
+              merged = topojson.merge(topo, topo.objects.districts.geometries);
               merged.properties = {GEOID:"us_national_outline"};
               r[size].national = [merged];
             }
           }
+         /* else {
+            for (var layer in r[size]) {
+              if (layer.indexOf("tract")!==-1) {
+                var quantFactor = Math.pow(2,m.zoomLevel);
+                var geojson = [{"type":"FeatureCollection","features":r[size][layer]}];
+                topo = topojson.topology(geojson,quantFactor);
+                r[size][layer] = topojson.feature(topo, topo.objects[0]).features;
+              }
+            }
+          }*/
         }
       }
       return r;
@@ -184,7 +195,7 @@ module.exports = function(
           }
           if (whichLayer==="cbsa") {
             if (m.active_cbsa) {
-              return 0;
+              return 0; 
             }
             return 1*scaling[size];
           }
@@ -258,10 +269,12 @@ module.exports = function(
             hoverColor = m.gradientConfig[m.dataset].hoverColor;
           }
           if (d.properties.csvData && !m.locked()) {
-            m.makePopup(d3.event, d);
-            $(this).css("cursor","pointer");
-            d3.select(this).attr("opacity",1);
-            d3.select(this).attr("fill",hoverColor);
+            if (m.showTractInfo) {
+              m.makePopup(d3.event, d);
+              $(this).css("cursor","pointer");
+              d3.select(this).attr("opacity",1);
+              d3.select(this).attr("fill",hoverColor);
+            }
           } else {
             $(sel).find(".popup-outer").remove();
           }
@@ -423,7 +436,6 @@ module.exports = function(
       }
       return r;
     }
-
   };
 
   m.removeTractsFromGeoData = function() {
@@ -556,7 +568,7 @@ module.exports = function(
       .attr("viewBox",m.fullUSViewbox)
       .attr("preserveAspectRatio", "xMidYMid")
       .attr("class","dotsSVG");
-    m.updateDrawData();
+     m.updateDrawData();
     require("./zoom.js")(sel + " .mapwrap", m, $, d3);
     require("./drag.js")(sel + " .mapwrap", m, $, d3);
     $(svg.node()).on("mouseover", "g.tl_2015_us_cbsa > path", function() {
@@ -591,7 +603,7 @@ module.exports = function(
   m.makeCBSADropdown = function() {
     var data = geo_data.tl_2015_us_cbsa.low.features;
     data.sort(function(a, b) {
-      return a.properties.NAME > b.properties.NAME;
+      return a.properties.NAME > b.properties.NAME ? 1 : -1;
     });
     var select = $(document.createElement("select"));
     var option;
@@ -606,7 +618,7 @@ module.exports = function(
       $(sel).find(".dotsSVG").empty();
       $(sel).find(".tilewrap").remove();
       var el = $(this).find("option:selected");
-      if (typeof(m.active_cbsa)==="undefined") {
+      if (true /*typeof(m.active_cbsa)==="undefined"*/) {
         cbsa_click(el.data("cbsa"));
       } else {
         m.zoomToCBSA(m.active_cbsa,"out", function() {

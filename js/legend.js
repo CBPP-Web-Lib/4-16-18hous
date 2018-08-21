@@ -177,10 +177,21 @@ module.exports = function($, d3, m, sel) {
     for (i = 0, ii = m.checked_dots.length; i<ii; i++) {
       $(sel).find("input[type='checkbox'][value='"+m.checked_dots[i] + "']").prop("checked",true);
     }
+    if (m.active_cbsa) {
+      $(sel).find(".dotExplainwrap").append(
+        "<div class='hidePopupOption'><input type='checkbox' " + (m.showTractInfo ? "checked" : "") + "/> Show tract info</div>"
+      );
+      var stamen_credit = $(document.createElement("div"))
+        .attr("class","stamen_credit")
+        .html(require("../stamen_credit.html"));
+      $(sel).find(".dotExplainwrap").append(stamen_credit);
+    }
   };
 
-
-
+  m.showTractInfo = true;
+  $(sel).on("change", ".hidePopupOption input", function() {
+    m.showTractInfo = $(this).prop("checked");
+  });
 
 
   

@@ -109,9 +109,9 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
 
   m.CBSAZoomInDone = function() {
     $(sel).find(".legendwrap").slideDown(100, function() {
-      if ($(sel).hasClass("fullScreen")) {
-        m.makeFullScreen();
-      }
+      /*if ($(sel).hasClass("fullScreen")) {
+        m.fixViewbox();
+      }*/
     });
     m.makeZoomOutButton();
     m.makeZoomButtons();
@@ -168,17 +168,18 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
     var width = $(m.svg.node()).width();
     var height = $(m.svg.node()).height();
     var zoom = m.getZoomFromBBox(bbox, width, height);
-    
+    m.minZoom = zoom;
+    m.maxZoom = 13;
     var orgProjection = d3.geoAlbers;
     var destProjection = d3.geoMercator;
     var startScale = orgProjection().scale();
     var destScale = 10000/(bbox[2]-bbox[0]);
-   /*if (zoomSideways) {
+   if (zoomSideways) {
       orgProjection = destProjection;
       orgcenter = [(org_bbox[0] + org_bbox[2])/2, (org_bbox[1] + org_bbox[3])/2];
       startScale = 10000/(org_bbox[2] - org_bbox[0]);
       $(sel).find(".tilewrap").hide();
-    }*/
+    }
     $(m.dotsSVG.node()).show();
     if (direction==="out") {
       $(m.dotsSVG.node()).hide();
@@ -196,10 +197,9 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
     }
     var destProjectionAdj = projectInterpolate(orgProjection, destProjection, 1, direction, startScale, destScale, center, orgcenter);
     var viewbox = get_final_viewbox(bbox, destProjectionAdj, width, height, zoom);
+    console.log(viewbox);
     var offset_px = m.offset_px_from_vb(viewbox, zoom, destProjectionAdj);
     var zoomFinished = false;
-    m.minZoom = zoom;
-    m.maxZoom = 13;
     m.getTiles({
       viewport: viewbox,
       width:width,

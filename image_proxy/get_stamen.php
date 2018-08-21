@@ -21,5 +21,13 @@ if (!file_exists($filename)) {
     fwrite($fp, $raw);
     fclose($fp);
 }
+if (
+  $_SERVER['HTTP_ORIGIN']==="https://apps.cbpp.org" || 
+  $_SERVER['HTTP_ORIGIN']==="http://apps.cbpp.org" ||
+  $_SERVER['HTTP_ORIGIN']==="https://www.cbpp.org" ||
+  $_SERVER["HTTP_ORIGIN"]==="https://www.cbpp-multimedia.org"
+) {
+  header('Access-Control-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
+}
 header('Content-type: image/png');
-echo file_get_contents($filename);
+echo file_get_contents($filename); 

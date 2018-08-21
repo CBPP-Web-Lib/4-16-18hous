@@ -3,6 +3,7 @@ module.exports = function($, d3, m, sel) {
     var windowResize = function() {
       clearTimeout(m.windowResizeTimer);
       m.windowResizeTimer = setTimeout(function() {
+        
         if (typeof(m.active_cbsa)==="undefined") {
           return;
         }
@@ -24,6 +25,10 @@ module.exports = function($, d3, m, sel) {
       if ($(sel).hasClass("fullScreen")) {
         m.makeFullScreen();
       }
+      $(sel).find("svg").each(function() {
+        $(this).css("width","");
+        $(this).css("height","");
+      });
       if (!m.active_cbsa) {return;}
       if (m.zoomingToCBSA) {return;}
       m.fixViewbox();

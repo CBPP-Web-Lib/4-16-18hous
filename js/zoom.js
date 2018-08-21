@@ -193,7 +193,7 @@ module.exports = function(sel, obj, $, d3) {
   m.makeZoomButtons = function() {
     function makeButton(direction) {
       var button = $(document.createElement("div"));
-      button.text(direction==="in" ? "+" : "-");
+      button.html(direction==="in" ? "<span>+</span>" : "<span>-</span>");
       button.addClass("zoom_tiles zoom_tiles_" + direction);
       $(sel).append(button);
       button.on("click touchstart",function() {
@@ -217,10 +217,11 @@ module.exports = function(sel, obj, $, d3) {
     }
   };
 
-  $(window).bind('mousewheel DOMMouseScroll', function(event) {
+  $(sel).bind('mousewheel DOMMouseScroll', function(event) {
     if (m.scrollEventsBlocked) {
       return;
     }
+    event.preventDefault();
     var amount = event.originalEvent.wheelDelta;
     if (typeof(amount)==="undefined") {
       amount = 0 - event.originalEvent.detail;

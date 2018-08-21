@@ -89,7 +89,7 @@ g.getJSONAndSaveInMemory = function(f, cb) {
 var Interactive = function(sel) {
   var m = this; /*easy access to main object*/
 
-  /*initial tasks and config*/
+  /*initial tasks and config*/ 
   function initialize() {
     new Figure.Figure(sel, {
       subtitle: "<div class=\"cbsa-picker-wrapper\"><span class='label'>Pick a metro area or click on the map below: </div><div class=\"data-picker-wrapper\"></div>",

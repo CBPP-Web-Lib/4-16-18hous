@@ -628,6 +628,9 @@ gulp.task("server", function(cb) {
       if (ext==="php") {
         var command = "php-cgi \"" + __dirname + "/build" + file + "\" " + req.url.split("?")[1].split("&").join(" ");
         exec(command, function(err, f) {
+          /*res.write(f);
+          res.end();
+          return;*/
           var queryString = req.url.split("?")[1].split("&");
           var r = {};
           queryString.forEach(function(v) {
@@ -644,7 +647,8 @@ gulp.task("server", function(cb) {
               return;
             }
             var headers = {
-              'Cache-Control':'no-cache'
+              'Cache-Control':'no-cache',
+              'Access-Control-Allow-Origin':"*"
             };
             res.writeHead(200, headers);
             res.write(file);
@@ -658,7 +662,8 @@ gulp.task("server", function(cb) {
             return;
           }
           var headers = {
-            'Cache-Control':'no-cache'
+            'Cache-Control':'no-cache',
+            'Access-Control-Allow-Origin':"*"
           };
           if (ext === "json") {
             headers['Content-Type'] = 'application/json';
