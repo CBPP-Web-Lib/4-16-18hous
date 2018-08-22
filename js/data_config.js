@@ -86,11 +86,11 @@ module.exports = function($, m) {
         ],
         labels: ["-5","0","30"],*/
         bins: binDefGen("#d2dae0",/*"#0b4a1b"*/"#266975",5, function(n) {
-          if (n<1.5) {
-            return "0 - 1";
+          if (n<0.5) {
+            return "Unknown";
           }
           return Math.ceil(n);
-        },[-0.5,1.5,2.5,3.5,4.5,5.5]),
+        },[-0.5,0.5,1.5,2.5,3.5,4.5,5.5], ["#baa8a5"].concat(colorgen("#d2dae0","#266975",5))),
         binLabel:"central",
         dataIndex: 5
       },

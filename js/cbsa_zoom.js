@@ -197,7 +197,6 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
     }
     var destProjectionAdj = projectInterpolate(orgProjection, destProjection, 1, direction, startScale, destScale, center, orgcenter);
     var viewbox = get_final_viewbox(bbox, destProjectionAdj, width, height, zoom);
-    console.log(viewbox);
     var offset_px = m.offset_px_from_vb(viewbox, zoom, destProjectionAdj);
     var zoomFinished = false;
     m.getTiles({

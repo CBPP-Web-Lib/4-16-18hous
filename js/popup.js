@@ -7,12 +7,15 @@ module.exports = function($, m, sel) {
     popup_wrap.html(popup_html);
     var f = {
       p: function(n) {
+        if (n==="") return "Unknown";
         return Math.round(n*1000)/10 + "%";
       },
       p100: function(n) {
+        if (n==="") return "Unknown";
         return Math.round(n*10)/10+"%";
       },
       n: function(n) {
+        if (n==="") return "Unknown";
         return Math.round(n*1000)/1000;
       },
       t: function(t) {return t;}

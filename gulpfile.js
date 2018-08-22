@@ -335,6 +335,7 @@ gl.gulp.task("simplify_water", [/*"ogr2ogr"*/], function(cb) {
     });
     var settings = gridConfig.high;
     gl.makeDirectory("./build/water", function() {
+      fs.writeFileSync("./build/water/.htaccess",fs.readFileSync("./.htaccess"),"utf-8");
       files.forEach(function(f) {
         var geo = JSON.parse(fs.readFileSync("./geojson/" + f, "utf-8"));
         geo.features = geo.features.filter(function(o) {
@@ -466,6 +467,7 @@ gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], fun
   });
   var sizes = [];
   makeDirectory("./build/topojson", function() {
+    fs.writeFileSync("./build/topojson/.htaccess",fs.readFileSync("./.htaccess"),"utf-8");
     makeDirectory("./build/topojson/high", directoryCB);
   });
   var directoryCB = function() {
@@ -585,6 +587,7 @@ gl.gulp.task("split_data", ["buildDirectory"], function(cb) {
   fs.writeFileSync("./intermediate/names.json", JSON.stringify(name_lookup));
   fs.writeFileSync("./intermediate/data_by_tract.json", JSON.stringify(r, null, " "));
   makeDirectory("./build/data", function() {
+    fs.writeFileSync("./build/data/.htaccess",fs.readFileSync("./.htaccess"),"utf-8");
     for (var cbsa in split) {
       if (split.hasOwnProperty(cbsa)) {
         fs.writeFileSync("./build/data/"+cbsa+".json", JSON.stringify(split[cbsa]));
@@ -708,6 +711,8 @@ gulp.task("minorityconc", ["data","split_data"], function() {
   }
   fs.writeFileSync("./intermediate/thresholds.json", JSON.stringify(threshholds, null, " "), "utf-8");
 });
+
+
 
 gulp.task("binData", ["intermediate"], function() {
   var binner = require("./binData.js");
