@@ -116,6 +116,7 @@ module.exports = function($, d3, m, sel, g) {
       }
     };
     function applyAttrs(img) {
+      try {
       img.css("left",(x-tl[0])*256 + "px")
         .css("top",(y-tl[1])*256 + "px")
         .css("visibility","hidden")
@@ -132,6 +133,10 @@ module.exports = function($, d3, m, sel, g) {
             imageOnload.call(img);
           //}
         });
+      } catch (ex) {
+        console.log(ex);
+        console.log(img);
+      }
     }
     for (var x = tl[0]; x<=br[0];x++) {
       for (var y = tl[1]; y<=br[1];y++) {
@@ -143,7 +148,7 @@ module.exports = function($, d3, m, sel, g) {
         var url = g.URL_BASE + "/image_proxy/get_stamen.php?z="+z+"&x="+x+"&y="+y+"&r="+r;
         if (existingTiles[url]) {
           img = $(existingTiles[url]).detach();
-          img = img[0];
+          //img = $(img[0]);
         } else if (existingCanvas[url]) {
           img = null;
           var canvas = $(existingCanvas[url]).detach();
