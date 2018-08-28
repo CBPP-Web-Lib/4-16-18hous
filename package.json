@@ -24,36 +24,13 @@
     "turf": "^3.0.14"
   },
   "devDependencies": {
-    "brfs": "^2.0.0",
-    "browserify": "^16.2.2",
-    "browserify-css": "^0.14.0",
-    "browserify-shim": "*",
-    "browserify-zlib": "*",
-    "child-process": "^1.0.2",
     "cbpp_shared_gulp": "github:CenterOnBudget/cbpp_shared_gulp",
     "deepcopy": "^1.0.0",
-    "exposify": "*",
-    "gulp": "*",
-    "gulp-concat": "*",
-    "gulp-decompress": "*",
-    "gulp-git": "^2.7.0",
-    "gulp-notify": "*",
-    "gulp-ruby-sass": "^3.0.0",
-    "gulp-sass": "^4.0.1",
-    "gulp-sourcemaps": "*",
-    "gulp-uglify": "^3.0.0",
-    "gulp-unzip": "*",
-    "gulp-util": "*",
-    "gulp-watch": "^5.0.0",
+    "gulp-decompress": "^2.0.2",
     "martinez-polygon-clipping": "^0.4.3",
     "ogr2ogr": "*",
     "request": "^2.87.0",
-    "sassr": "*",
-    "text-encoding": "*",
-    "topojson": "*",
-    "vinyl-buffer": "*",
-    "vinyl-source-stream": "^2.0.0",
-    "watchify": "*"
+    "topojson": "*"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

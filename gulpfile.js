@@ -1,5 +1,6 @@
 /*globals require, Promise*/
-var gl = require("cbpp_shared_gulp")(), gulp = gl.gulp, fs = gl.fs;
+var gulp = require("gulp");
+var gl = require("cbpp_shared_gulp")(gulp), fs = gl.fs;
 var request = require("request");
 var decompress = require("gulp-decompress");
 var ogr2ogr = require("ogr2ogr");
