@@ -1,7 +1,10 @@
 /*globals require, document, console, window, Promise*/
+var runOnce = false;
 (function() {
 "use strict";
-
+/*prevent double code execution in Drupal*/
+if (runOnce) {return;}
+runOnce = true;
 /*external libraries*/
 require("babel-polyfill");
 var $ = require("jquery");
@@ -16,6 +19,7 @@ var tl_2015_us_cbsa = JSON.parse(pako.inflate(require("./topojson/low/tl_2015_us
 var GridConfig = require("./gridConfig.json");
 var FileIndex = require("./fileIndex.json");
 var waterIndex = require("./waterIndex.json");
+var build_intro_functions = require("./js/intro_functions.js"); 
 var build_tile_functions = require("./js/tile_functions.js");
 var build_geo_functions = require("./js/geo_functions.js");
 var build_dot_functions = require("./js/dot_functions.js");
@@ -41,7 +45,7 @@ var water_data = g.water_data = {type:"FeatureCollection","features":[]};
 var URL_BASE; 
 
 /*CBPP-specific dependencies*/
-var Figure = require("./CBPP_Figure")($);
+var Figure = require("cbpp_figures")($);
 
 /*convert initial state and low-res cbsa shapes to geojson features and add to geo_data*/
 geo_data.cb_2015_us_state_500k = {low: topojson.feature(cb_2015_us_state_500k, cb_2015_us_state_500k.objects.districts)};
@@ -88,11 +92,14 @@ g.getJSONAndSaveInMemory = function(f, cb) {
 /*main constructor for map object*/
 var Interactive = function(sel) {
   var m = this; /*easy access to main object*/
-
   /*initial tasks and config*/ 
   function initialize() {
+    m.initialContents = $(sel).html();
     new Figure.Figure(sel, {
-      subtitle: "<div class=\"cbsa-picker-wrapper\"><span class='label'>Pick a metro area or click on the map below: </div><div class=\"data-picker-wrapper\"></div>",
+      title:"",
+      subtitle: "<div class=\"cbsa-picker-wrapper\">"+
+        "<span class='label'>Pick a metro area or click on the map below: </div>" +
+          "<div class=\"data-picker-wrapper\"><span class='label'>Pick a dataset: </div>",
       rows: [0.61,"fixed","fixed"]
     });
     $(sel).find(".grid00").empty().addClass("mapwrap");
@@ -112,7 +119,7 @@ var Interactive = function(sel) {
         m.slideLegendUp();
       } else {
         m.slideLegendDown();
-      }
+      } 
     });
     $(sel).find(".beforeBreak").remove();
     URL_BASE = g.URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
@@ -125,6 +132,7 @@ var Interactive = function(sel) {
     m.cbsaBins = {};
   }
   initialize();
+  build_intro_functions($, m, sel);
   build_tile_functions($, d3, m, sel, g);
   build_geo_functions($, d3, m, sel);
   build_dot_functions($, d3, m, sel, geojson_bbox);

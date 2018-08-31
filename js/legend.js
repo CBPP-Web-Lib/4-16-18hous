@@ -86,7 +86,9 @@ module.exports = function($, d3, m, sel) {
     $(sel).find(".dotExplainer").find(".dotRepresentsIsPlural.affordable_units").html(
       dotRepresents.affordable_units !== 1 ? "s" : "");
     $(sel).find(".legend_dot_svg_ex").html(legend_dot_svg);
-
+    if (m.dataset==="nonwhite") {
+      theDotExplainer.addClass("shrunk");
+    }
 
     d3.select(sel).select(".legend_dot_svg_ex.vouchers svg").select("circle").attr("fill","#EB9123")
       .attr("stroke","#333333");
@@ -178,12 +180,12 @@ module.exports = function($, d3, m, sel) {
       $(sel).find("input[type='checkbox'][value='"+m.checked_dots[i] + "']").prop("checked",true);
     }
     if (m.active_cbsa) {
-      $(sel).find(".dotExplainwrap").append(
+      $(sel).find(".dotExplainer").append(
         "<div class='hidePopupOption'><input type='checkbox' " + (m.showTractInfo ? "checked" : "") + "/> Show tract info</div>"
       );
       var stamen_credit = $(document.createElement("div"))
         .attr("class","stamen_credit")
-        .html(require("../stamen_credit.html"));
+        .html($(m.initialContents).find(".license_info"));
       $(sel).find(".dotExplainwrap").append(stamen_credit);
     }
   };

@@ -7,6 +7,63 @@ html {
   font-size:12pt;
   line-height:14pt;
   background-color:#fff;
+  position:relative;
+  overflow-y:visible;
+  h3.subtitle .label {
+    display:inline-block;
+    width:38%;
+    margin-right:2%;
+    white-space:normal;
+    vertical-align:middle;
+  }
+  h3.subtitle select {
+    width:60%;
+    vertical-align:middle;
+    margin-bottom:4pt;
+  }
+  h3.subtitle {
+    white-space:nowrap;
+  }
+  a.showInstructions {
+    display:inline-block;
+    position:absolute;
+    font-family:"proxima-nova-condensed",sans-serif;
+    top:10px;
+    right:10px;
+    font-size:14pt;
+    padding:4pt;
+    color:#000;
+    border:1px solid #666;
+    background-color:#eee;
+    line-height:14pt;
+    border-radius:5pt;
+    z-index:10000;
+  }
+  a.showInstructions:hover {
+    background-color:#aaa;
+  }
+  .dots_note {
+    padding:10px;
+    background-color:#eee;
+    color:#B9292F;
+    font-weight:bold;
+  }
+  .ftnPopup {
+    position:absolute;
+    width:40%;
+    padding:5px;
+    font-size:10pt;
+    line-height:1.1;
+    color:#FFF;
+    background-color:rgba(0,0,0,0.8);
+    left:20px;
+    top:20px;
+    z-index:100000;
+    a {
+      color:#8ab8dc;
+      font-weight:bold;
+    }
+  }
   select, option {
     font-family:inherit;
     font-size:inherit;
@@ -14,15 +71,82 @@ html {
     line-height:inherit;
     color:inherit;
   }
+  .instructions-wrap {
+    position:absolute;
+    top:0px;
+    left:0px;
+    right:0px;
+    bottom:0px;
+    height:100%;
+
+    z-index:50000;
+  }
+  .instructions-wrap-table {
+    height:100%;
+    line-height:1.3;
+    display:table;
+    a {
+      color:#0c61a4;
+      position:relative;
+    }
+    
+    button {
+      display:block;
+      margin-left:auto;
+      margin-right:auto;
+      font-weight:bold;
+      font-size:14pt;
+      border-radius:8pt;
+      cursor:pointer; 
+    }
+    .instructions-wrap-row {
+      display:table-row;
+    }
+    .instructions-wrap-cell {
+      display:table-cell;
+      vertical-align:middle;
+      background-color:rgba(255,255,255,0.5);
+    }
+    .instructions_popup {
+      padding:10px;
+      border:1px solid #aaa;
+      margin-left:20px;
+      margin-right:20px;
+      background-color:rgba(255,255,255,0.9);
+      li {margin-bottom:0.5em;}
+      a.ftnref {
+        position:relative;
+      }
+      max-height:100%;
+      overflow-y:auto;
+    }
+    .figure-footnotes {
+      font-size:10pt;
+      font-family:"proxima-nova-condensed",sans-serif;
+      color:#666;
+    }
+  }
+  .data-picker-wrapper {
+    display:none;
+  }
   button.zoomOut {
-    font-size:14pt;
+    /*font-size:14pt;
     font-weight:bold;
     background-color:#EB9123;
     color:#000;
     border-radius:3pt;
-    border:1px solid #000;
+    border:1px solid #000;*/
     cursor:pointer;
     outline: none;
+    font-family:"proxima-nova-condensed",sans-serif;
+    //display:inline-block;
+    font-size:14pt;
+    padding:4pt;
+    color:#000;
+    border:1px solid #666;
+    background-color:#eee;
+    line-height:14pt;
+    border-radius:5pt;
   }
   .hidePopupOption {
     text-align:left;
@@ -65,12 +189,12 @@ html {
     font-size:24px;
     border-radius:50%;
     padding:0.5em;
-    border:2px solid #000;
+    border:1px solid #aaa;
     left:10px;
     width:12px;
     height:12px;
     line-height:0.6;
-    background-color:#fff;
+    background-color:#eee;
     z-index:500;
     text-align:center;
     cursor:pointer;
@@ -105,13 +229,22 @@ html {
   .dotExplainwrap {
     display:inline-block;
     text-align:center;
+    width:80%;
+    margin-top:1em;
+    margin-left:10%;
+    margin-right:10%;
   }
   .grid02 {
     text-align:center;
   }
+  .dotExplainer.shrunk {
+    width:50%;
+  }
   .dotExplainer {
     text-align:left;
-    width:50%;
+    width:100%;
+    background-color:#eee;
+    padding:10px;
     .line {
       
       position:relative;
@@ -340,11 +473,15 @@ html {
   }
 
   .stamen_credit {
+    text-align:left;
     font-size:10pt;
+    line-height:1.1;
     color:#666;
     a {
       color:#0C61A4;
     }
+    margin-left:-12.5%;
+    margin-right:-12.5%;
     margin-top:1em;
   }
 
@@ -358,6 +495,12 @@ html {
     top:0px;
     margin-left:10px;
     z-index:1000;
+  }
+  h3.subtitle .label {
+    display:none;
+  }
+  h3.subtitle select {
+    width:auto;
   }
   .legendSlideDownPositioner {
     position:absolute;
@@ -379,18 +522,19 @@ html {
     cursor:pointer;
   }
   .zoomOut {
-    top:100px;
+    top:90px;
   }
   div.zoom_tiles_in {
-    top:150px;
+    top:130px;
   }
   div.zoom_tiles_out {
-    top:200px;
+    top:170px;
   }
   .cbsa-picker-wrapper .label {
     display:none;
   }
   div.fixedGroup {
+    visibility:hidden;
     position:fixed;
     bottom:0px;
     width:60%;

@@ -56,6 +56,11 @@ module.exports = function($, m) {
       m.makeGradientConfig();
       m.dataset = $(this).val();
       m.updateDrawData(m.svg);
+      if (m.dataset==="nonwhite") {
+        $(this).parents(".cbppFigure").find(".dotExplainer").addClass("shrunk");
+      } else {
+        $(this).parents(".cbppFigure").find(".dotExplainer").removeClass("shrunk");
+      }
     });
     return select;
   };

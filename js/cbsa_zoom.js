@@ -113,6 +113,8 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
         m.fixViewbox();
       }*/
     });
+    $(sel).find(".fixedGroup").css("visibility","visible");
+    $(sel).find(".data-picker-wrapper").show();
     m.makeZoomOutButton();
     m.makeZoomButtons();
     m.baseWidth = $(m.svg.node()).width();
@@ -194,6 +196,8 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
       swap = center;
       center = orgcenter;
       orgcenter = swap;
+      $(sel).find(".fixedGroup").css("visibility","hidden");
+      $(sel).find(".data-picker-wrapper").hide();
     }
     var destProjectionAdj = projectInterpolate(orgProjection, destProjection, 1, direction, startScale, destScale, center, orgcenter);
     var viewbox = get_final_viewbox(bbox, destProjectionAdj, width, height, zoom);

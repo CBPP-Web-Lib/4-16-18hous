@@ -11,6 +11,7 @@ module.exports = function($, d3, m, sel) {
     $(sel).css("left","0px");
     $(sel).css("max-width","9999px");
     $(sel).find(".title, .notes, .credit").hide();
+    $(sel).find(".fixedGroup").css({"padding":"10px"});
     var space_for_map = $(window).height();
     var map_height_percent = space_for_map/($(sel).outerWidth());
     var padding = 0.15;
@@ -64,6 +65,7 @@ module.exports = function($, d3, m, sel) {
     $(sel).css("left","");
     $(sel).css("max-width","940px");
     $(sel).find(".title, .notes, .credit").show();
+    $(sel).find(".fixedGroup").css({"padding":"0px"});
     var map_height_percent = 0.61;
     var vb = svg.attr("viewBox").split(" ");
     vb[3] = vb[2]*map_height_percent;

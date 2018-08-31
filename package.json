@@ -7,6 +7,7 @@
     "@turf/flatten": "^5.1.5",
     "@turf/intersect": "^6.1.2",
     "@turf/truncate": "^6.0.1",
+    "cbpp_figures": "github:CenterOnBudget/CBPP_Figure",
     "comma-number": "^2.0.0",
     "csv-parse": "^1.2.0",
     "d3": "^4.8.0",

@@ -1,9 +1,9 @@
 
 
 module.exports = function($, d3, m, sel, g) {
-  var img_to_canvas = require("./img_to_canvas.js")($); 
+  var img_to_canvas = require("./img_to_canvas.js")($, m); 
   var exports = {};
-
+  m.cachedCanvasData = {};
   m.get_tile_from_long_lat = function(long, lat, zoom, exact) {
     var scale = 1 << zoom;
     var rounder = Math.floor;

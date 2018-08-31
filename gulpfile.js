@@ -21,9 +21,6 @@ function zeroPad(fips) {
   }
   return fips;
 }
-gl.gulp.task("cbpp_shared_lib", function(cb) {
-  gl.get_cbpp_shared_libs(["CBPP_Figure"], cb);
-});
 gl.gulp.task("redlining_shapefiles", ["intermediate"], function(cb) {
   if (!fs.existsSync("./intermediate/redlining.json")) {
     var dest = fs.createWriteStream("./intermediate/redlining.json");
@@ -651,8 +648,9 @@ gulp.task("server", function(cb) {
               return;
             }
             var headers = {
-              'Cache-Control':'no-cache',
-              'Access-Control-Allow-Origin':"*"
+              'max-age':86400,
+              'Access-Control-Allow-Origin':"*",
+              'Vary':"Access-Control-Allow-Origin"
             };
             res.writeHead(200, headers);
             res.write(file);
@@ -666,8 +664,9 @@ gulp.task("server", function(cb) {
             return;
           }
           var headers = {
-            'Cache-Control':'no-cache',
-            'Access-Control-Allow-Origin':"*"
+            'max-age':86400,
+            'Access-Control-Allow-Origin':"*",
+            'Vary':"Access-Control-Allow-Origin"
           };
           if (ext === "json") {
             headers['Content-Type'] = 'application/json';
