@@ -622,8 +622,16 @@ gulp.task("server", function(cb) {
   var http = require('http');
   var fs = require("fs");
   var exec = require("child_process").exec;
+  
   var server = http.createServer(function(req, res) {
     try {
+      var headers = {
+        'max-age':86400,
+        'Access-Control-Allow-Origin':"*",
+        'Vary':"Access-Control-Allow-Origin",
+        'Access-Control-Allow-Headers':'referer, range, accept-encoding, x-requested-with',
+        'Access-Control-Allow-Methods':'POST, GET, OPTIONS'
+      };
       var file = req.url.split("?")[0];
       var ext = file.split(".")[file.split(".").length-1];
       if (ext==="php") {
@@ -647,11 +655,7 @@ gulp.task("server", function(cb) {
               res.end();
               return;
             }
-            var headers = {
-              'max-age':86400,
-              'Access-Control-Allow-Origin':"*",
-              'Vary':"Access-Control-Allow-Origin"
-            };
+            
             res.writeHead(200, headers);
             res.write(file);
             res.end();
@@ -663,11 +667,6 @@ gulp.task("server", function(cb) {
             res.end('HTTP/1.1 400 Bad Request\r\n\r\n');
             return;
           }
-          var headers = {
-            'max-age':86400,
-            'Access-Control-Allow-Origin':"*",
-            'Vary':"Access-Control-Allow-Origin"
-          };
           if (ext === "json") {
             headers['Content-Type'] = 'application/json';
           }

@@ -26,10 +26,10 @@ module.exports = function($, m) {
     var imageData;
     try {
       if (m.cachedCanvasData[$(image).attr("src")]) {
-        console.log("using cache for " + $(image).attr("src"));
+        //console.log("using cache for " + $(image).attr("src"));
         imageData = m.cachedCanvasData[$(image).attr("src")][0];
       } else {
-        console.log("getting new for " + $(image).attr("src"));
+        //console.log("getting new for " + $(image).attr("src"));
         ctx.drawImage(image,0,0);
         imageData = ctx.getImageData(0,0,image.naturalWidth,image.naturalHeight);
         var data = imageData.data;

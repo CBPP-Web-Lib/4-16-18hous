@@ -25,9 +25,16 @@ if (
   $_SERVER['HTTP_ORIGIN']==="https://apps.cbpp.org" || 
   $_SERVER['HTTP_ORIGIN']==="http://apps.cbpp.org" ||
   $_SERVER['HTTP_ORIGIN']==="https://www.cbpp.org" ||
-  $_SERVER["HTTP_ORIGIN"]==="https://www.cbpp-multimedia.org"
+  $_SERVER["HTTP_ORIGIN"]==="https://www.cbpp-multimedia.org" ||
+  $_SERVER["HTTP_ORIGIN"]==="http://localhost:8000" ||
+  $_SERVER["HTTP_ORIGIN"]==="http://127.0.0.1:8000"
 ) {
   header('Access-Control-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
+  header('max-age: 86400');
+  header('Vary: Access-Control-Allow-Origin');
+  header('Access-Control-Allow-Headers: referer, range, accept-encoding, x-requested-with');
+  header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+  header('Content-type: image/png');
+  echo file_get_contents($filename); 
 }
-header('Content-type: image/png');
-echo file_get_contents($filename); 
+
