@@ -74,6 +74,7 @@ module.exports = function($, d3, m, sel) {
     wrap.append(entryWrap);
   };
   m.makeDotExplainer = function(dotRepresents) {
+    $(sel).find(".voucherHouseholdType").off();
     $(sel).find(".dotExplainwrap").empty();
     if (typeof(m.active_cbsa)==="undefined" || m.active_cbsa===null) return; 
     var theDotExplainer = $(document.createElement("div")).html(dotExplainer).attr("class","dotExplainer");
@@ -88,8 +89,17 @@ module.exports = function($, d3, m, sel) {
     $(sel).find(".legend_dot_svg_ex").html(legend_dot_svg);
     if (m.dataset==="nonwhite") {
       theDotExplainer.addClass("shrunk");
-    }
+    } 
 
+    $(sel).find(".voucherHouseholdType").on("change", function() {
+      m.updateVoucherHouseholdType();
+      m.checked_dots = m.getCheckedDots();
+      m.updateDrawData();
+    }); 
+    if (typeof(m.voucherHouseholdType)!=="undefined") {
+      $(sel).find("select.voucherHouseholdType").val(m.voucherHouseholdType);
+    }
+    m.updateVoucherHouseholdType();
     d3.select(sel).select(".legend_dot_svg_ex.vouchers svg").select("circle").attr("fill","#EB9123")
       .attr("stroke","#333333");
     d3.select(sel).select(".legend_dot_svg_ex.affordable_units svg").select("circle").attr("fill","#ffffff")
@@ -176,8 +186,13 @@ module.exports = function($, d3, m, sel) {
       $(sel).find(".minorityConcExp").remove();
     }
     m.makeDotExplainer(m.dotRepresents);
+    var toCheck;
     for (i = 0, ii = m.checked_dots.length; i<ii; i++) {
-      $(sel).find("input[type='checkbox'][value='"+m.checked_dots[i] + "']").prop("checked",true);
+      toCheck = m.checked_dots[i];
+      if ($.inArray(m.checked_dots[i],["vouchers","with_kids","with_kids_nonwhite"])!==-1) {
+        toCheck = "vouchers";
+      }
+      $(sel).find("input[type='checkbox'][value='"+toCheck + "']").prop("checked",true);
     }
     if (m.active_cbsa) {
       $(sel).find(".dotExplainer").append(

@@ -102,7 +102,7 @@ module.exports = function($, m) {
       "nonwhite" : {
         name:"Non-white percentage",
         bins: binDefGen("#d3e7f1",/*"#532e67"*/"#7a5e89",6, function(n) {
-          return Math.round(n*1000)/10 + "%";
+          return Math.round(n*100) + "%";
         }, undefined, colorgen("#d7cabd","#a3876a",4).concat(colorgen("#b2b2f8","#6a6aa3",4)), true, true),
         colors: [
           [0,[200,200,200,1]],

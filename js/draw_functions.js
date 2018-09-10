@@ -397,10 +397,13 @@ module.exports = function(
         }
       });
     });
-
+    /*for (var k = 0, kk=m.checked_dots.length;k<kk;k++) {
+      m.updateDotData(drawData, m.checked_dots[k]);
+    }*/
     m.updateDotData(drawData, "vouchers");
     m.updateDotData(drawData, "affordable_units");
-
+    m.updateDotData(drawData, "with_kids");
+    m.updateDotData(drawData, "with_kids_nonwhite");
     m.makeLegend();
     m.updateDots(drawData, m.checked_dots);
 
@@ -592,6 +595,7 @@ module.exports = function(
       m.checked_dots = m.getCheckedDots();
       m.updateDrawData();
     });
+    
     $(sel + " .mapwrap").append($(document.createElement("div")).attr("class","fullscreenButton")
       .html(require("../fullscreen_svg.txt"))
       .on("click touchstart",function() {

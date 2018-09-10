@@ -78,13 +78,13 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       .append("circle")
       .attr("class","household")
       .attr("stroke",function(d) {
-        return d[1]==="vouchers" ? "#333333" : "#B9292F";
+        return d[1]!=="affordable_units" ? "#333333" : "#B9292F";
       })
       .attr("stroke-width",function(d) {
         return (circle_size*dotScaleM[d[1]])/3;
       })
       .attr("fill",function(d) {
-        return (d[1]==="vouchers" ? "#EB9123" : "none");
+        return (d[1]!=="affordable_units" ? "#EB9123" : "none");
       })
       .merge(dots)
       .attr("r",function(d) {
@@ -113,20 +113,30 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       } else {
         return;
       }
-
+      var dot_parms = {
+        "vouchers": {
+          "multiply":12,
+          "index":8
+        },
+        "with_kids": {
+          "multiply":12,
+          "index":9
+        },
+        "with_kids_nonwhite": {
+          "multiply":12,
+          "index":10
+        },
+        "affordable_units": {
+          "multiply":1,
+          "index":11
+        }
+      }[dot_dataset];
       //var doneDots = dot_data[z][dot_dataset][geoid].length;
       var doneDots = 0;
      
       if (!tract.properties.csvData) return;
       var numDots;
-      if (dot_dataset==="vouchers") {
-        numDots = 12*tract.properties.csvData[8]*1;
-      } else {
-        numDots = tract.properties.csvData[11]*1; 
-        
-      }
-      
-     
+      numDots = dot_parms.multiply*tract.properties.csvData[dot_parms.index]*1;     
       numDots /= m.dotRepresents[dot_dataset];
       var leftOver = numDots%1;
       numDots = Math.floor(numDots);
@@ -220,6 +230,14 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
     }
   };
 
+  m.updateVoucherHouseholdType = function() {
+    m.voucherHouseholdType = $(sel).find("select.voucherHouseholdType").val();
+  };
+
+  m.getVoucherHouseholdType = function() {
+    return m.voucherHouseholdType;
+  };
+
   m.getCheckedDots = function() {
     var r = [];
     var checkboxes = $(sel).find("input[name='dotDataset']");
@@ -228,6 +246,11 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
         r.push($(this).val());
       }
     });
+    for (var i = 0, ii = r.length; i<ii; i++) {
+      if (r[i]==="vouchers") {
+        r[i] = m.getVoucherHouseholdType();
+      }
+    }
     return r;
   };
 
