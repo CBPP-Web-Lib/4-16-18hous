@@ -116,7 +116,7 @@ module.exports = function($, d3, m, sel) {
         label.addClass("central");
       }
       var labelInner = $(document.createElement("div"));
-      labelInner.text(bin.label);
+      labelInner.html(bin.label);
       label.append(labelInner);
       var r = $(document.createElement("div")).addClass("entry");
       if (!final) {
@@ -196,7 +196,7 @@ module.exports = function($, d3, m, sel) {
     }
     if (m.active_cbsa) {
       $(sel).find(".dotExplainer").append(
-        "<div class='hidePopupOption'><input type='checkbox' " + (m.showTractInfo ? "checked" : "") + "/> Show tract info</div>"
+        "<div class='hidePopupOption'><input type='checkbox' " + (m.showTractInfo ? "checked" : "") + "/> Show neighborhood info</div>"
       );
       var stamen_credit = $(document.createElement("div"))
         .attr("class","stamen_credit")

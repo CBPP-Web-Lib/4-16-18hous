@@ -192,14 +192,22 @@ gl.gulp.task("filter_redline", function(cb) {
       var a = geojson_bbox(redline);
       var b = geojson_bbox(cbsa);
       /*x1, y1, x2, y2*/
-
       if (!(
           a[2] < b[0] ||
           b[2] < a[0] ||
           a[1] > b[3] ||
           b[3] < a[1]
         )) {
-        r.features.push(redline);
+          try {
+            if (typeof(turf.intersect(redline, cbsa))!=="undefined") {
+              console.log("intersect");
+              r.features.push(redline);
+            } else {
+              console.log("no intersect");
+            }
+          } catch (ex) {
+            console.log(ex);
+          }
       }
     });
     fs.writeFileSync("./filtered/redlining_"+cbsa_id+".json", JSON.stringify(r, null, " "));

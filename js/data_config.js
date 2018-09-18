@@ -21,7 +21,7 @@ module.exports = function($, m) {
     }
     for (var i = 0, ii = theseBins.length-1;i<ii;i++) {
       r.push({
-        label: labelFormatter(theseBins[i]),
+        label: labelFormatter(theseBins[i], i),
         color: colors[i],
         min: theseBins[i],
         max: theseBins[i+1]
@@ -29,7 +29,7 @@ module.exports = function($, m) {
     }
     if (extraBin) {
       r.push({
-        label: labelFormatter(theseBins[ii]-0.01)
+        label: labelFormatter(theseBins[ii]-0.01, ii)
       });
     }
     return r;
@@ -94,14 +94,28 @@ module.exports = function($, m) {
           if (n<0.5) {
             return "Unknown";
           }
-          return Math.ceil(n);
+          n = Math.ceil(n);
+          var suffixes = {
+            1:"st",
+            2:"nd",
+            3:"rd",
+            4:"th",
+            5:"th"
+          };
+          var r = n + suffixes[n] + " quintile";
+          if (n===1) {r += "<br>(Low Opportunity)";}
+          if (n===5) {r += "<br>(High Opportunity)";}
+          return r;
         },[-0.5,0.5,1.5,2.5,3.5,4.5,5.5], ["#baa8a5"].concat(colorgen("#d2dae0","#266975",5))),
         binLabel:"central",
         dataIndex: 5
       },
       "nonwhite" : {
-        name:"Non-white percentage",
-        bins: binDefGen("#d3e7f1",/*"#532e67"*/"#7a5e89",6, function(n) {
+        name:"Share people of color",
+        bins: binDefGen("#d3e7f1",/*"#532e67"*/"#7a5e89",6, function(n, i) {
+          if (i===4) {
+            return Math.round(n*10000)/100 + "%";
+          }
           return Math.round(n*100) + "%";
         }, undefined, colorgen("#d7cabd","#a3876a",4).concat(colorgen("#b2b2f8","#6a6aa3",4)), true, true),
         colors: [

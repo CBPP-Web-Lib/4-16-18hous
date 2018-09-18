@@ -18,6 +18,21 @@ module.exports = function(
   var getBounds = require("svg-path-bounds");
   var textOffsets = require("../textOffsets.json");
   var svg_path_data = {};
+
+  function disableRedline() {
+    var s = $(sel).find(".data-picker-wrapper select");
+    if (s.val()==="holc") {
+      s.val("poverty_rate");
+      m.dataset = "poverty_rate";
+    }
+    s.find("option[value='holc']").attr("disabled",true);
+  }
+
+  function enableRedline() {
+    var s = $(sel).find(".data-picker-wrapper select");
+    s.find("option[value='holc']").attr("disabled",false);
+  }
+
   var cbsa_click = function(d) {
     if (m.locked()) {
       return false;
@@ -46,6 +61,11 @@ module.exports = function(
       checkZoomAndLoad();
     });
     g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/redlining_"+geoid+".txt", function(err, d) {
+      if (d.objects.districts.geometries.length===0) {
+        disableRedline();
+      } else {
+        enableRedline();
+      }
       var geo = topojson.feature(d, d.objects.districts);
       geo_data["redlining_" + geoid] = {high:geo};
       red_loaded = true;
@@ -611,6 +631,12 @@ module.exports = function(
     });
     var select = $(document.createElement("select"));
     var option;
+    option = $(document.createElement("option"))
+      .text("Pick a metro area...")
+      .attr("val",-1)
+      .attr("disabled",true)
+      .attr("selected",true);
+    select.append(option);
     for (var i = 0, ii = data.length; i<ii; i++) {
       option = $(document.createElement("option"))
         .text(data[i].properties.NAME)

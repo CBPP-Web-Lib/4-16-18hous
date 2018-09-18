@@ -1,10 +1,12 @@
 /*globals require, document, console, window, Promise*/
-var runOnce = false;
+if (typeof(window.runOnce)==="undefined") {
+  window.runOnce = false;
+}
 (function() {
 "use strict";
 /*prevent double code execution in Drupal*/
-if (runOnce) {return;}
-runOnce = true;
+if (window.runOnce) {return;}
+window.runOnce = true;
 /*external libraries*/
 require("babel-polyfill");
 var $ = require("jquery");
@@ -55,36 +57,30 @@ geo_data.water = {high: water_data};
 /*methods for getting JSON data*/
 g.getJSONAndSaveInMemory = function(f, cb) {
   if (!localmemory[f]) {
-    g.getJSONAndSave(f, function(err, d) {
-      localmemory[f] = d;
-      cb(err, d);
-    });
+    if (f.indexOf(".json")!==-1) {
+      $.getJSON(f, function(d) {
+        handle(d);
+      });
+    } else {
+      $.ajax({
+        url: f,
+        type:"GET",
+        mimeType: 'text/plain',
+        success: function(d) {
+          d = pako.inflate(d,{to:"string"});
+          d = JSON.parse(d);
+          handle(d);
+        }
+      });
+    }
   } else {
     cb(null, localmemory[f]);
-  }
-};
-
-g.getJSONAndSaveInMemory = function(f, cb) {
-  if (f.indexOf(".json")!==-1) {
-    $.getJSON(f, function(d) {
-      handle(d);
-    });
-  } else {
-    $.ajax({
-      url: f,
-      type:"GET",
-      mimeType: 'text/plain',
-      success: function(d) {
-        d = pako.inflate(d,{to:"string"});
-        d = JSON.parse(d);
-        handle(d);
-      }
-    });
   }
   var handle = function(d) {
     if (typeof(d)==="object" && d.compressed) {
       d = JSON.parse(pako.inflate(d.d, {to: "string"}));
     }
+    //localmemory[f] = d;
     cb(null, d);
   };
 };

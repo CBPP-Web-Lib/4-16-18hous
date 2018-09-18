@@ -14,6 +14,23 @@ module.exports = function($, m, sel) {
         if (n==="") return "Unknown";
         return Math.round(n*10)/10+"%";
       },
+      s: function(n) {
+        if (n==="") {
+          return f.n(n);
+        }
+        n = Math.round(n);
+        var suffixes = {
+          1:"st",
+          2:"nd",
+          3:"rd",
+          4:"th",
+          5:"th"
+        };
+        if (typeof(suffixes[n])==="undefined") {
+          return f.n(n);
+        }
+        return n + suffixes[n] + " quintile";
+      },
       n: function(n) {
         if (n==="") return "Unknown";
         return Math.round(n*1000)/1000;
@@ -22,7 +39,7 @@ module.exports = function($, m, sel) {
     };
     var data = {
       cbsa: [d.properties.NAMELSAD10, f.t],
-      opportunity: [d.properties.csvData[5], f.n],
+      opportunity: [d.properties.csvData[5], f.s],
       poverty: [d.properties.csvData[1], f.p100],
       race: [d.properties.csvData[6], f.p]
     };

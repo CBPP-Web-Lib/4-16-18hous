@@ -74,6 +74,8 @@ module.exports = function(sel, m, $, d3) {
 			m.removeLock("dragOn");
 			m.dragPossible = false;
 			delete(m.dragBase);
+			if (m.locked()) {return;}
+			m.finishDrag();
 		}
 	});
 	$(sel + " svg").bind('mousemove touchmove', function(e) {
