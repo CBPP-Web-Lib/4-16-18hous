@@ -357,8 +357,8 @@ gl.gulp.task("simplify_water", [/*"ogr2ogr"*/], function(cb) {
         topo.objects.districts.geometries.forEach(function(el) {
           delete(el.properties);
         });
-        f = f.replace(".json",".txt");
-        fs.writeFileSync("./build/water/" + f, pako.deflate(JSON.stringify(topo),{to:"string"}));
+        f = f.replace(".json",".binary");
+        fs.writeFileSync("./build/water/" + f, pako.deflate(JSON.stringify(topo)));
       });
       cb();
     });
@@ -463,7 +463,7 @@ gl.gulp.task("topojson_dir", function(cb) {
 });
 var gridConfig = require("./gridConfig.json");
 
-gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], function(done) {
+gl.gulp.task("topojson", [/*"topojson_dir","filter_geojson","buildDirectory"*/], function(done) {
   var files = fs.readdirSync("./filtered");
   files = files.filter(function(f) {
     if (f.indexOf("areawater")===-1) {
@@ -514,7 +514,7 @@ gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], fun
                 encoding: "utf-8"
               }));
               try {
-                console.log(f);
+              
               var topo = topojson.topology({districts:geo}/*, 10000*/);
               for (var i = topo.objects.districts.geometries.length-1; i>=0; i--) {
                 var obj = topo.objects.districts.geometries[i].properties;
@@ -534,13 +534,23 @@ gl.gulp.task("topojson", ["topojson_dir","filter_geojson","buildDirectory"], fun
                 scale:[settings.quantize,settings.quantize],
                 translate:[0,0]
               });
-              var compressedf = f.replace(".json", ".txt");
-              fs.writeFileSync(settings.dest + compressedf,
-                pako.deflate(
-                  JSON.stringify(topo, null, settings.dest.indexOf("build")===-1 ? " " : null),
-                  {to : "string"}
-                )
-              );
+              var compressedf;
+              if (settings.dest==="./topojson/low/") {
+                compressedf = f.replace(".json", ".txt");
+                fs.writeFileSync(settings.dest + compressedf,
+                  pako.deflate(
+                    JSON.stringify(topo, null, settings.dest.indexOf("build")===-1 ? " " : null),
+                    {to:"string"}
+                  )
+                );
+              } else {
+                compressedf = f.replace(".json", ".binary");
+                fs.writeFileSync(settings.dest + compressedf,
+                  pako.deflate(
+                    JSON.stringify(topo, null, settings.dest.indexOf("build")===-1 ? " " : null)
+                  )
+                );
+              }
               console.log("wrote " + settings.dest + f);
             } catch (ex) {
               console.log(ex);
@@ -637,7 +647,7 @@ gulp.task("server", function(cb) {
         'max-age':86400,
         'Access-Control-Allow-Origin':"*",
         'Vary':"Access-Control-Allow-Origin",
-        'Access-Control-Allow-Headers':'referer, range, accept-encoding, x-requested-with',
+        'Access-Control-Allow-Headers':'referrer, range, accept-encoding, x-requested-with',
         'Access-Control-Allow-Methods':'POST, GET, OPTIONS'
       };
       var file = req.url.split("?")[0];

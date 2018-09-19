@@ -17,7 +17,10 @@ module.exports = function($, m) {
       }
     }
   }
-  var png_to_canvas_transparent = function(image) {
+  var png_to_canvas_transparent = function(image, secondTry, cb) {
+    if (typeof(secondTry)==="undefined") {
+      secondTry = false;
+    }
     var inline_styles = $(image).attr("style");
     var canvas = document.createElement("canvas");
     $(canvas).attr({"width":image.naturalWidth,"height":image.naturalHeight});
@@ -45,13 +48,30 @@ module.exports = function($, m) {
       ctx.putImageData(imageData,0,0);
       //m.cachedCanvasData[$(image).attr("src")] = [imageData, Date.now()];
     } catch (ex) {
-      console.error(ex);
+      if (!secondTry) {
+        /*try again with timestamp to prevent cache issue in Chrome*/
+        var src = image.src;
+        var styles = $(image).attr("style");
+        var parent = $(image).parent();
+        $(image).remove();
+        var newImage = $(document.createElement("img"));
+        newImage.attr("src", src + "&t=" + new Date().getTime());
+        newImage.attr("style",styles);
+        newImage.attr("crossorigin",true);
+        parent.append(newImage);
+        newImage.on("load", function() {
+          png_to_canvas_transparent(newImage[0], true, cb);
+        });
+      } else {
+        console.log(ex);
+        return;
+      }
     }
     $(canvas).attr("style",inline_styles);
     $(image).replaceWith(canvas);
     $(canvas).attr("data-src",$(image).attr("src"));
     //filterCachedCanvas();
-    return canvas;
+    cb(canvas);
   };
 
   return png_to_canvas_transparent;

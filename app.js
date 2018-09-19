@@ -62,16 +62,17 @@ g.getJSONAndSaveInMemory = function(f, cb) {
         handle(d);
       });
     } else {
-      $.ajax({
-        url: f,
-        type:"GET",
-        mimeType: 'text/plain',
-        success: function(d) {
-          d = pako.inflate(d,{to:"string"});
+      var req = new XMLHttpRequest();
+      req.open('GET',f,true);
+      req.responseType = 'arraybuffer';
+      req.send(null);
+      req.onreadystatechange = function() {
+        if (this.readyState===4 && this.status===200) {
+          var d = pako.inflate(req.response,{to:"string"});
           d = JSON.parse(d);
           handle(d);
         }
-      });
+      };
     }
   } else {
     cb(null, localmemory[f]);

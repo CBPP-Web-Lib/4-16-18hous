@@ -109,11 +109,13 @@ module.exports = function($, d3, m, sel, g) {
     };
     var imageOnload = function() {
       requests--;
-      var canvas = img_to_canvas(this);
-      $(canvas).css("visibility","visible");
-      if (requests===0) {
-        finished();
-      }
+      img_to_canvas(this, false, function(canvas) {
+        $(canvas).css("visibility","visible");
+        if (requests===0) {
+          finished();
+        }
+      });
+      
     };
     function applyAttrs(img) {
       try {
@@ -124,11 +126,10 @@ module.exports = function($, d3, m, sel, g) {
         .on("error", errorHandler)
         .on("load", function() {
           var img = this;
-         /* if (Math.random()<0.2) {
-            console.log("fake fail");
+          /*if (Math.random()<0.5) {
             setTimeout(function() {
               imageOnload.call(img);
-            }, 500); 
+            }, 1500); 
           } else {*/
             imageOnload.call(img);
           //}
