@@ -5,7 +5,9 @@ if (typeof(window.runOnce)==="undefined") {
 (function() {
 "use strict";
 /*prevent double code execution in Drupal*/
-if (window.runOnce) {return;}
+if (window.runOnce) {
+  return;
+}
 window.runOnce = true;
 /*external libraries*/
 require("babel-polyfill");

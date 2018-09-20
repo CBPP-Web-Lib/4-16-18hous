@@ -2,6 +2,26 @@ Math.log10 = Math.log10 || function(x) {
   return Math.log(x) * Math.LOG10E;
 };
 
+function shuffle(array) {
+  /*https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array*/
+  var currentIndex = array.length, temporaryValue, randomIndex;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+
 module.exports = function($, d3, m, sel, geojson_bbox) {
   var exports = {};
   var dot_data = {};
@@ -26,6 +46,8 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
     }
     m.dot_deflator[geoid] = {
       "vouchers": Math.ceil(total_vouchers/5000),
+      "with_kids": Math.ceil(total_vouchers/5000),
+      "with_kids_nonwhite": Math.ceil(total_vouchers/5000),
       "affordable_units":Math.ceil(total_vouchers/5000)
     };
   };
@@ -99,6 +121,7 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
     dots.exit().remove();
   };
   m.updateDotData = function(drawData, dot_dataset) {
+    var dotLeftOver = 0;
     function update_dots_for_tract(tract, dot_dataset) {
       var z = m.zoomLevel;
       var geoid = tract.properties.GEOID10;
@@ -140,7 +163,11 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       numDots /= m.dotRepresents[dot_dataset];
       var leftOver = numDots%1;
       numDots = Math.floor(numDots);
-      if (Math.random()<leftOver) {
+      dotLeftOver+=leftOver;
+      dotLeftOver = Math.round(dotLeftOver*1000000)/1000000;
+      while (dotLeftOver > 1) {
+        dotLeftOver -= 1;
+        dotLeftOver = Math.round(dotLeftOver*1000000)/1000000;
         numDots++;
       }
       if (doneDots>=numDots) {
@@ -188,6 +215,7 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       return n;
     }
     function update_dots_for_cbsa(tract_data, dot_dataset) {
+      tract_data = shuffle(tract_data);
       var cbsa_geoid = m.active_cbsa.properties.GEOID;
       var deflator = m.dot_deflator[cbsa_geoid][dot_dataset];
       if (typeof(deflator)==="undefined") {
@@ -195,7 +223,7 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       }
       var z = m.zoomLevel;
       var dataAdjust = 0;
-      if (dot_dataset==="vouchers") {
+      if (dot_dataset!=="affordable_units") {
         minDotRepresents = 12;
       } else {
         minDotRepresents = 1;

@@ -126,7 +126,6 @@ module.exports = function(sel, obj, $, d3) {
     });
     r.topTouch = touchArr[0].pageY;
     r.bottomTouch = touchArr[1].pageY;
-    console.log(r);
     return r;
   };
 
@@ -217,15 +216,15 @@ module.exports = function(sel, obj, $, d3) {
     }
   };
 
-  $(sel).bind('mousewheel DOMMouseScroll', function(event) {
+  $(sel).bind('wheel', function(event) {
     if (m.scrollEventsBlocked) {
       return;
     }
     event.preventDefault();
-    var amount = event.originalEvent.wheelDelta;
-    if (typeof(amount)==="undefined") {
+    var amount = 0-event.originalEvent.deltaY;
+    /*if (typeof(amount)==="undefined") {
       amount = 0 - event.originalEvent.detail;
-    }
+    }*/
     if (amount===0) {return;}
     var direction = amount > 0 ? "in" : "out";
     zoomFromPageCoords(event.originalEvent.pageX, event.originalEvent.pageY, direction);
