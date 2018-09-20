@@ -28,12 +28,13 @@ module.exports = function($, m, sel) {
     }
   });
   $(sel).find(".instructions_popup .figure-footnotes").hide();
-  $(sel).find(".instructions_popup .figure-footnotes a.ftnref").on("click", function(e) {
+  $(sel).on("click", "a.ftnref", function(e) {
     e.preventDefault();
   });
-  $(sel).find(".instructions_popup a.ftnref").on("mouseenter", function(e) {
+  $(sel).on("mouseenter", "a.ftnref", function(e) {
     var href = $(this).attr("href").replace("#","");
     var corresponding_ftn = $(sel).find(".figure-footnotes a[name='"+href+"']").parents("p").first().html();
+    
     make_ftn_popup(corresponding_ftn, $(this));
   });
   function leaveFootnote() {
@@ -41,7 +42,7 @@ module.exports = function($, m, sel) {
       destroy_ftn_popup();
     }, 500);  
   }
-  $(sel).find(".instructions_popup a.ftnref, .ftnPopup").on("mouseleave", leaveFootnote);
+  $(sel).on("mouseleave","a.ftnref, .ftnPopup", leaveFootnote);
   $(sel).on("mouseleave",".ftnPopup",leaveFootnote);
 
   function make_ftn_popup(html, a) {

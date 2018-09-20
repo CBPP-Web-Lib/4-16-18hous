@@ -178,7 +178,7 @@ module.exports = function($, d3, m, sel) {
       var minorityCExp = $(document.createElement("div"))
         .addClass("minorityConcExp");
       var exp = $(document.createElement("div"))
-        .html("HUD-Defined Minority-Concentrated Neighborhood")
+        .html("HUD-Defined &ldquo;Minority-Concentrated&rdquo;<sup><a name='_ftnref3' class='ftnref' href='#_ftn3'>[3]</a></sup> Neighborhood")
         .addClass("exp");
       minorityCExp.append(exp);
       gradientwrap.append(minorityCExp);
