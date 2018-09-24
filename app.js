@@ -9,6 +9,14 @@ if (window.runOnce) {
   return;
 }
 window.runOnce = true;
+
+/*fail for IE <=10 */
+var jscriptVersion = new Function("/*@cc_on return @_jscript_version; @*/")();
+if (jscriptVersion !== undefined) {
+  ieToLow();
+  throw new Error("IE 11.0 or higher required");
+}
+
 /*external libraries*/
 require("babel-polyfill");
 var $ = require("jquery");
@@ -164,3 +172,7 @@ Figure.whenReady = function() {
   return new Interactive("#hous4-16-18");
 };
 })();
+
+function ieToLow() {
+  document.getElementById("hous4-16-18").innerHTML = "<div style='border:1px solid #aaa;padding:10px'>Your browser is too old to display these maps correctly. Please upgrade to the latest version of Internet Explorer, Edge, Chrome, Firefox, or Safari.</div>";
+}
