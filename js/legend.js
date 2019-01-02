@@ -89,7 +89,10 @@ module.exports = function($, d3, m, sel) {
     $(sel).find(".legend_dot_svg_ex").html(legend_dot_svg);
     if (m.dataset==="nonwhite") {
       theDotExplainer.addClass("shrunk");
-    } 
+      $(sel).find(".note-poc-bins").show();
+    } else {
+      $(sel).find(".note-poc-bins").hide();
+    }
 
     $(sel).find(".voucherHouseholdType").on("change", function() {
       m.updateVoucherHouseholdType();
@@ -136,10 +139,9 @@ module.exports = function($, d3, m, sel) {
       .attr("class","gradientwrap");
     var labelwrap = $(document.createElement("div"))
       .attr("class","labelwrap");
-    $(sel).find(".legendwrap").append(gradientwrap);
-    
-    
     var titlewrap = $(document.createElement("div"));
+    gradientwrap.append(titlewrap);
+    $(sel).find(".legendwrap").append(gradientwrap);
     titlewrap.addClass("titlewrap");
     titlewrap.attr("data-dataset",m.dataset);
     titlewrap.text(m.gradientConfig[m.dataset].name);
@@ -173,7 +175,6 @@ module.exports = function($, d3, m, sel) {
         .attr("fill","url(#legend_gradient_def)");
       makeGradientText(m.gradientConfig[m.dataset], d3.select(labelwrap[0]));
     }
-    gradientwrap.append(titlewrap);
     if (m.dataset==="nonwhite") {
       var minorityCExp = $(document.createElement("div"))
         .addClass("minorityConcExp");
