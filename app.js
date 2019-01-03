@@ -26,6 +26,7 @@ var pako = require("pako");
 var geojson_bbox = require("geojson-bbox");
 
 /*linked files*/
+var dom = require("./dom.html");
 var cb_2015_us_state_500k = JSON.parse(pako.inflate(require("./topojson/low/cb_2015_us_state_500k.txt"),{to:"string"}));
 var tl_2015_us_cbsa = JSON.parse(pako.inflate(require("./topojson/low/tl_2015_us_cbsa.txt"),{to:"string"}));
 var GridConfig = require("./gridConfig.json");
@@ -96,11 +97,17 @@ g.getJSONAndSaveInMemory = function(f, cb) {
   };
 };
 
-/*main constructor for map object*/
+/*main constructor for map object*/ 
 var Interactive = function(sel) {
   var m = this; /*easy access to main object*/
+  m.constructed = false;
+  if (m.constructed===true) {
+    return;
+  }
+  m.constructed = true;
   /*initial tasks and config*/ 
   function initialize() {
+    $(sel).empty().html(dom);
     m.initialContents = $(sel).html();
     new Figure.Figure(sel, {
       title:"",
@@ -169,7 +176,10 @@ var Interactive = function(sel) {
 
 
 Figure.whenReady = function() {
-  return new Interactive("#hous4-16-18");
+  if (window.interactiveBuilt) {return;}
+  var theInteractive = new Interactive("#hous4-16-18");
+  window.interactiveBuilt = true;
+  return theInteractive;
 };
 })();
 

@@ -21,6 +21,11 @@ function zeroPad(fips) {
   }
   return fips;
 }
+gl.watch_list.push([['./image_proxy/*.php'],{usePolling: true},['copyProxy']]);
+gl.watch_list.push([['./loader.js','loadtest.html'], {usePolling:true},['copyLoader']]);
+gulp.task("copyLoader", function() {
+  gulp.src(['./loader.js','loadtest.html']).pipe(gulp.dest('./build'));
+});
 gl.gulp.task("redlining_shapefiles", ["intermediate"], function(cb) {
   if (!fs.existsSync("./intermediate/redlining.json")) {
     var dest = fs.createWriteStream("./intermediate/redlining.json");
@@ -636,6 +641,8 @@ gulp.task("copyProxy", function() {
   gulp.src(['./image_proxy/**/*']).pipe(gulp.dest('./build/image_proxy'));
 });
 
+
+
 gulp.task("server", function(cb) {
   var http = require('http');
   var fs = require("fs");
@@ -653,7 +660,7 @@ gulp.task("server", function(cb) {
       var file = req.url.split("?")[0];
       var ext = file.split(".")[file.split(".").length-1];
       if (ext==="php") {
-        var command = "php-cgi \"" + __dirname + "/build" + file + "\" " + req.url.split("?")[1].split("&").join(" ");
+        var command = "php-cgi -q \"" + __dirname + "/build" + file + "\" " + req.url.split("?")[1].split("&").join(" ");
         exec(command, function(err, f) {
           /*res.write(f);
           res.end();

@@ -57,7 +57,7 @@ module.exports = function($, m) {
         var newImage = $(document.createElement("img"));
         newImage.attr("src", src + "&t=" + new Date().getTime());
         newImage.attr("style",styles);
-        newImage.attr("crossorigin",true);
+        newImage.attr("crossorigin","anonymous");
         parent.append(newImage);
         newImage.on("load", function() {
           png_to_canvas_transparent(newImage[0], true, cb);
