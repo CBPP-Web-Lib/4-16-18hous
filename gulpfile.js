@@ -649,6 +649,34 @@ gulp.task("server", function(cb) {
   var exec = require("child_process").exec;
   
   var server = http.createServer(function(req, res) {
+    function parse_php_res(f) {
+      var offset;
+      for (var i = 0, ii = f.length; i<ii; i++) {
+        //utf8 double line break
+        if (f[i]===13 && f[i+1]===10 && f[i+2]==13 && f[i+3]===10) {
+          offset = i;
+        }
+      }
+      var headers = [];
+      for (i = 0; i<offset;i++) {
+        headers.push(f[i]);
+      }
+      var body = [];
+      for (i = offset+4, ii = f.length; i<ii; i++) {
+        body.push(f[i]);
+      }
+      headers = Buffer.from(headers).toString("utf8").split("\r\n");
+      body = Buffer.from(body);
+      var headersObj = {};
+      headers.forEach(function(header) {
+        header = header.split(":");
+        headersObj[header[0]] = header[1];
+      });
+      var result = {};
+      result.headers = headersObj;
+      result.body = body;
+      return result;
+    }
     try {
       var headers = {
         'max-age':86400,
@@ -660,31 +688,12 @@ gulp.task("server", function(cb) {
       var file = req.url.split("?")[0];
       var ext = file.split(".")[file.split(".").length-1];
       if (ext==="php") {
-        var command = "php-cgi -q \"" + __dirname + "/build" + file + "\" " + req.url.split("?")[1].split("&").join(" ");
-        exec(command, function(err, f) {
-          /*res.write(f);
+        var command = "php-cgi \"" + __dirname + "/build" + file + "\" " + req.url.split("?")[1].split("&").join(" ");
+        exec(command, {encoding:"Buffer"}, function(err, f) {
+          var parsed = parse_php_res(f);
+          res.writeHead(200, parsed.headers);
+          res.write(parsed.body);
           res.end();
-          return;*/
-          var queryString = req.url.split("?")[1].split("&");
-          var r = {};
-          queryString.forEach(function(v) {
-            var n = v.split("=")[0];
-            var val = v.split("=")[1];
-            r[n] = val;
-          });
-          file = "./build/image_proxy/cache/"+r.z + "_" + r.x + "_" + r.y + (r.r*1===2 ? "@2x.png" : ".png");
-          fs.readFile(file, function(err, file) {
-            if (err) {
-              res.statusCode = 404;
-              res.write('Not found');
-              res.end();
-              return;
-            }
-            
-            res.writeHead(200, headers);
-            res.write(file);
-            res.end();
-          });
         });
       } else {
         fs.readFile("./build" + file, function (err, file) {

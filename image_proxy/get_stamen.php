@@ -1,8 +1,7 @@
 <?php
 
 
-
-
+//print_r($_SERVER);
 $z = $_GET["z"]*1;
 $x = $_GET["x"]*1;
 $y = $_GET["y"]*1;
@@ -12,12 +11,32 @@ $ext = ($r===2) ? "@2x.png" : ".png";
 
 $filename = getcwd() . "/cache/" . $z . "_" . $x . "_" . $y . $ext;
 
-try {
+$is_cgi = false;
+$valid_referer = false;
+
+
+
+if (array_key_exists("SHELL", $_SERVER)) {
+  if ($_SERVER["SHELL"]==="/bin/bash") {
+    $is_cgi = true;
+  }
+}
+
+
+if (array_key_exists("HTTP_REFERER", $_SERVER)) {
   if (
     strpos($_SERVER['HTTP_REFERER'],"https://apps.cbpp.org")!==false || 
     strpos($_SERVER['HTTP_REFERER'],"http://apps.cbpp.org")!==false || 
     strpos($_SERVER['HTTP_REFERER'],"https://www.cbpp.org")!==false || 
     strpos($_SERVER['HTTP_REFERER'],"https://www.cbpp-multimedia.org")!==false
+  ) {
+    $valid_referer = true;
+  }
+}
+
+try {
+  if (
+   $valid_referer || $is_cgi
   ) {
     if (!file_exists($filename)) { 
       $url = "http://b.tile.stamen.com/toner/".$z."/".$x."/".$y. $ext;
