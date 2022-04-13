@@ -1,0 +1,20 @@
+{
+  "low": {
+    "quantize":0.05,
+    "simplify":0.005,
+    "dest":"./topojson/low/",
+    "exclude" : [
+      "tl_2010",
+      "redlining"
+    ]
+  },
+  "high": {
+    "quantize":0.000001,
+    "simplify":0.000001,
+    "dest":"./build/topojson/high/",
+    "exclude": [
+      "tl_2015",
+      "cb_2015"
+    ]
+  }
+}

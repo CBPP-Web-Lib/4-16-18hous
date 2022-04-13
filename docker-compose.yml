@@ -1,0 +1,31 @@
+version: '3'
+services:
+    node-watch:
+        volumes:
+            - ./node:/opt/project:rw
+            - ./webroot:/opt/project/webroot:rw
+            - ./services/watch/webpack.config.js:/opt/project/webpack.config.js:rw
+        build:
+            context: .
+            dockerfile: services/watch/Dockerfile
+        container_name: 4-16-18hous-watch
+    apache-dev:
+        volumes:
+            - ./node/dev:/var/www/html/js:rw
+            - ./webroot:/var/www/html:rw
+        build:
+            context: .
+            dockerfile: services/apache/Dockerfile
+        ports:
+            - "8888:80"
+        container_name: 4-16-18hous-dev
+    apache-prod:
+        volumes:
+            - ./node/prod:/var/www/html/js:rw
+            - ./webroot:/var/www/html:rw
+        build:
+            context: .
+            dockerfile: services/apache/Dockerfile
+        ports:
+            - "8889:80"
+        container_name: 4-16-18hous-prod
