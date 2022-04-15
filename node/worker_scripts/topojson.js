@@ -33,7 +33,11 @@ parentPort.on("message", function(e) {
 function do_topojson(item) {
   var {settings, f} = item;
   makeDirectory(settings.dest);
-  var compressedf = f.replace(".json", "");
+  var ext = "";
+  if (settings.dest==="./topojson/low/") {
+    ext = ".json";
+  }
+  var compressedf = f.replace(".json", ext);
   var dest = settings.dest + compressedf;
 
   function exclude(f, settings) {
@@ -75,14 +79,21 @@ function do_topojson(item) {
         scale:[settings.quantize,settings.quantize],
         translate:[0,0]
       });
-      var binary =  pako.deflate(
-        JSON.stringify(topo, null, null)
-      );
-      return {
-        filePromise: new Promise((resolve)=> {
-          fs.writeFile(dest, binary, resolve);
-        }),
-        dest: dest
+      var toWrite = JSON.stringify(topo);
+      if (ext!==".json") {
+        return {
+          filePromise: new Promise((resolve)=> {
+            fs.writeFile(dest, pako.deflate(toWrite), resolve);
+          }),
+          dest: dest
+        }
+      } else {
+        return {
+          filePromise: new Promise((resolve)=> {
+            fs.writeFile(dest, toWrite, "utf-8", resolve);
+          }),
+          dest: dest
+        }
       }
     } catch (ex) {
       console.log(ex);

@@ -10,6 +10,7 @@
     "cbpp_colorgen": "git+https://github@github.com:CBPP-Web-Lib/CBPP_Colorgen.git",
     "cbpp_figures": "git+https://github@github.com:CBPP-Web-Lib/CBPP_Figure.git",
     "comma-number": "^2.0.0",
+    "core-js": "^3.22.0",
     "csv-parse": "^1.2.0",
     "d3": "^4.8.0",
     "fs": "0.0.1-security",
@@ -20,21 +21,30 @@
     "localforage": "^1.7.2",
     "node-php-server": "^0.1.2",
     "pako": "^1.0.6",
+    "path": "^0.12.7",
     "point-in-polygon": "^1.0.1",
     "promise-polyfill": "^7.1.2",
+    "regenerator-runtime": "^0.13.9",
     "stringify": "^5.1.0",
+    "style-loader": "^3.3.1",
     "svg-path-bounds": "^1.0.1",
-    "turf": "^3.0.14"
+    "turf": "^3.0.14",
+    "webpack": "^5.72.0"
   },
   "devDependencies": {
+    "css-loader": "^6.7.1",
     "deepcopy": "^1.0.0",
     "gulp-decompress": "^2.0.2",
     "martinez-polygon-clipping": "^0.4.3",
     "node-phpcgi": "^0.3.7",
     "ogr2ogr": "*",
+    "raw-loader": "^4.0.2",
     "request": "^2.87.0",
+    "sass": "^1.50.0",
+    "sass-loader": "^12.6.0",
     "topojson": "*",
-    "twig-loader": "^0.5.5"
+    "twig-loader": "^0.5.5",
+    "webpack-cli": "^4.9.2"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

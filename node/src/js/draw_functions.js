@@ -54,13 +54,13 @@ module.exports = function(
         m.updateDrawData();
       }
     }
-    g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".binary", function(err, d) {
+    g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2010_tract_" + geoid, function(err, d) {
       var geo = topojson.feature(d, d.objects.districts);
       geo_data["tl_2010_tract_" + geoid] = {high:geo};
       loaded = true;
       checkZoomAndLoad();
     });
-    g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/redlining_"+geoid+".binary", function(err, d) {
+    g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/redlining_"+geoid, function(err, d) {
       if (d.objects.districts.geometries.length===0) {
         disableRedline();
       } else {
@@ -95,7 +95,7 @@ module.exports = function(
       while (water_files[i].length<5) {
         water_files[i] = "0" + water_files[i];
       }
-      water_requests.push(new WaterRequest(g.URL_BASE + "/water/tl_2017_" + water_files[i] + "_areawater.binary"));
+      water_requests.push(new WaterRequest(g.URL_BASE + "/water/tl_2017_" + water_files[i] + "_areawater"));
     }
     Promise.all(water_requests).then(function() {
       water_loaded = true;

@@ -30,11 +30,9 @@ var geojson_bbox = require("geojson-bbox");
 
 /*linked files*/
 var dom = require("./dom.html");
-var cb_2015_us_state_500k = JSON.parse(pako.inflate(require("./topojson/low/cb_2015_us_state_500k.txt"),{to:"string"}));
-var tl_2015_us_cbsa = JSON.parse(pako.inflate(require("./topojson/low/tl_2015_us_cbsa.txt"),{to:"string"}));
 var GridConfig = require("./gridConfig.json");
-var FileIndex = require("./fileIndex.json");
-var waterIndex = require("./waterIndex.json");
+var FileIndex = require("../tmp/fileIndex.json");
+var waterIndex = require("../tmp/waterIndex.json");
 var build_intro_functions = require("./js/intro_functions.js"); 
 var build_tile_functions = require("./js/tile_functions.js");
 var build_geo_functions = require("./js/geo_functions.js");
@@ -47,7 +45,10 @@ var build_cbsa_zoom_functions = require("./js/cbsa_zoom.js");
 var build_resize = require("./js/resize.js");
 var build_fullscreen = require("./js/fullscreen.js");
 var build_locking = require("./js/locking.js");
-require("./app.css");
+
+var cb_2015_us_state_500k = require("../topojson/low/cb_2015_us_state_500k.json");
+var tl_2015_us_cbsa = require("../topojson/low/tl_2015_us_cbsa.json");
+require("./app.scss");
 
 /*global storage/cache object for requested JSON data*/
 var localmemory = {};

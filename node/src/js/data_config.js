@@ -1,5 +1,5 @@
 var colorgen = require("cbpp_colorgen");
-var bins = require("../intermediate/bins.json");
+var bins = require("../../tmp/bins.json");
 
 module.exports = function($, m) {
   var binDefGen = function(startColor, endColor, dataIndex, labelFormatter, customBins, customColors, extraBin, useCBSABins) {

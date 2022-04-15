@@ -5,7 +5,7 @@ WORKDIR /opt/project
 RUN apt-get update 
 
 RUN npm config set cache /home/node/cache --global
-RUN npm install -g webpack@4
+RUN npm install -g webpack@5
 RUN npm install -g webpack-cli
 RUN npm install -g gulp
 

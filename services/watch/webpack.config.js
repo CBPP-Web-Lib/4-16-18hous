@@ -45,6 +45,10 @@ module.exports = {
       {
         test: /\.twig|html$/,
         loader: "twig-loader"
+      },
+      {
+        test: /\.txt$/,
+        loader: "raw-loader"
       }
     ],
   }

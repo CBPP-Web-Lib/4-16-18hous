@@ -298,7 +298,7 @@ gulp.task("simplify_water", gulp.series("ogr2ogr", function(cb) {
     topo.objects.districts.geometries.forEach(function(el) {
       delete(el.properties);
     });
-    f = f.replace(".json",".binary");
+    f = f.replace(".json","");
     fs.writeFileSync("./webroot/water/" + f, pako.deflate(JSON.stringify(topo)));
   });
   cb();
@@ -324,7 +324,8 @@ gulp.task("index_water",  gulp.series("ogr2ogr", function(cb) {
     }
     r[f] = fArr;
   });
-  fs.writeFileSync("./waterIndex.json", JSON.stringify(r, null, " "));
+  fs.writeFileSync("./tmp/waterIndex.json", JSON.stringify(r, null, " "));
+  cb();
 }));
 
 gulp.task("redlining_shapefiles", gulp.series("temp", function(cb) {
@@ -393,9 +394,8 @@ gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
     var merged = topojson.merge(topostate, topostate.objects.districts.geometries);
     var r = [];
     var intersect;
-    gulp.watch();
     try {
-      cbsa.features.forEach(function(f) {
+      cbsa.features.forEach(function(f, i) {
         //console.log(merged, f.geometry);
         console.log(merged, f.geometry, f.properties.GEOID);
         intersect = turf.intersect(merged, f.geometry);
@@ -547,7 +547,7 @@ gulp.task("filter_geojson", gulp.series("ogr2ogr","split_data", function(cb) {
         }
       }
     }
-    fs.writeFileSync("./fileIndex.json", JSON.stringify(fileIndex, null, " "));
+    fs.writeFileSync("./tmp/fileIndex.json", JSON.stringify(fileIndex, null, " "));
     for (var cbsa in r) {
       if (r.hasOwnProperty(cbsa)) {
         fs.writeFileSync("./filtered/tl_2010_tract_" + cbsa + ".json", JSON.stringify(r[cbsa], null, " "));

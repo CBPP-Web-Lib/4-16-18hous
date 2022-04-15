@@ -10,7 +10,6 @@ $r = $_GET["r"]*1;
 $ext = ($r===2) ? "@2x.png" : ".png";
 
 $filename = getcwd() . "/cache/" . $z . "_" . $x . "_" . $y . $ext;
-
 $is_cgi = false;
 $valid_referer = false;
 
