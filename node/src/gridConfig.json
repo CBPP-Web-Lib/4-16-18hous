@@ -11,7 +11,7 @@
   "high": {
     "quantize":0.000001,
     "simplify":0.000001,
-    "dest":"./build/topojson/high/",
+    "dest":"./webroot/topojson/high/",
     "exclude": [
       "tl_2015",
       "cb_2015"

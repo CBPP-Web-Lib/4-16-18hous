@@ -19,3 +19,5 @@ water_simple/
 image_proxy/cache
 phptest/test.php
 tmp
+webroot/water
+webroot/data

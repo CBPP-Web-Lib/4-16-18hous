@@ -3,18 +3,154 @@ var gulp = require("gulp");
 var fs = require("fs");
 var request = require("request");
 var decompress = require("gulp-decompress");
-var ogr2ogr = require("ogr2ogr");
+var ogr2ogr = require("ogr2ogr").default;
 var topojson = require("topojson");
 var pako = require("pako");
-var geojson_bbox = require("geojson-bbox");
 var fips = require("./src/fips.json");
 var turf_area = require("@turf/area").default;
+var csv_parse = require("csv-parse");
+const {
+  Worker,
+  isMainThread,
+  setEnvironmentData,
+  getEnvironmentData,
+} = require('worker_threads');
+
+var gridConfig = require("./src/gridConfig.json");
+
+var parallel_exec = function(array_of_promise_factories, num_slots, cb) {
+  var i = 0;
+  var slots = [];
+  for (var s = 0; s < num_slots; s++) {
+    slots[s] = next_task(s);
+  }
+  var started_all = false;
+  function next_task(s) {
+    if (i >= array_of_promise_factories.length) {
+      started_all = true;
+    } else {
+      slots[s] = array_of_promise_factories[i](s, i).then(function() {
+        slots[s] = null;
+        if (started_all) {
+          check_finish();
+        } else {
+          slots.forEach((slot, s)=> {
+            if (slots[s] === null) {
+              next_task(s);
+            }
+          });
+        }
+      });
+      i++;
+    }
+  }
+  function check_finish() {
+    var done = true;
+    slots.forEach((slot, s)=> {
+      if (slots[s]!==null) {
+        done = false;
+      }
+    });
+    if (done) {
+      cb();
+    }
+  }
+}
+
+/*for highly parallel tasks to speed things up*/
+var chunk_tasks_to_workers = function(parm_list, config, finished) {
+
+  var {num_slots, response_handler, worker_filename, chunk_size} = config;
+
+  var workers = [];
+  var Worker_Wrap = function(script) {
+    this.worker = new Worker(script);
+    var self = this;
+    this.worker.on("message", function(e) {
+      e.results.forEach((result)=> {
+        response_handler(result);
+      });
+      if (typeof(self.cb)==="function") {
+        self.cb();
+      }
+      self.status = "idle";
+    });
+  };
+
+  for (var s = 0; s < num_slots; s++) {
+    workers[s] = new Worker_Wrap(worker_filename);
+  }
+
+  
+  function create_chunk(s) {
+    var list = [];
+    for (var ci = 0; ci < chunk_size; ci++) {
+      if (parm_list[i]) {
+        list.push(parm_list[i]);
+        i++;
+      }
+    }
+    var _i = i;
+    return function() {
+      return new Promise((resolve, reject) => {
+        var worker_wrap = workers[s];
+        worker_wrap.status = "active";
+        worker_wrap.worker.postMessage({
+          list
+        });
+        worker_wrap.cb = resolve;
+        console.log(_i + "/" + n);
+      });
+    }
+  }
+
+  var n = parm_list.length;
+  var i = 0;
+  function next_group() {
+    var tasks = [];
+
+    for (var s = 0; s < num_slots; s++) {
+      tasks.push(create_chunk(s));
+    }
+    var group_cb;
+    if (i < n) {
+      group_cb = next_group;
+    } else {
+      group_cb = function() {
+        if (check_if_done()) {
+          workers.forEach((worker)=> {
+            worker.worker.terminate();
+          });
+          if (typeof(finished)==="function") {
+            finished();
+          }
+        }
+      };
+    }
+    parallel_exec(tasks, num_slots, group_cb);
+  }
+
+  next_group();
+
+  function check_if_done() {
+    var done = true;
+    workers.forEach((worker)=> {
+      if (worker.status==="active") {
+        done = false;
+      }
+    });
+    return done;
+  }
+
+}
 
 var makeDirectory = function(dir) {
   try {
     fs.mkdirSync(dir)
   } catch (ex) {
-    console.log(ex);
+    if (ex.code!=="EEXIST") {
+      throw (ex);
+    }
   }
 }
 
@@ -38,7 +174,8 @@ gulp.task("temp", function(cb) {
 
 
 gulp.task("geojson_dir", function(cb) {
-  makeDirectory("./geojson", cb);
+  makeDirectory("./geojson");
+  cb();
 });
 
 
@@ -47,94 +184,84 @@ gulp.task("unzip_shapefiles", function(cb) {
   var zips = fs.readdirSync("./download");
   var requests = [];
   var index = [];
+  var problems = [];
   zips.forEach(function(f) {
     var name = f.split(".")[0];
     index.push(name);
-    requests.push(new Promise(function(resolve, reject) {
-      try {
-        makeDirectory("./shp/" + name);
-        if (fs.readdirSync("./shp/" + name ).length > 0) {
+    requests.push(function() {
+      return new Promise(function(resolve, reject) {
+        try {
+          makeDirectory("./shp/" + name);
+          if (fs.readdirSync("./shp/" + name ).length > 0) {
+            resolve();
+          } else {
+            console.log(f);
+            gulp.src("./download/" + f)
+              .pipe(decompress().on("error", function(err) {
+                problems.push(f);
+                resolve();
+              }))
+              .pipe(gulp.dest("./shp/" + name))
+              .on("error", function(err) {
+                resolve();
+              })
+              .on("finish", function() {
+                console.log("finished unzipping " + name);
+                resolve();
+              });
+          }
+        } catch (ex) {
+          console.log(ex);
           resolve();
-        } else {
-          console.log(f);
-          gulp.src("./download/" + f)
-            .pipe(decompress())
-            .pipe(gulp.dest("./shp/" + name))
-            .on("error", function(err) {
-              resolve();
-            })
-            .on("finish", function() {
-              console.log("finished unzipping " + name);
-              resolve();
-            });
         }
-      } catch (ex) {
-        console.log(ex);
-        resolve();
-      }
-    }));
-    Promise.all(requests).then(function() {
-      cb();
+      })
     });
+  });
+  parallel_exec(requests, 8, function() {
+    console.log(problems);
+    cb(); 
   });
 });
 
 gulp.task("ogr2ogr", gulp.series("geojson_dir","unzip_shapefiles", function(cb) {
   var shp = fs.readdirSync("./shp");
   var requests = [];
-  var Converter = function(f, j) {
-    return new Promise(function(resolve, reject) {
-      try {
-        if (fs.existsSync("./geojson/" + f + ".json")) {
-          resolve(j);
-        } else {
-          var geojson = ogr2ogr('./shp/' + f + "/" + f + ".shp")
-            .format('GeoJSON')
-            .timeout(600000);
-          geojson.exec(function(err, data) {
-            if (err) {
-              console.log(err);
-            } else {
-              console.log("finished ogr2ogr for " + f);
-              fs.writeFileSync('./geojson/' + f + ".json", JSON.stringify(data, null, " "));
-              resolve(j);
-            }
-          });
+  var problems = [];
+  shp.forEach((f)=> {
+    requests.push(function() {
+      return new Promise((resolve, reject)=> {
+        try {
+          console.log(f);
+          if (fs.existsSync("./geojson/" + f + ".json")) {
+            resolve();
+          } else {
+            ogr2ogr('./shp/' + f + "/" + f + ".shp", {
+              format: "GeoJSON",
+              maxBuffer: 1024*2014*500
+            }).exec(function(err, result) {
+              if (err) {
+                problems.push(f);
+                console.log(err);
+                resolve();
+              } else {
+                console.log("finished ogr2ogr for " + f);
+                fs.writeFileSync('./geojson/' + f + ".json", JSON.stringify(result.data));
+                resolve();
+              }
+            });
+          }
+        } catch (ex) {
+          console.log(ex);
+          reject(ex);
         }
-      } catch (ex) {
-        console.log(ex);
-        reject(ex);
-      }
+      });
     });
-  };
-  var max_simultaneous = 8;
-  var fileIndex = 0;
-  function clearConvert(i) {
-    requests[i] = null;
-    tryConvert();
-  }
-  function tryConvert() {
-    for (var i = 0; i<max_simultaneous;i++) {
-      if (typeof(requests[i])==="undefined" || requests[i]===null) {
-        if (fileIndex >= shp.length) {
-          var done = true;
-          for (var j = 0; j<max_simultaneous;j++) {
-            if (requests[j]!==null) {done = false;}
-          }
-          if (done) {
-            console.log("finished ogr2ogr for all");
-            cb();
-          }
-          return;
-        }
-        var f = shp[fileIndex];
-        console.log("starting for " + f);
-        requests[i] = new Converter(f, i).then(clearConvert);
-        fileIndex++;
-      }
-    }
-  }
-  tryConvert();
+  });
+  parallel_exec(requests, 8, function() {
+    console.log("problems");
+    console.log(problems);
+    cb(); 
+  });
 }));
 function makeDirectory(d, cb) {
   fs.mkdir(d, function(e) {
@@ -146,6 +273,59 @@ function makeDirectory(d, cb) {
     cb();
   });
 }
+
+
+gulp.task("simplify_water", gulp.series("ogr2ogr", function(cb) {
+  makeDirectory("water_simple");
+  var files = fs.readdirSync("./geojson");
+  files = files.filter(function(f) {
+    return f.indexOf("areawater")!==-1;
+  });
+  var settings = gridConfig.high;
+  makeDirectory("./webroot/water");
+  files.forEach(function(f) {
+    var geo = JSON.parse(fs.readFileSync("./geojson/" + f, "utf-8"));
+    geo.features = geo.features.filter(function(o) {
+      return turf_area(o)>10000;
+    });
+    var topo = topojson.topology({districts:geo});
+    topo = topojson.presimplify(topo);
+    topo = topojson.simplify(topo, settings.simplify);
+    topo = topojson.quantize(topo, {
+      scale:[settings.quantize,settings.quantize],
+      translate:[0,0]
+    });
+    topo.objects.districts.geometries.forEach(function(el) {
+      delete(el.properties);
+    });
+    f = f.replace(".json",".binary");
+    fs.writeFileSync("./webroot/water/" + f, pako.deflate(JSON.stringify(topo)));
+  });
+  cb();
+}));
+
+gulp.task("index_water",  gulp.series("ogr2ogr", function(cb) {
+  var files = fs.readdirSync("./filtered");
+  files = files.filter(function(e) {
+    return e.indexOf("tract")!==-1;
+  });
+  var r = {};
+  files.forEach(function(f) {
+    var fIndex = {};
+    var features = JSON.parse(fs.readFileSync("./filtered/" + f)).features;
+    features.forEach(function(f) {
+      fIndex[f.properties.STATEFP10*1000 + f.properties.COUNTYFP10*1] = true;
+    });
+    var fArr = [];
+    for (var cfips in fIndex) {
+      if (fIndex.hasOwnProperty(cfips)) {
+        fArr.push(cfips);
+      }
+    }
+    r[f] = fArr;
+  });
+  fs.writeFileSync("./waterIndex.json", JSON.stringify(r, null, " "));
+}));
 
 gulp.task("redlining_shapefiles", gulp.series("temp", function(cb) {
   if (!fs.existsSync("./tmp/redlining.json")) {
@@ -179,51 +359,28 @@ gulp.task("download_shapefiles", function(cb) {
   waterfiles.forEach(function(f) {
     files.push("https://www2.census.gov/geo/tiger/TIGER2017/AREAWATER/" + f);
   });
-  var requests = [];
-  var max_simultaneous = 8;
-  var RequestMaker = function(f, j) {
-    return new Promise(function(resolve, reject) {
-      try {
+  var array_of_promise_factories = [];
+  files.forEach((f)=> {
+    array_of_promise_factories.push(function() {
+      return new Promise((resolve)=> {
         var filename = f.split("/")[f.split("/").length - 1];
         if (fs.existsSync("./download/" + filename)) {
           console.log("file exists " + f);
-          resolve(j);
+          resolve();
         } else {
           var ws = fs.createWriteStream("./download/" +  filename);
           request(f)
             .pipe(ws);
           ws.on("finish", function() {
             console.log("finished downloading " + f);
-            resolve(j);
+            resolve();
           });
         }
-      } catch (ex) {
-        console.log(ex);
-        reject(ex);
-      }
+      });
     });
-  };
+  });
   makeDirectory("./download");
-  var fIndex = 0;
-  function clearRequest(j) {
-    console.log("clearing slot " + j);
-    requests[j] = null;
-    tryFile();
-  }
-  function tryFile() {
-    if (fIndex >= files.length) {return;}
-    for (var j = 0; j<max_simultaneous;j++) {
-      var f = files[fIndex];
-      if (requests[j]===null || typeof(requests[j])==="undefined") {
-
-        console.log("trying " + f, j);
-        requests[j] = new RequestMaker(f, j).then(clearRequest);
-        fIndex++;
-      }
-    }
-    console.log("done trying, waiting...");
-  }
-  tryFile();
+  parallel_exec(array_of_promise_factories, 8, cb);
 });
 gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
   function clip_cbsa(cbsa) {
@@ -262,43 +419,24 @@ gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
   fs.writeFileSync("./filtered/tl_2015_us_cbsa.json", JSON.stringify(clip_cbsa(cbsa), null, " "));
   cb();
 });
-gulp.task("filter_redline", function(cb) {
-  gulp.watch();
-  var cbsas = JSON.parse(fs.readFileSync("./tmp/cbsa_filtered_unclipped.json", "utf-8"));
-  var redlining = JSON.parse(fs.readFileSync("./tmp/redlining.json","utf-8"));
-  cbsas.features.forEach(cbsa => {
-    var cbsa_id = cbsa.properties.GEOID;
-    var r = {
-      "type": "FeatureCollection",
-      "features": []
-    };
-    redlining.features.forEach(redline => {
-      var a = geojson_bbox(redline);
-      var b = geojson_bbox(cbsa);
-      /*x1, y1, x2, y2*/
-      if (!(
-          a[2] < b[0] ||
-          b[2] < a[0] ||
-          a[1] > b[3] ||
-          b[3] < a[1]
-        )) {
-          try {
-            if (typeof(turf.intersect(redline, cbsa))!=="undefined") {
-              console.log("intersect");
-              r.features.push(redline);
-            } else {
-              console.log("no intersect");
-            }
-          } catch (ex) {
-            console.log(ex);
-          }
-      }
-    });
-    fs.writeFileSync("./filtered/redlining_"+cbsa_id+".json", JSON.stringify(r, null, " "));
-  }); 
-  cb(); 
+
+gulp.task("tract_csv_parse", function(cb) {
+  var csv = fs.readFileSync("./src/csv/tract_data.csv", "utf-8");
+  makeDirectory("./tmp");
+  csv_parse(csv, function(err, d) {
+    fs.writeFileSync("./tmp/tract_data.json", JSON.stringify(d), "utf-8");
+    cb();
+  });
 });
 
+gulp.task("minority_threshold_parse", function(cb) {
+  var csv = fs.readFileSync("./src/csv/minority_threshold.csv", "utf-8");
+  makeDirectory("./tmp");
+  csv_parse(csv, function(err, d) {
+    fs.writeFileSync("./tmp/minority_threshold.json", JSON.stringify(d), "utf-8");
+    cb();
+  });
+});
 
 gulp.task("split_data",  function(cb) {
   if (fs.existsSync("./tmp/names.json")) {
@@ -307,7 +445,7 @@ gulp.task("split_data",  function(cb) {
   }
   var r = {};
   var name_lookup = {};
-  var data = JSON.parse(fs.readFileSync("./tmp/data.json")).data.tract_data;
+  var data = JSON.parse(fs.readFileSync("./tmp/tract_data.json"));
   var split = {};
   data.forEach(function(row, i) {
     if (i===0) {return;}
@@ -342,6 +480,7 @@ gulp.task("split_data",  function(cb) {
   cb();
 
 });
+
 
 gulp.task("filter_geojson", gulp.series("ogr2ogr","split_data", function(cb) {
   function existsInData(feature, data) {
@@ -461,63 +600,47 @@ gulp.task("filter_geojson", gulp.series("ogr2ogr","split_data", function(cb) {
 
 }));
 
-gulp.task("simplify_water", gulp.series("ogr2ogr", function(cb) {
-  makeDirectory("water_simple");
-  var files = fs.readdirSync("./geojson");
-  files = files.filter(function(f) {
-    return f.indexOf("areawater")!==-1;
-  });
-  var settings = gridConfig.high;
-  makeDirectory("./webroot/water");
-  fs.writeFileSync("./webroot/water/.htaccess",fs.readFileSync("./.htaccess"),"utf-8");
-  files.forEach(function(f) {
-    var geo = JSON.parse(fs.readFileSync("./geojson/" + f, "utf-8"));
-    geo.features = geo.features.filter(function(o) {
-      return turf_area(o)>10000;
-    });
-    var topo = topojson.topology({districts:geo});
-    topo = topojson.presimplify(topo);
-    topo = topojson.simplify(topo, settings.simplify);
-    topo = topojson.quantize(topo, {
-      scale:[settings.quantize,settings.quantize],
-      translate:[0,0]
-    });
-    topo.objects.districts.geometries.forEach(function(el) {
-      delete(el.properties);
-    });
-    f = f.replace(".json",".binary");
-    fs.writeFileSync("./webroot/water/" + f, pako.deflate(JSON.stringify(topo)));
-  });
-  cb();
-}));
 
-gulp.task("index_water",  gulp.series("ogr2ogr", function(cb) {
-  var files = fs.readdirSync("./filtered");
-  files = files.filter(function(e) {
-    return e.indexOf("tract")!==-1;
-  });
-  var r = {};
-  files.forEach(function(f) {
-    var fIndex = {};
-    var features = JSON.parse(fs.readFileSync("./filtered/" + f)).features;
-    features.forEach(function(f) {
-      fIndex[f.properties.STATEFP10*1000 + f.properties.COUNTYFP10*1] = true;
+gulp.task("filter_redline", function(cb) {
+  var cbsas = JSON.parse(fs.readFileSync("./tmp/cbsa_filtered_unclipped.json", "utf-8"));
+  var redlining = JSON.parse(fs.readFileSync("./tmp/redlining.json","utf-8"));
+  var tasks = [];
+  var results = {};
+  cbsas.features.forEach((cbsa) => {
+    var cbsa_id = cbsa.properties.GEOID;
+    results[cbsa_id] = {
+      "type": "FeatureCollection",
+      "features": []
+    };
+    redlining.features.forEach((redline) => {
+      tasks.push({cbsa, redline, cbsa_id});
     });
-    var fArr = [];
-    for (var cfips in fIndex) {
-      if (fIndex.hasOwnProperty(cfips)) {
-        fArr.push(cfips);
-      }
-    }
-    r[f] = fArr;
   });
-  fs.writeFileSync("./waterIndex.json", JSON.stringify(r, null, " "));
-}));
+
+  chunk_tasks_to_workers(tasks, {
+    response_handler: (intersection)=> {
+      var {cbsa_id, result} = intersection;
+      if (result) {
+        results[cbsa_id].features.push(result);
+      }
+    },
+    num_slots: 16,
+    worker_filename: "./worker_scripts/filter_redline.js",
+    chunk_size: 500
+  }, function() {
+    Object.keys(results).forEach((cbsa_id) => {
+      fs.writeFileSync("./filtered/redlining_"+cbsa_id+".json", JSON.stringify(results[cbsa_id], null, " "));
+    });
+    cb(); 
+  });
+
+});
+
 
 gulp.task("topojson_dir", function(cb) {
-  makeDirectory("./topojson", cb);
+  makeDirectory("./topojson");
+  cb();
 });
-var gridConfig = require("./src/gridConfig.json");
 
 gulp.task("topojson", gulp.series(/*"topojson_dir","filter_geojson","buildDirectory"*/ function(done) {
   var files = fs.readdirSync("./filtered");
@@ -528,105 +651,79 @@ gulp.task("topojson", gulp.series(/*"topojson_dir","filter_geojson","buildDirect
     return false;
   });
   var sizes = [];
-  makeDirectory("./webroot/topojson", function() {
-    fs.writeFileSync("./webroot/topojson/.htaccess",fs.readFileSync("./.htaccess"),"utf-8");
-    makeDirectory("./webroot/topojson/high", directoryCB);
-  });
-  var directoryCB = function() {
-    var promiseMaker = function(config) {
-      return new Promise(function(resolve) {
-        topojson_out(config, resolve);
-      });
-    };
-    for (var config in gridConfig) {
-      if (gridConfig.hasOwnProperty(config)) {
-        sizes.push(promiseMaker(gridConfig[config]));
-      }
-    }
-    Promise.all(sizes).then(function() {
-      done();
+  makeDirectory("./webroot/topojson");
+  makeDirectory("./webroot/topojson/high");
+  var promiseMaker = function(config) {
+    return new Promise(function(resolve) {
+      topojson_out(config, resolve);
     });
-    function topojson_out(settings, _cb) {
-      var converts = [];
-      function exclude(f, settings) {
-        var r = false;
-        if (!settings.exclude) {settings.exclude = [];}
-        settings.exclude.forEach(function(e) {
-          if (f.indexOf(e)!==-1) {
-            r = true;
-          }
-        });
-        return r;
-      }
-      files.forEach(function(f) {
-        converts.push(new Promise(function(resolve) {
-          makeDirectory(settings.dest);
-          if (fs.existsSync(settings.dest + f)) {
-            resolve();
-          } else if (exclude(f, settings)) {
-            resolve();
-          } else {
-            var geo = JSON.parse(fs.readFileSync("./filtered/" + f, {
-              encoding: "utf-8"
-            }));
-            try {
-            
-            var topo = topojson.topology({districts:geo}/*, 10000*/);
-            for (var i = topo.objects.districts.geometries.length-1; i>=0; i--) {
-              var obj = topo.objects.districts.geometries[i].properties;
-
-              for (var prop in obj) {
-                if (obj.hasOwnProperty(prop)) {
-                  if (prop.indexOf("GEOID")===-1 && prop.indexOf("NAME")===-1 && prop.indexOf("holc")===-1) {
-                    delete (obj[prop]);
-                  }
-                }
-              }
-
-            }
-            topo = topojson.presimplify(topo);
-            topo = topojson.simplify(topo, settings.simplify);
-            topo = topojson.quantize(topo, {
-              scale:[settings.quantize,settings.quantize],
-              translate:[0,0]
-            });
-            var compressedf;
-            if (settings.dest==="./topojson/low/") {
-              compressedf = f.replace(".json", ".txt");
-              fs.writeFileSync(settings.dest + compressedf,
-                pako.deflate(
-                  JSON.stringify(topo, null, settings.dest.indexOf("build")===-1 ? " " : null),
-                  {to:"string"}
-                )
-              );
-            } else {
-              compressedf = f.replace(".json", ".binary");
-              fs.writeFileSync(settings.dest + compressedf,
-                pako.deflate(
-                  JSON.stringify(topo, null, settings.dest.indexOf("build")===-1 ? " " : null)
-                )
-              );
-            }
-            console.log("wrote " + settings.dest + f);
-          } catch (ex) {
-            console.log(ex);
-          }
-            resolve();
-          }
-        }));
-      });
-      Promise.all(converts).then(function() {
-        _cb();
-      });
-    }
   };
+  for (var config in gridConfig) {
+    if (gridConfig.hasOwnProperty(config)) {
+      sizes.push(promiseMaker(gridConfig[config]));
+    }
+  }
+  Promise.all(sizes).then(function() {
+    done();
+  });
+  function topojson_out(settings, _cb) {
+    var converts = [];
+    files.forEach(function(f) {
+      converts.push({
+        settings,
+        f
+      });
+    });
+    chunk_tasks_to_workers(converts, {
+      response_handler: (result) => {
+        console.log(result.dest);
+      },
+      chunk_size: 10,
+      num_slots: 16,
+      worker_filename: "./worker_scripts/topojson.js"
+    }, _cb);
+  }
 }));
 
 
+gulp.task("minorityconc", gulp.series("split_data", function() {
+  var data = require("./tmp/minority_threshold.json");
+  var names = invert(require('./tmp/names.json'));
+  function invert(o) {
+    var r = {};
+    for (var key in o) {
+      if (o.hasOwnProperty(key)) {
+        r[o[key]] = key;
+      }
+    }
+    return r;
+  }
+  var thresholds = {};
+  for (var i = 0, ii = data.length; i<ii;i++) {
+    for (var cbsa in names) {
+      if (names.hasOwnProperty(cbsa)) {
+        if (cbsa.indexOf(data[i][0])!==-1 || data[i][0].indexOf(cbsa)!==-1) {
+          thresholds[names[cbsa]] = data[i][1];
+        }
+      }
+    }
+  }
+  fs.writeFileSync("./tmp/thresholds.json", JSON.stringify(thresholds, null, " "), "utf-8");
+  cb();
+}));
 
 
-gulp.task("binCBSA", gulp.series("temp","split_data", function() {
-  var binner = require("./binData.js");
+gulp.task("binData", gulp.series("temp", function(cb) {
+  var binner = require("./src/binData.js");
+  var bins = binner(JSON.parse(fs.readFileSync("./tmp/tract_data.json","utf-8")), true, {"nonwhite":8}, null);
+  bins.splice(2, 1);
+  bins = bins.slice(1);
+  fs.writeFileSync("./tmp/bins.json",JSON.stringify(bins),"utf-8");
+  cb();
+}));
+
+gulp.task("binCBSA", gulp.series("temp","split_data", function(cb) {
+  var binner = require("./src/binData.js");
   var names= require("./tmp/names.json");
   for (var cbsa in names) {
     if (names.hasOwnProperty(cbsa)) {
@@ -641,124 +738,5 @@ gulp.task("binCBSA", gulp.series("temp","split_data", function() {
       fs.writeFileSync("./webroot/data/bin_"+cbsa+".json", JSON.stringify(bins));
     }
   }
-}));
-
-gulp.task("copyProxy", function() {
-  gulp.src(['./image_proxy/**/*']).pipe(gulp.dest('./webroot/image_proxy'));
-});
-
-
-
-gulp.task("server", function(cb) {
-  var http = require('http');
-  var fs = require("fs");
-  var exec = require("child_process").exec;
-  
-  var server = http.createServer(function(req, res) {
-    function parse_php_res(f) {
-      var offset;
-      for (var i = 0, ii = f.length; i<ii; i++) {
-        //utf8 double line break
-        if (f[i]===13 && f[i+1]===10 && f[i+2]==13 && f[i+3]===10) {
-          offset = i;
-        }
-      }
-      var headers = [];
-      for (i = 0; i<offset;i++) {
-        headers.push(f[i]);
-      }
-      var body = [];
-      for (i = offset+4, ii = f.length; i<ii; i++) {
-        body.push(f[i]);
-      }
-      headers = Buffer.from(headers).toString("utf8").split("\r\n");
-      body = Buffer.from(body);
-      var headersObj = {};
-      headers.forEach(function(header) {
-        header = header.split(":");
-        headersObj[header[0]] = header[1];
-      });
-      var result = {};
-      result.headers = headersObj;
-      result.body = body;
-      return result;
-    }
-    try {
-      var headers = {
-        'max-age':86400,
-        'Access-Control-Allow-Origin':"*",
-        'Vary':"Access-Control-Allow-Origin",
-        'Access-Control-Allow-Headers':'referrer, range, accept-encoding, x-requested-with',
-        'Access-Control-Allow-Methods':'POST, GET, OPTIONS'
-      };
-      var file = req.url.split("?")[0];
-      var ext = file.split(".")[file.split(".").length-1];
-      if (ext==="php") {
-        var command = "php-cgi \"" + __dirname + "/build" + file + "\" " + req.url.split("?")[1].split("&").join(" ");
-        exec(command, {encoding:"Buffer"}, function(err, f) {
-          var parsed = parse_php_res(f);
-          res.writeHead(200, parsed.headers);
-          res.write(parsed.body);
-          res.end();
-        });
-      } else {
-        fs.readFile("./webroot" + file, function (err, file) {
-          if (err) {
-            res.end('HTTP/1.1 400 Bad Request\r\n\r\n');
-            return;
-          }
-          if (ext === "json") {
-            headers['Content-Type'] = 'application/json';
-          }
-          res.writeHead(200, headers);
-          res.write(file);
-          res.end();
-        });
-      }
-    } catch (ex) {
-      res.end('HTTP/1.1 400 Bad Request\r\n\r\n');
-    }
-  });
-  server.on('clientError', function (err, socket) {
-    socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
-  });
-  server.listen(8000);
-  cb(); 
-});
-
-gulp.task("minorityconc", gulp.series("split_data", function() {
-  var data = require("./tmp/data.json").data.minority_threshhold;
-  var names = invert(require('./tmp/names.json'));
-  function invert(o) {
-    var r = {};
-    for (var key in o) {
-      if (o.hasOwnProperty(key)) {
-        r[o[key]] = key;
-      }
-    }
-    return r;
-  }
-  var threshholds = {};
-  for (var i = 0, ii = data.length; i<ii;i++) {
-    for (var cbsa in names) {
-      if (names.hasOwnProperty(cbsa)) {
-        if (cbsa.indexOf(data[i][0])!==-1 || data[i][0].indexOf(cbsa)!==-1) {
-          threshholds[names[cbsa]] = data[i][1];
-        }
-      }
-    }
-  }
-  fs.writeFileSync("./tmp/thresholds.json", JSON.stringify(threshholds, null, " "), "utf-8");
-}));
-
-
-
-gulp.task("binData", gulp.series("temp", function() {
-  var binner = require("./binData.js");
-  console.log(JSON.parse(fs.readFileSync("./tmp/data.json","utf-8")).data.tract_data);
-  var bins = binner(JSON.parse(fs.readFileSync("./tmp/data.json","utf-8")).data.tract_data, true, {"nonwhite":8}, null);
-  bins.splice(2, 1);
-  bins = bins.slice(1);
-  fs.writeFileSync("./tmp/bins.json",JSON.stringify(bins),"utf-8");
-  setTimeout(function(){},86400000);
+  cb();
 }));

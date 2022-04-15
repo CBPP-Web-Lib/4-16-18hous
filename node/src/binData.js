@@ -1,5 +1,5 @@
 var numBins = 8;
-var thresholds = require("./intermediate/thresholds.json");
+var thresholds = require("../tmp/thresholds.json");
 
 var config = {
   "nonwhite": {
