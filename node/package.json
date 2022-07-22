@@ -32,6 +32,7 @@
     "webpack": "^5.72.0"
   },
   "devDependencies": {
+    "axios": "^0.27.2",
     "css-loader": "^6.7.1",
     "deepcopy": "^1.0.0",
     "gulp-decompress": "^2.0.2",

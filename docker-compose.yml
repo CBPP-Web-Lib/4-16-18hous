@@ -13,6 +13,7 @@ services:
         volumes:
             - ./node/dev:/var/www/html/js:rw
             - ./webroot:/var/www/html:rw
+            - ${TILE_DIR}:/var/www/html/image_proxy/cache:rw
         build:
             context: .
             dockerfile: services/apache/Dockerfile

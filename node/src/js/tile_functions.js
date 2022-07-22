@@ -97,7 +97,7 @@ module.exports = function($, d3, m, sel, g) {
       if (url.indexOf("r=2")!==-1) {
         var styles = $(this).attr("style");
         $(this).remove();
-        url = url.replace("r=2","r=1");
+        //url = url.replace("r=2","r=1");
         var img = $(document.createElement("img"));
         img.attr("style",styles);
         img.attr("src",url);
@@ -146,6 +146,7 @@ module.exports = function($, d3, m, sel, g) {
         if (window.devicePixelRatio>1) {
           r = "2";
         }
+        r="2";
         var url = g.URL_BASE + "/image_proxy/get_stamen.php?z="+z+"&x="+x+"&y="+y+"&r="+r;
         if (existingTiles[url]) {
           img = $(existingTiles[url]).detach();
