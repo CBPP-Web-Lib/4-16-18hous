@@ -22,8 +22,8 @@ var get_tile_from_long_lat = function(long, lat, zoom, exact) {
   ];
 };
 
-var leftmost = 172;
-var rightmost = -45;
+var leftmost = 172 + 45;
+var rightmost = -60 + 45;
 var northmost = 72;
 var southmost = 19;
 var rotate = 45;
@@ -38,10 +38,17 @@ var x, y, n, shift, tl, br;
 x = 99; y = 0;zoom=-1, n = 0;
 find_next_tile();
 
+var errors = [];
+
+
 function request_tile(x, y, z, cb) {
   var url = "http://host.docker.internal:8888/image_proxy/get_stamen.php?z=" + z + "&x=" + x + "&y=" + y + "&r=2&dynamic=true";
   console.log(url);
-  axios.get(url).then(function() {
+  axios.get(url).catch(function(err) {
+    errors.push(url);
+    console.log(err);
+    cb();
+  }).then(function() {
     cb(); 
   });
 }
@@ -85,7 +92,9 @@ function find_next_tile() {
     x = 0;
     y = 0;
   }
-  if (zoom >= 0) {
+  if (zoom <= 13) {
     next_tile();
+  } else {
+    fs.writeFileSync("./errors.json", JSON.stringify(errors), "utf-8");
   }
 }
