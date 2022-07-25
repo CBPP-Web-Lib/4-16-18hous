@@ -7,8 +7,7 @@ var feature_index = 0;
 var feature = geo_tl_2015_us_cbsa.features[feature_index];
 function next_feature() {
   var bbox = geojson_bbox(feature);
-  console.log(feature.properties.NAME);
-  do_box(bbox[0], bbox[2], bbox[3], bbox[1]).then(function() {
+  do_box(bbox[0], bbox[2], bbox[3], bbox[1], feature.properties.NAME).then(function() {
     feature_index++;
     feature = geo_tl_2015_us_cbsa.features[feature_index];
     if (feature) {
@@ -43,7 +42,7 @@ function get_tile_from_long_lat(long, lat, zoom, exact) {
   ];
 };
 
-function do_box(leftmost, rightmost, northmost, southmost) {
+function do_box(leftmost, rightmost, northmost, southmost, name) {
   return new Promise((resolve, reject)=> {
     console.log(leftmost, rightmost, northmost, southmost);
     var rotate = 45;
@@ -63,7 +62,7 @@ function do_box(leftmost, rightmost, northmost, southmost) {
 
     function request_tile(x, y, z, cb) {
       var url = "http://host.docker.internal:8888/image_proxy/get_stamen.php?z=" + z + "&x=" + x + "&y=" + y + "&r=2&dynamic=true";
-      console.log(url);
+      console.log(url, name);
       var moved_on = false;
       function _cb() {
         if (moved_on) {
@@ -114,9 +113,9 @@ function do_box(leftmost, rightmost, northmost, southmost) {
         br = get_tile_from_long_lat((rightmost + rotate + 180)%360-180, southmost, zoom, false);
         xn = br[0] - tl[0];
         yn = br[1] - tl[1];
-        console.log(zoom);
-        console.log([tl[0] - shift, tl[1]]);
-        console.log([br[0] - shift, br[1]]);
+        //console.log(zoom);
+        //console.log([tl[0] - shift, tl[1]]);
+        //console.log([br[0] - shift, br[1]]);
         x = tl[0] - 1;
         y = tl[1] - 1;
       }
