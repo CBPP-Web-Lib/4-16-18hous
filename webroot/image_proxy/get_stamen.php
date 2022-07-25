@@ -100,13 +100,19 @@ try {
     if (array_key_exists("HTTP_ORIGIN",$_SERVER)) { 
       $origin = $_SERVER['HTTP_ORIGIN'];
     }
-    header('Access-Control-Allow-Origin: '.$origin);
-    header('max-age: 86400');
-    header('Vary: Access-Control-Allow-Origin');
-    header('Access-Control-Allow-Headers: referer, range, accept-encoding, x-requested-with');
-    header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-    header('Content-type: image/png');
-    echo file_get_contents($filename);
+    if (file_exists($filename)) {
+      header('Access-Control-Allow-Origin: '.$origin);
+      header('max-age: 86400');
+      header('Vary: Access-Control-Allow-Origin');
+      header('Access-Control-Allow-Headers: referer, range, accept-encoding, x-requested-with');
+      header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+      header('Content-type: image/png');
+      echo file_get_contents($filename);
+    } else {
+      http_response_code(404);
+      echo "<!doctype html><html><head><title>Not found</title></head><body>Not found</body></html>";
+      die();
+    }
   }
 } catch (Exception $e) {
   die();

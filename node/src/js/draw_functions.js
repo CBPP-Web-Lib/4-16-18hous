@@ -91,6 +91,7 @@ module.exports = function(
       });
     };
     var water_requests = [];
+    console.log(water_files);
     for (var i = 0, ii = water_files.length; i<ii; i++) {
       while (water_files[i].length<5) {
         water_files[i] = "0" + water_files[i];
