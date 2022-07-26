@@ -1,6 +1,7 @@
 var axios = require("axios").default;
 var topojson = require("topojson");
 var tl_2015_us_cbsa = require("./topojson/low/tl_2015_us_cbsa.json");
+var fs = require("fs");
 var geo_tl_2015_us_cbsa = topojson.feature(tl_2015_us_cbsa, tl_2015_us_cbsa.objects.districts);
 var geojson_bbox = require("geojson-bbox");
 var feature_index = 0;
@@ -61,6 +62,11 @@ function do_box(leftmost, rightmost, northmost, southmost, name) {
     var errors = [];
 
     function request_tile(x, y, z, cb) {
+      var filename = "./tiles/@2x/" + z + "/" + x + "/" + y + ".png";
+      if (fs.existsSync(filename)) {
+        cb();
+        return;
+      }
       var url = "http://host.docker.internal:8888/image_proxy/get_stamen.php?z=" + z + "&x=" + x + "&y=" + y + "&r=2&dynamic=true";
       console.log(url, name);
       var moved_on = false;
@@ -82,7 +88,6 @@ function do_box(leftmost, rightmost, northmost, southmost, name) {
     }
 
     function next_tile() {
-      console.log(x, y, zoom);
       if (test_tile(x, y, zoom)) {
       //if (x >= tl[0] && (x-1) <= br[0] && y >= tl[1] && (y-1) <= br[1]) {
         request_tile((x-shift+n)%n, y, zoom, function() {
@@ -103,7 +108,7 @@ function do_box(leftmost, rightmost, northmost, southmost, name) {
     function find_next_tile() {
       //xn = xn || -1;
       br = br || [-1];
-      console.log(x, br[0]);
+      //console.log(x, br[0]);
       if (x-1 > br[0]|| typeof(x)==="undefined") {
         zoom++;
         

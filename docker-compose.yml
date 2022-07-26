@@ -5,6 +5,7 @@ services:
             - ./node:/opt/project:rw
             - ./webroot:/opt/project/webroot:rw
             - ./services/watch/webpack.config.js:/opt/project/webpack.config.js:rw
+            - ${TILE_DIR}:/opt/project/tiles:rw
         build:
             context: .
             dockerfile: services/watch/Dockerfile

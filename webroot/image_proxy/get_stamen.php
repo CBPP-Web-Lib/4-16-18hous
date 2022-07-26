@@ -7,7 +7,7 @@ $x = $_GET["x"]*1;
 $y = $_GET["y"]*1;
 $r = $_GET["r"]*1;
 $allow_dynamic = isset($_GET["dynamic"]);
-$ext = ($r==2) ? ".png?scale=3" : ".png?scale=1.5";
+$ext = ($r==2) ? ".png?scale=3&metatile=4" : ".png?scale=1.5&metatile=4";
 $size = pow(2, $z);
 $dir = getcwd() . "/cache/";
 if ($r==2) {
