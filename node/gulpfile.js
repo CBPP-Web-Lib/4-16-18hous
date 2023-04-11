@@ -421,11 +421,21 @@ gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
 });
 
 gulp.task("tract_csv_parse", function(cb) {
-  var csv = fs.readFileSync("./src/csv/tract_data.csv", "utf-8");
+  var files = [
+    "hcv",
+    "ethnicity",
+    "poverty"
+  ];
+  var csvs = [];
+  files.forEach((file)=>{
+    csvs.push([fs.readFileSync("./src/csv/tract_" + file + ".csv", "utf-8"), file]); 
+  })
   makeDirectory("./tmp");
-  csv_parse(csv, function(err, d) {
-    fs.writeFileSync("./tmp/tract_data.json", JSON.stringify(d), "utf-8");
-    cb();
+  csvs.forEach((csv)=>{
+    csv_parse(csv[0], function(err, d) {
+      fs.writeFileSync("./tmp/tract_data_" + csv[1] + ".json", JSON.stringify(d), "utf-8");
+      cb();
+    });
   });
 });
 
@@ -438,17 +448,67 @@ gulp.task("minority_threshold_parse", function(cb) {
   });
 });
 
+gulp.task("merge_csv", function(cb) {
+  /*filename, merge_column*/
+  var files = [
+    ["hcv","tract"],
+    ["ethnicity","st_cnty_tract"],
+    ["poverty","st_cnty_tract"]
+  ];
+  var header_row = [];
+  var r = {};
+  var offset = 0;
+  files.forEach((file_details)=>{
+    var filename = file_details[0];
+    var merge_column = file_details[1];
+    var file = JSON.parse(fs.readFileSync("./tmp/tract_data_" + filename + ".json", "utf-8"));
+    var this_header_row = file.shift();
+    var header_indexes = {};
+    this_header_row.forEach((header, i) => {
+      header_indexes[header] = i + offset;
+    });
+    file.forEach((row)=>{
+      var tract = {};
+      var tract_id;
+      this_header_row.forEach((header, i) => {
+        tract[header_indexes[header]] = row[i];
+        if (header === merge_column) {
+          tract_id = row[i];
+        }
+      });
+      r[tract_id] = r[tract_id] || [];
+      Object.keys(tract).forEach((index)=>{
+        r[tract_id][index] = tract[index];
+      })
+    });
+    offset += this_header_row.length;
+    header_row = header_row.concat(this_header_row);
+  });
+  
+  fs.writeFileSync("./tmp/tract_data_all.json", JSON.stringify({
+    data: r,
+    headers: header_row
+  }, null, " "), "utf-8");
+  cb();
+});
+
 gulp.task("split_data",  function(cb) {
-  if (fs.existsSync("./tmp/names.json")) {
+  /*if (fs.existsSync("./tmp/names.json")) {
     if (typeof(cb)==="function") {cb();}
     return;
-  }
+  }*/
   var r = {};
   var name_lookup = {};
-  var data = JSON.parse(fs.readFileSync("./tmp/tract_data.json"));
+  var data_file = JSON.parse(fs.readFileSync("./tmp/tract_data_all.json"));
+  var data = data_file.data;
+  var headers = data_file.headers;
   var split = {};
-  data.forEach(function(row, i) {
-    if (i===0) {return;}
+
+  /*compliance columns - divide by 12*/
+  var compliance = {"hcv_hh":true, "hcv_kids":true, "nwkids_hcv":true};
+
+  Object.keys(data).forEach(function(tract, i) {
+    var row = data[tract];
     var cbsa = row[1];
     if (typeof(name_lookup[cbsa])==="undefined") {
       name_lookup[cbsa] = row[2];
@@ -461,9 +521,14 @@ gulp.task("split_data",  function(cb) {
     }
     split[cbsa][tract] = r[tract];
     /*do this to comply w/ HUD reporting requirements*/
-    for (var j = 8;j<=10;j++) {
+    /*for (var j = 8;j<=10;j++) {
       r[tract][j] = Math.round(r[tract][j]/12);
-    }
+    }*/
+    headers.forEach((header, j)=>{
+      if (compliance[header]) {
+        r[tract][j] = Math.round(r[tract][j]/12);
+      }
+    })
   });
 
   //setTimeout(function(){},86400000);
