@@ -22,9 +22,9 @@ module.exports = function(data, hasHeaders, specialOptions, cbsa) {
     if (config[columnName]) {
       configByCol[columnName] = {dataSplit: config[columnName].dataSplit, binSplit: config[columnName].binSplit};
     }
-    /*if (specialOptions.hasOwnProperty(columnName)) {
+    if (specialOptions.hasOwnProperty(columnName)) {
       configByCol[columnName] = config[columnName];
-    }*/
+    }
   }
   if (typeof(hasHeaders)==="undefined") {
     hasHeaders = true;
