@@ -9,6 +9,9 @@ module.exports = {
     filename: 'app.js'
   },
   devtool: 'inline-source-map',
+  resolve: {
+    fallback: { "stream": false }
+  },
   module: {
     rules: [
       {
@@ -43,8 +46,8 @@ module.exports = {
         ],
       },
       {
-        test: /\.twig|html$/,
-        loader: "twig-loader"
+        test: /\.html$/,
+        loader: "raw-loader"
       },
       {
         test: /\.txt$/,

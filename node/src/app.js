@@ -24,12 +24,13 @@ if (jscriptVersion !== undefined) {
 /*external libraries*/
 var $ = require("jquery");
 var d3 = require("d3");
+var csv_parse = require("papaparse");
 var topojson = require("topojson");
 var pako = require("pako");
 var geojson_bbox = require("geojson-bbox");
 
 /*linked files*/
-var dom = require("./dom.html");
+var dom = require("./dom.html").default;
 var GridConfig = require("./gridConfig.json");
 var FileIndex = require("../tmp/fileIndex.json");
 var waterIndex = require("../tmp/waterIndex.json");
@@ -69,36 +70,50 @@ geo_data.cb_2015_us_state_500k = {low: topojson.feature(cb_2015_us_state_500k, c
 geo_data.tl_2015_us_cbsa = {low: topojson.feature(tl_2015_us_cbsa, tl_2015_us_cbsa.objects.districts)};
 geo_data.water = {high: water_data};
 
-/*methods for getting JSON data*/
-g.getJSONAndSaveInMemory = function(f, cb) {
+g.getFileAndSaveInMemory = function(f, handler, cb) {
+  var responseType = "text";
+  if (f.indexOf(".bin")!==-1) {
+    responseType = "arraybuffer";
+  }
   if (!localmemory[f]) {
-    if (f.indexOf(".json")!==-1) {
-      $.getJSON(f, function(d) {
-        handle(d);
-      });
-    } else {
-      var req = new XMLHttpRequest();
-      req.open('GET',f,true);
-      req.responseType = 'arraybuffer';
-      req.send(null);
-      req.onreadystatechange = function() {
-        if (this.readyState===4 && this.status===200) {
-          var d = pako.inflate(req.response,{to:"string"});
-          d = JSON.parse(d);
-          handle(d);
-        }
-      };
-    }
+    var req = new XMLHttpRequest();
+    req.open('GET',f,true);
+    req.responseType = responseType;
+    req.send(null);
+    req.onreadystatechange = function() {
+      if (this.readyState===4 && this.status===200) {
+        handle(req.response);
+      }
+    };
   } else {
     cb(null, localmemory[f]);
   }
   var handle = function(d) {
-    if (typeof(d)==="object" && d.compressed) {
-      d = JSON.parse(pako.inflate(d.d, {to: "string"}));
-    }
-    //localmemory[f] = d;
+    d = handler(d);
+    localmemory[f] = d;
     cb(null, d);
   };
+}
+
+g.getCSVAndSaveInMemory = function(f, cb) {
+  g.getFileAndSaveInMemory(f, function(d) {
+    if (f.indexOf(".csv")===-1) {
+      d = pako.inflate(d,{to:"string"});
+    }
+    d = csv_parse.parse(d, {dynamicTyping: true});
+    return d;
+  }, cb);
+}
+
+/*methods for getting JSON data*/
+g.getJSONAndSaveInMemory = function(f, cb) {
+  g.getFileAndSaveInMemory(f, function(d) {
+    if (f.indexOf(".json")===-1) {
+      d = pako.inflate(d,{to:"string"});
+    }
+    d = JSON.parse(d);
+    return d;
+  }, cb);
 };
 
 /*main constructor for map object*/ 

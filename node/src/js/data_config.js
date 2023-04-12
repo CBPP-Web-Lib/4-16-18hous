@@ -8,10 +8,17 @@ module.exports = function($, m) {
       labelFormatter = function(n) {return n;};
     }
     var r = [];
+    console.log(bins);
     var theseBins = bins[dataIndex];
+    console.log(useCBSABins);
     if (useCBSABins && m.active_cbsa) {
-      theseBins = m.cbsaBins[m.active_cbsa.properties.GEOID][dataIndex];
+      var _theseBins = m.cbsaBins[m.active_cbsa.properties.GEOID][dataIndex];
+      console.log(_theseBins);
+      if (typeof(_theseBins)!=="undefined") {
+        theseBins = _theseBins;
+      }
     }
+    console.log(theseBins);
     if (typeof(customBins)!=="undefined") {
       theseBins = customBins;
     }
@@ -76,11 +83,11 @@ module.exports = function($, m) {
           [40, [235, 145, 35, 1]]
         ],*/
         hoverColor: "#EB9123",
-        bins: binDefGen("#edeeef",/*"#ED1C24"*/"#0c61a4",1, function(n) {
+        bins: binDefGen("#edeeef",/*"#ED1C24"*/"#0c61a4","pov_pct", function(n) {
           return n + "%";
         }, [0,10,20,30,40,100.01], undefined, true),
         labels: ["0%","","40% or more"],
-        dataIndex: 1
+        dataIndex: "pov_pct"
       },
       "opportunity" : {
         name:"Opportunity Index",
@@ -90,7 +97,7 @@ module.exports = function($, m) {
           [30, [237,28,36,1]]
         ],
         labels: ["-5","0","30"],*/
-        bins: binDefGen("#d2dae0",/*"#0b4a1b"*/"#266975",5, function(n) {
+        bins: binDefGen("#d2dae0",/*"#0b4a1b"*/"#266975","opp_quin", function(n) {
           if (n<0.5) {
             return "Unknown";
           }
@@ -108,11 +115,11 @@ module.exports = function($, m) {
           return r;
         },[-0.5,0.5,1.5,2.5,3.5,4.5,5.5], ["#baa8a5"].concat(colorgen("#d2dae0","#266975",5))),
         binLabel:"central",
-        dataIndex: 5
+        dataIndex: "opp_quin"
       },
       "nonwhite" : {
         name:"Share people of color",
-        bins: binDefGen("#d3e7f1",/*"#532e67"*/"#7a5e89",6, function(n, i) {
+        bins: binDefGen("#d3e7f1",/*"#532e67"*/"#7a5e89","znonwhite", function(n, i) {
           if (i===4) {
             return Math.round(n*10000)/100 + "%";
           }
@@ -123,7 +130,7 @@ module.exports = function($, m) {
           [1,[15,99,33,1]]
         ],
         labels: ["0%","100%"],
-        dataIndex:6
+        dataIndex:"znonwhite"
       },
       "holc" : {
         name:"1930s HOLC Risk Assessment Grades",

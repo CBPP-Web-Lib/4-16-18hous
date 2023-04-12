@@ -33,7 +33,7 @@ parentPort.on("message", function(e) {
 function do_topojson(item) {
   var {settings, f} = item;
   makeDirectory(settings.dest);
-  var ext = "";
+  var ext = ".bin";
   if (settings.dest==="./topojson/low/") {
     ext = ".json";
   }

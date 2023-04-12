@@ -6,9 +6,9 @@ RUN apt-get update
 
 RUN npm config set cache /home/node/cache --global
 RUN npm install -g webpack@5
-RUN npm install -g webpack-cli
+RUN npm install -g webpack-cli@5
 RUN npm install -g gulp
 
 RUN apt-get install gdal-bin -y
 
-ENTRYPOINT sleep infinity
+ENTRYPOINT npx webpack

@@ -54,13 +54,13 @@ module.exports = function(
         m.updateDrawData();
       }
     }
-    g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2010_tract_" + geoid, function(err, d) {
+    g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".bin", function(err, d) {
       var geo = topojson.feature(d, d.objects.districts);
       geo_data["tl_2010_tract_" + geoid] = {high:geo};
       loaded = true;
       checkZoomAndLoad();
     });
-    g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/redlining_"+geoid, function(err, d) {
+    g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/redlining_"+geoid + ".bin", function(err, d) {
       if (d.objects.districts.geometries.length===0) {
         disableRedline();
       } else {
@@ -96,7 +96,7 @@ module.exports = function(
       while (water_files[i].length<5) {
         water_files[i] = "0" + water_files[i];
       }
-      water_requests.push(new WaterRequest(g.URL_BASE + "/water/tl_2017_" + water_files[i] + "_areawater"));
+      water_requests.push(new WaterRequest(g.URL_BASE + "/water/tl_2017_" + water_files[i] + "_areawater.bin"));
     }
     Promise.all(water_requests).then(function() {
       water_loaded = true;
@@ -369,6 +369,7 @@ module.exports = function(
           if (d.length > 0) {
             var cbsa = m.active_cbsa.properties.GEOID;
             d = applyData(m.csv,cbsa, d);
+            console.log(d);
           }
         }
       }
@@ -527,6 +528,14 @@ module.exports = function(
       .attr("opacity",1);
   }
 
+  function rowToObj(row, headers) {
+    var r = {};
+    row.forEach((cell, i)=>{
+      r[headers[i]] = cell;
+    })
+    return r;
+  }
+
   function fillFromData(d) {
     if (typeof(d)==="undefined") {
       return "#EB9123";
@@ -563,11 +572,12 @@ module.exports = function(
   }
 
   function applyData(d, cbsa, pathData) {
+    console.log(d);
     var selector = "g.tl_2010_tract_" + cbsa + " path";
     var paths = m.svg.selectAll(selector);
     paths.each(function(gd, i) {
       pathData[i] = gd;
-      gd.properties.csvData = d[cbsa][gd.properties.GEOID10*1];
+      gd.properties.csvData = rowToObj(d[cbsa].data[gd.properties.GEOID10*1], d[cbsa].headers);
       d3.select(this).attr("fill", function() {
         return fillFromData(gd.properties.csvData);
       });

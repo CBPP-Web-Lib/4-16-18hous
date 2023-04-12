@@ -138,15 +138,15 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       }
       var dot_parms = {
         "vouchers": {
-          "multiply":12,
+          "multiply":1,
           "index":8
         },
         "with_kids": {
-          "multiply":12,
+          "multiply":1,
           "index":9
         },
         "with_kids_nonwhite": {
-          "multiply":12,
+          "multiply":1,
           "index":10
         },
         "affordable_units": {

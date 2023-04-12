@@ -2,9 +2,10 @@ var numBins = 8;
 var thresholds = require("../tmp/thresholds.json");
 
 var config = {
-  "nonwhite": {
+  "znonwhite": {
     dataSplit: function(cbsa) {
       if (cbsa===null) {return 0.5;}
+      console.log(cbsa, thresholds[cbsa]);
       return thresholds[cbsa];
     },
     binSplit: 4
@@ -13,15 +14,17 @@ var config = {
 
 module.exports = function(data, hasHeaders, specialOptions, cbsa) {
   var bins = [];
-  var data_by_col = [];
-  if (typeof(specialOptions)==="undefined") {
-    specialOptions = {};
-  }
+  var data_by_col = {};
   var configByCol = {};
+  /*var configByCol = {};*/
   for (var columnName in specialOptions) {
-    if (specialOptions.hasOwnProperty(columnName)) {
-      configByCol[specialOptions[columnName]] = config[columnName];
+    configByCol[columnName] = {};
+    if (config[columnName]) {
+      configByCol[columnName] = {dataSplit: config[columnName].dataSplit, binSplit: config[columnName].binSplit};
     }
+    /*if (specialOptions.hasOwnProperty(columnName)) {
+      configByCol[columnName] = config[columnName];
+    }*/
   }
   if (typeof(hasHeaders)==="undefined") {
     hasHeaders = true;
@@ -30,25 +33,30 @@ module.exports = function(data, hasHeaders, specialOptions, cbsa) {
     if (i===0) return;
     row.forEach((cell,j)=> {
       if (!isNaN(cell*1)) {
-        if (typeof(data_by_col[j])==="undefined") {
-          data_by_col[j] = [];
+        var header_name = data[0][j];
+        if (typeof(data_by_col[header_name])==="undefined") {
+          data_by_col[header_name] = [];
         }
-        data_by_col[j].push(cell*1);
+        data_by_col[header_name].push(cell*1);
       }
     });
   });
   
-  data_by_col.forEach((col,j)=> {
+  Object.keys(data_by_col).forEach((col_name,j)=> {
+    var col = data_by_col[col_name];
     col = col.sort((a,b)=> {
       return a-b;
     });
     var l = col.length;
     var n;
-    var c = configByCol[j];
+    var c = configByCol[col_name];
+    if (typeof(bins[j])==="undefined") {
+      bins[j] = [];
+    }
+    console.log(configByCol);
     if (typeof(c)!=="undefined") {
       if (typeof(c.dataSplit)!=="undefined") {
         var dataSplit = c.dataSplit(cbsa);
-        console.log(c);
         var l1=0, l2=0;
         for (var i = 0, ii = col.length;i<ii;i++) {
           if (col[i] < dataSplit) {
@@ -60,9 +68,7 @@ module.exports = function(data, hasHeaders, specialOptions, cbsa) {
         console.log(l1, l2);
         var binSplit = c.binSplit;
         for (n = 0; n<binSplit;n++) {
-          if (typeof(bins[j])==="undefined") {
-            bins[j] = [];
-          }
+          
           console.log(n/binSplit*l1);
           bins[j].push(col[Math.floor(n/binSplit*l1)]);
         }

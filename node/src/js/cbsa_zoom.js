@@ -145,9 +145,10 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
     if (m.locked()) {return false;}
     m.setLock("zoomingToCBSA");
     var csvDataLoaded = false, binDataLoaded = false;
-    g.getJSONAndSaveInMemory(g.URL_BASE + "/data/" + cbsa.properties.GEOID + ".json", function(err, d) {
+    g.getCSVAndSaveInMemory(g.URL_BASE + "/data/" + cbsa.properties.GEOID + ".csv", function(err, d) {
       csvDataLoaded = true;
-      m.csv[cbsa.properties.GEOID] = d;
+      m.csv[cbsa.properties.GEOID] = organize_csv(d);
+      console.log(m.csv);
       m.getDotDeflator(m.csv, cbsa.properties.GEOID);
       checkDisplay();
     });
@@ -267,5 +268,20 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
       });
     });
   };
+
+  function organize_csv(data) {
+    var r = {};
+    var d = data[Object.keys(data)[0]];
+    var headers = d[0];
+    var r = {};
+    for (var i = 1; i < d.length; i++) {
+      var tract = d[i];
+      r[tract[0]] = tract;
+    };
+    return {
+      data: r,
+      headers
+    };
+  }
 
 };

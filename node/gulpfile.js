@@ -9,6 +9,8 @@ var pako = require("pako");
 var fips = require("./src/fips.json");
 var turf_area = require("@turf/area").default;
 var csv_parse = require("csv-parse");
+const createCsvStringifier = require('csv-writer').createArrayCsvStringifier;
+var seedrandom = require("seedrandom");
 const {
   Worker,
   isMainThread,
@@ -299,7 +301,7 @@ gulp.task("simplify_water", gulp.series("ogr2ogr", function(cb) {
       delete(el.properties);
     });
     f = f.replace(".json","");
-    fs.writeFileSync("./webroot/water/" + f, pako.deflate(JSON.stringify(topo)));
+    fs.writeFileSync("./webroot/water/" + f + ".bin", pako.deflate(JSON.stringify(topo)));
   });
   cb();
 }));
@@ -504,8 +506,9 @@ gulp.task("split_data",  function(cb) {
   var headers = data_file.headers;
   var split = {};
 
-  /*compliance columns - divide by 12*/
-  var compliance = {"hcv_hh":true, "hcv_kids":true, "nwkids_hcv":true};
+  /*compliance columns*/
+  var compliance = {"hcv_hh":true, "hcv_kids":true, "nwkids_hcv":true, "aff_units":true};
+  const num_dots = [1000, 200, 100, 50, 25, 12];
 
   Object.keys(data).forEach(function(tract, i) {
     var row = data[tract];
@@ -514,8 +517,9 @@ gulp.task("split_data",  function(cb) {
       name_lookup[cbsa] = row[2];
     }
     var tract = row[0]*1;
-    row.splice(2, 1);
-    r[tract] = row.slice(1);
+    /*row.splice(2, 1);
+    r[tract] = row.slice(1);*/
+    r[tract] = row;
     if (typeof(split[cbsa])==="undefined") {
       split[cbsa] = {};
     }
@@ -524,12 +528,66 @@ gulp.task("split_data",  function(cb) {
     /*for (var j = 8;j<=10;j++) {
       r[tract][j] = Math.round(r[tract][j]/12);
     }*/
-    headers.forEach((header, j)=>{
-      if (compliance[header]) {
-        r[tract][j] = Math.round(r[tract][j]/12);
-      }
-    })
+    
   });
+
+  var myrng = seedrandom("Nick's awesome random seed");
+  console.log(myrng);
+  var blurred_split = {};
+
+  /*don't include these*/
+  var filter_columns = {"tract":true, "st_cnty_tract":true};
+
+  Object.keys(split).forEach((cbsa)=> {
+    var data = split[cbsa];
+    blurred_split[cbsa] = {};
+    var random_tracts = Object.keys(data);
+    var tracts = Object.keys(data);
+    shuffleArray(random_tracts);
+    num_dots.forEach((dot_number)=>{
+      var remainder = 0;
+      random_tracts.forEach((tract_id)=>{
+        headers.forEach((header, j)=>{
+          if (!isNaN(r[tract_id][j]*1)) {
+            r[tract_id][j]*=1;
+          }
+          if (compliance[header]) {
+            var compliance_value = r[tract_id][j];
+            var num_dots_raw = compliance_value / dot_number;
+            var num_dots_rounded = Math.floor(num_dots_raw);
+            var leftover = num_dots_raw%1;
+            remainder += leftover;
+            if (remainder > 1) {
+              remainder -= 1;
+              num_dots_rounded++;
+            }
+            blurred_split[cbsa][tract_id] = blurred_split[cbsa][tract_id] || {};
+            blurred_split[cbsa][tract_id][[header, dot_number].join("_")] = num_dots_rounded;
+          }
+        })
+      })
+    })
+    tracts.forEach((tract_id)=>{
+      headers.forEach((header, j)=>{
+        if (compliance[header] || filter_columns[header]) {
+          /*do nothing*/
+        } else {
+          blurred_split[cbsa][tract_id] = blurred_split[cbsa][tract_id] || {};
+          blurred_split[cbsa][tract_id][header] = data[tract_id][j];
+        }
+      })
+    });
+  });
+
+  /*https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array*/
+  /*Using a seeded RNG so things don't change dramatically from run to run*/
+  
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(myrng() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
 
   //setTimeout(function(){},86400000);
 
@@ -537,14 +595,40 @@ gulp.task("split_data",  function(cb) {
   fs.writeFileSync("./tmp/names.json", JSON.stringify(name_lookup));
   fs.writeFileSync("./tmp/data_by_tract.json", JSON.stringify(r, null, " "));
   makeDirectory("./webroot/data");
-  for (var cbsa in split) {
-    if (split.hasOwnProperty(cbsa)) {
-      fs.writeFileSync("./webroot/data/"+cbsa+".json", JSON.stringify(split[cbsa]));
+  for (var cbsa in blurred_split) {
+    if (blurred_split.hasOwnProperty(cbsa)) {
+      fs.writeFileSync("./webroot/data/"+cbsa+".csv", splitDataToCSV(blurred_split[cbsa]));
     }
   }
   cb();
 
 });
+
+function splitDataToCSV(obj) {
+  var tracts = Object.keys(obj);
+  var headers = Object.keys(obj[tracts[0]]);
+  var csv_headers = ["tract_id"].concat(headers);
+  var csv = [];
+  tracts.forEach((tract_id)=>{
+    var row = [];
+    row.push(tract_id);
+    headers.forEach((header)=>{
+      if (typeof(obj[tract_id][header])==="undefined") {
+        row.push(null);
+      } else {
+        row.push(obj[tract_id][header]);
+      }
+    })
+    csv.push(row);
+  })
+  var writer = createCsvStringifier({
+    header: csv_headers 
+  });
+  var csv_string = "";
+  csv_string += writer.getHeaderString();
+  csv_string += writer.stringifyRecords(csv);
+  return csv_string;
+}
 
 
 gulp.task("filter_geojson", gulp.series("ogr2ogr","split_data", function(cb) {
@@ -778,30 +862,51 @@ gulp.task("minorityconc", gulp.series("split_data", function() {
 }));
 
 
-gulp.task("binData", gulp.series("temp", function(cb) {
+/*gulp.task("binData", gulp.series("temp", function(cb) {
   var binner = require("./src/binData.js");
-  var bins = binner(JSON.parse(fs.readFileSync("./tmp/tract_data.json","utf-8")), true, {"nonwhite":8}, null);
-  bins.splice(2, 1);
-  bins = bins.slice(1);
+  
   fs.writeFileSync("./tmp/bins.json",JSON.stringify(bins),"utf-8");
   cb();
-}));
+}));*/
 
 gulp.task("binCBSA", gulp.series("temp","split_data", function(cb) {
   var binner = require("./src/binData.js");
   var names= require("./tmp/names.json");
-  for (var cbsa in names) {
-    if (names.hasOwnProperty(cbsa)) {
-      var data = JSON.parse(fs.readFileSync("./webroot/data/"+cbsa+".json","utf-8"));
-      var dArr = [];
-      for (var tract in data) {
-        if (data.hasOwnProperty(tract)) {
-          dArr.push(data[tract]);
-        }
-      }
-      var bins = binner(dArr, false, {"nonwhite":6}, cbsa);
-      fs.writeFileSync("./webroot/data/bin_"+cbsa+".json", JSON.stringify(bins));
+  var tasks = [];
+  var all_bins_json = JSON.parse(fs.readFileSync("./tmp/tract_data_all.json","utf-8"));
+  var all_bins = [all_bins_json.headers];
+  Object.keys(all_bins_json.data).forEach((tract_id)=>{
+    all_bins.push(all_bins_json.data[tract_id]);
+  })
+  var file_handler = function(data, cbsa, nonwhite_bins) {
+    var dArr = [];
+    var headers = data[0];
+    for (var i = 1; i < data.length; i++) {
+      dArr.push(data[i]);
     }
+    var bins = binner(data, true, {"znonwhite":nonwhite_bins}, cbsa);
+    var r = {};
+    bins.forEach((column, j)=> {
+      r[headers[j]] = column;
+    });
+    //fs.writeFileSync("./webroot/data/bin_"+cbsa+".json", JSON.stringify(r));
+    return r;
   }
-  cb();
+  var all_json = file_handler(all_bins, null, 8);
+  fs.writeFileSync("./tmp/bins.json", JSON.stringify(all_json));
+  Object.keys(names).forEach((cbsa)=> {
+    tasks.push(new Promise((resolve)=>{
+      csv_parse(fs.readFileSync("./webroot/data/"+cbsa+".csv","utf-8"), function(err, data) {
+        var bin_json = file_handler(data, cbsa, 6);
+        fs.writeFileSync("./webroot/data/bin_"+cbsa+".json", JSON.stringify(bin_json));
+        resolve();
+      });
+    }))
+    
+  });
+  Promise.all(tasks).then(function() {
+    if (typeof(cb)==="function") {
+      cb();
+    }
+  });
 }));
