@@ -1,3 +1,5 @@
+const { data } = require("jquery");
+
 Math.log10 = Math.log10 || function(x) {
   return Math.log(x) * Math.LOG10E;
 };
@@ -45,11 +47,18 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       }
     }
     m.dot_deflator[geoid] = {
-      "vouchers": Math.ceil(total_vouchers/5000),
-      "with_kids": Math.ceil(total_vouchers/5000),
-      "with_kids_nonwhite": Math.ceil(total_vouchers/5000),
-      "affordable_units":Math.ceil(total_vouchers/5000)
+      "hcv_hh": Math.ceil(total_vouchers/5000),
+      "hcv_kids": Math.ceil(total_vouchers/5000),
+      "nwkids_hcv": Math.ceil(total_vouchers/5000),
+      "aff_units":Math.ceil(total_vouchers/5000)
     };
+  };
+
+  m.dotRepresentsZoom = {
+    "hcv_hh": [200, 100, 50, 25, 12],
+    "hcv_kids": [200, 100, 50, 25, 12],
+    "nwkids_hcv": [200, 100, 50, 25, 12],
+    "aff_units": [1000, 200, 100, 50, 12]
   };
 
   m.updateDots = function(d, dot_datasets) {
@@ -86,45 +95,67 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       var svg_coords_width = viewport[2];
       return 2.5*svg_coords_width/px_width;
     })();
-    var dots = m.dotsSVG.selectAll("circle.household")
-      .data(view_dot_data, function(d) {
+    var view_dot_data_split = {};
+    view_dot_data_split.vouchers = view_dot_data.filter(a=>a[1]!=="aff_units");
+    view_dot_data_split.affordable_units = view_dot_data.filter(a=>a[1]=="aff_units");
+
+  
+    ["vouchers", "affordable_units"].forEach((dot_type)=>{
+      var dots = m.dotsSVG_layers[dot_type].selectAll("circle.household")
+      .data(view_dot_data_split[dot_type], function(d) {
         return d[1] + (d[0][0]*d[0][1]);
       });
-    var dotScaleM = {};
-    for (var dot_dataset in m.dotScale) {
-      if (m.dotScale.hasOwnProperty(dot_dataset)) {
-        dotScaleM[dot_dataset] = Math.sqrt(m.dotScale[dot_dataset]);
+      var dotScaleM = {};
+      for (var dot_dataset in m.dotScale) {
+        if (m.dotScale.hasOwnProperty(dot_dataset)) {
+          dotScaleM[dot_dataset] = Math.sqrt(m.dotScale[dot_dataset]);
+        }
       }
-    }
-    dots.enter()
-      .append("circle")
-      .attr("class","household")
-      .attr("stroke",function(d) {
-        return d[1]!=="affordable_units" ? "#333333" : "#B9292F";
-      })
-      .attr("stroke-width",function(d) {
-        return (circle_size*dotScaleM[d[1]])/3;
-      })
-      .attr("fill",function(d) {
-        return (d[1]!=="affordable_units" ? "#EB9123" : "none");
-      })
-      .merge(dots)
-      .attr("r",function(d) {
-        return circle_size*dotScaleM[d[1]]/* - (d[1]==="vouchers" ? 0 : (circle_size*dotScaleM[d[1]])/3)*/;
-      })
-      .each(function(d) {
-        var el = d3.select(this);
-        var coords = m.projection(d[0]);
-        el.attr("cx", coords[0]);
-        el.attr("cy", coords[1]);
-      });
-    dots.exit().remove();
+      dots.enter()
+        .append("circle")
+        .attr("class","household")
+        .attr("stroke",function(d) {
+          return d[1]!=="aff_units" ? "#333333" : "rgba(100, 0, 0, 0.4)";
+        })
+        .attr("stroke-width",function(d) {
+          return d[1]==="aff_units" ? (circle_size*dotScaleM[d[1]])/3 : 0;
+          //return (circle_size*dotScaleM[d[1]])/3;
+        })
+        .attr("fill",function(d) {
+          return (d[1]!=="aff_units" ? "rgba(83, 41, 110, 0.8)" : "none");
+        })
+        .attr("filter", "url(#f1)")
+        .merge(dots)
+        .attr("r",function(d) {
+          return (d[1]==="aff_units" ? 1 : 0.7)*circle_size*dotScaleM[d[1]]/* - (d[1]==="vouchers" ? 0 : (circle_size*dotScaleM[d[1]])/3)*/;
+        })
+        .each(function(d) {
+          var el = d3.select(this);
+          var coords = m.projection(d[0]);
+          el.attr("cx", coords[0]);
+          el.attr("cy", coords[1]);
+        });
+      dots.exit().remove();
+    });
   };
   m.updateDotData = function(drawData, dot_dataset) {
     var dotLeftOver = 0;
     function update_dots_for_tract(tract, dot_dataset) {
       var z = m.zoomLevel;
       var geoid = tract.properties.GEOID10;
+      var dot_z_index = z - 7;
+      dot_z_index = Math.max(0, dot_z_index);
+      dot_z_index = Math.min(4, dot_z_index);
+      console.log(dot_z_index);
+      console.log(m.dotRepresentsZoom);
+      console.log(dot_dataset);
+      m.dotRepresents[dot_dataset] = m.dotRepresentsZoom[dot_dataset][dot_z_index];
+      var dot_represents = m.dotRepresents[dot_dataset];
+      //var dot_represents = 12;
+      console.log(tract);
+      console.log(dot_represents);
+      console.log(tract, dot_dataset);
+      
       if (typeof(dot_data[z])==="undefined") {
         dot_data[z] = {};
       }
@@ -136,7 +167,11 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       } else {
         return;
       }
-      var dot_parms = {
+      var numDots = tract.properties.csvData[dot_dataset + "_" + dot_represents];
+      var doneDots = 0;
+      console.log(numDots);
+      //return tract.properties.csvData[dot_dataset + "_" + dot_represents];
+      /*var dot_parms = {
         "vouchers": {
           "multiply":1,
           "index":8
@@ -155,12 +190,11 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
         }
       }[dot_dataset];
       //var doneDots = dot_data[z][dot_dataset][geoid].length;
-      var doneDots = 0;
      
-      if (!tract.properties.csvData) return;
-      var numDots;
-      numDots = dot_parms.multiply*tract.properties.csvData[dot_parms.index]*1;     
-      numDots /= m.dotRepresents[dot_dataset];
+      if (!tract.properties.csvData) return;*/
+      //var numDots;
+      //numDots = dot_parms.multiply*tract.properties.csvData[dot_parms.index]*1;     
+      //numDots /= m.dotRepresents[dot_dataset];
       var leftOver = numDots%1;
       numDots = Math.floor(numDots);
       dotLeftOver+=leftOver;
@@ -232,7 +266,7 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       var dotRepresents = 3*Math.pow(2,m.maxZoom+1-z+dataAdjust);
       dotRepresents *= deflator;
       var minDotRepresents;
-      var baseDotRepresents = 3*Math.pow(2,m.maxZoom+1-z)*m.dot_deflator[cbsa_geoid].vouchers;
+      var baseDotRepresents = 3*Math.pow(2,m.maxZoom+1-z)*m.dot_deflator[cbsa_geoid].hcv_hh;
       if (typeof(m.dotRepresents)==="undefined") {
         m.dotRepresents = {};
       }

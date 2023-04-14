@@ -1,6 +1,6 @@
 
-var dotExplainer = require("../dotExplainer.html");
-var legend_dot_svg = require("../legend_dot_svg.html");
+var dotExplainer = require("../dotExplainer.html").default;
+var legend_dot_svg = require("../legend_dot_svg.html").default;
 
 module.exports = function($, d3, m, sel) {
   var exports = {};
@@ -80,14 +80,14 @@ module.exports = function($, d3, m, sel) {
     var theDotExplainer = $(document.createElement("div")).html(dotExplainer).attr("class","dotExplainer");
     $(sel).find(".dotExplainwrap").append(theDotExplainer);
     if (typeof(dotRepresents)==="undefined") {return;}
-    $(sel).find(".dotExplainer").find(".dotRepresents.vouchers").html(dotRepresents.vouchers);
-    $(sel).find(".dotExplainer").find(".dotRepresents.affordable_units").html(dotRepresents.affordable_units);
+    $(sel).find(".dotExplainer").find(".dotRepresents.vouchers").html(dotRepresents.hcv_hh);
+    $(sel).find(".dotExplainer").find(".dotRepresents.affordable_units").html(dotRepresents.aff_units);
     $(sel).find(".dotExplainer").find(".dotRepresentsIsPlural.vouchers").html(
-      dotRepresents.vouchers !== 1 ? "s" : "");
+      dotRepresents.hcv_hh !== 1 ? "s" : "");
     $(sel).find(".dotExplainer").find(".dotRepresentsIsPlural.affordable_units").html(
-      dotRepresents.affordable_units !== 1 ? "s" : "");
+      dotRepresents.aff_units !== 1 ? "s" : "");
     $(sel).find(".legend_dot_svg_ex").html(legend_dot_svg);
-    if (m.dataset==="nonwhite") {
+    if (m.dataset==="nwkids_hcv") {
       theDotExplainer.addClass("shrunk");
       $(sel).find(".note-poc-bins").show();
     } else {
@@ -186,11 +186,12 @@ module.exports = function($, d3, m, sel) {
     } else {
       $(sel).find(".minorityConcExp").remove();
     }
+    console.log(m.dotRepresents);
     m.makeDotExplainer(m.dotRepresents);
     var toCheck;
     for (i = 0, ii = m.checked_dots.length; i<ii; i++) {
       toCheck = m.checked_dots[i];
-      if ($.inArray(m.checked_dots[i],["vouchers","with_kids","with_kids_nonwhite"])!==-1) {
+      if ($.inArray(m.checked_dots[i],["hcv_hh","hcv_kids","nwkids_hcv"])!==-1) {
         toCheck = "vouchers";
       }
       $(sel).find("input[type='checkbox'][value='"+toCheck + "']").prop("checked",true);

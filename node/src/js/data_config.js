@@ -83,9 +83,9 @@ module.exports = function($, m) {
           [40, [235, 145, 35, 1]]
         ],*/
         hoverColor: "#EB9123",
-        bins: binDefGen("#edeeef",/*"#ED1C24"*/"#0c61a4","pov_pct", function(n) {
+        bins: binDefGen("#f5f8fa",/*"#ED1C24"*/"#8fa5b8","pov_pct", function(n) {
           return n + "%";
-        }, [0,10,20,30,40,100.01], undefined, true),
+        }, [0,5,10,15,20,25,30,35,40,100.01], undefined, true),
         labels: ["0%","","40% or more"],
         dataIndex: "pov_pct"
       },

@@ -4,28 +4,19 @@ var thresholds = require("../tmp/thresholds.json");
 var config = {
   "znonwhite": {
     dataSplit: function(cbsa) {
-      if (cbsa===null) {return 0.5;}
-      console.log(cbsa, thresholds[cbsa]);
-      return thresholds[cbsa];
+      if (!cbsa) {return 0.5;}
+      if (!thresholds[cbsa]) {
+        return 0.5;
+      }
+      return thresholds[cbsa].replace("%","")*0.01;
     },
     binSplit: 4
   }
 };
 
-module.exports = function(data, hasHeaders, specialOptions, cbsa) {
-  var bins = [];
+module.exports = function(data, hasHeaders, cbsa) {
+  var bins = {};
   var data_by_col = {};
-  var configByCol = {};
-  /*var configByCol = {};*/
-  for (var columnName in specialOptions) {
-    configByCol[columnName] = {};
-    if (config[columnName]) {
-      configByCol[columnName] = {dataSplit: config[columnName].dataSplit, binSplit: config[columnName].binSplit};
-    }
-    if (specialOptions.hasOwnProperty(columnName)) {
-      configByCol[columnName] = config[columnName];
-    }
-  }
   if (typeof(hasHeaders)==="undefined") {
     hasHeaders = true;
   }
@@ -49,11 +40,10 @@ module.exports = function(data, hasHeaders, specialOptions, cbsa) {
     });
     var l = col.length;
     var n;
-    var c = configByCol[col_name];
-    if (typeof(bins[j])==="undefined") {
-      bins[j] = [];
+    var c = config[col_name];
+    if (typeof(bins[col_name])==="undefined") {
+      bins[col_name] = [];
     }
-    console.log(configByCol);
     if (typeof(c)!=="undefined") {
       if (typeof(c.dataSplit)!=="undefined") {
         var dataSplit = c.dataSplit(cbsa);
@@ -69,26 +59,22 @@ module.exports = function(data, hasHeaders, specialOptions, cbsa) {
         var binSplit = c.binSplit;
         for (n = 0; n<binSplit;n++) {
           
-          console.log(n/binSplit*l1);
-          bins[j].push(col[Math.floor(n/binSplit*l1)]);
+          //console.log(n/binSplit*l1);
+          bins[col_name].push(col[Math.floor(n/binSplit*l1)]);
         }
         for (n = 0; n<numBins-binSplit;n++) {
-          if (typeof(bins[j])==="undefined") {
-            bins[j] = [];
-          }
-          console.log(l1+n/(numBins-binSplit)*l2);
-          bins[j].push(col[l1+Math.floor(n/(numBins-binSplit)*l2)]);
+          //console.log(l1+n/(numBins-binSplit)*l2);
+          bins[col_name].push(col[l1+Math.floor(n/(numBins-binSplit)*l2)]);
         }
+        console.log(bins[col_name]);
       }
     } else {
       for (n = 0; n<numBins;n++) {
-        if (typeof(bins[j])==="undefined") {
-          bins[j] = [];
-        }
-        bins[j].push(col[Math.floor(n/numBins*l)]);
+        bins[col_name].push(col[Math.floor(n/numBins*l)]);
       }
     }
-    bins[j].push(col[col.length-1]+0.01);
+    bins[col_name].push(col[col.length-1]+0.001);
   });
+  console.log(bins);
   return bins;
 };

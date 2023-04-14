@@ -51,7 +51,7 @@ try {
   if (
    $valid_referer || $is_cgi
   ) {
-    if (!file_exists($filename) && $allow_dynamic || true) {
+    if ((!file_exists($filename) && $allow_dynamic) || true) {
       if ($r==2) {
         $mh = curl_multi_init();
         $urls = array(
@@ -102,6 +102,8 @@ try {
     if (array_key_exists("HTTP_ORIGIN",$_SERVER)) { 
       $origin = $_SERVER['HTTP_ORIGIN'];
     }
+    echo $raw;
+    die();
     if (file_exists($filename)) {
       header('Access-Control-Allow-Origin: '.$origin);
       header('max-age: 86400');
@@ -110,7 +112,7 @@ try {
       header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
       header('Content-type: image/png');
       //echo file_get_contents($filename);
-      echo $raw;
+      //echo $raw;
     } else {
       http_response_code(404);
       echo "<!doctype html><html><head><title>Not found</title></head><body>Not found</body></html>";

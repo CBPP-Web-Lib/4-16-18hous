@@ -10,6 +10,9 @@ services:
             context: .
             dockerfile: services/watch/Dockerfile
         container_name: 4-16-18hous-watch
+        ports: 
+            #- "3000:3000"
+            - "9229:9229"
     apache-dev:
         volumes:
             - ./node/dev:/var/www/html/js:rw

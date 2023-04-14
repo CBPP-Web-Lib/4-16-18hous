@@ -11,4 +11,7 @@ RUN npm install -g gulp
 
 RUN apt-get install gdal-bin -y
 
+EXPOSE 3000
+EXPOSE 9229
+
 ENTRYPOINT npx webpack

@@ -1,3 +1,6 @@
+
+var glow_filter = require("../glowfilter.txt").default;
+
 module.exports = function(
   $, 
   d3, 
@@ -46,32 +49,13 @@ module.exports = function(
       m.resetCBSALowRes();
     }
     var zoomed = false;
-    var loaded = false;
-    var red_loaded = false;
-    var water_loaded = false;
     function checkZoomAndLoad() {
-      if (zoomed && loaded && water_loaded && red_loaded) {
+      if (zoomed) {
         m.updateDrawData();
       }
     }
-    g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".bin", function(err, d) {
-      var geo = topojson.feature(d, d.objects.districts);
-      geo_data["tl_2010_tract_" + geoid] = {high:geo};
-      loaded = true;
-      checkZoomAndLoad();
-    });
-    g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/redlining_"+geoid + ".bin", function(err, d) {
-      if (d.objects.districts.geometries.length===0) {
-        disableRedline();
-      } else {
-        enableRedline();
-      }
-      var geo = topojson.feature(d, d.objects.districts);
-      geo_data["redlining_" + geoid] = {high:geo};
-      red_loaded = true;
-      checkZoomAndLoad();
-    });
     var water_files = waterIndex["tl_2010_tract_" + geoid + ".json"];
+    var water_requests = [];
     var WaterRequest = function(file) {
       return new Promise(function(resolve, reject) {
         if (typeof(water_data[file])!=="undefined") {
@@ -90,18 +74,59 @@ module.exports = function(
         }
       });
     };
-    var water_requests = [];
-    console.log(water_files);
     for (var i = 0, ii = water_files.length; i<ii; i++) {
       while (water_files[i].length<5) {
         water_files[i] = "0" + water_files[i];
       }
       water_requests.push(new WaterRequest(g.URL_BASE + "/water/tl_2017_" + water_files[i] + "_areawater.bin"));
     }
-    Promise.all(water_requests).then(function() {
-      water_loaded = true;
-      checkZoomAndLoad();
-    });
+    Promise.all([
+      new Promise((resolve)=>{
+        g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".bin", function(err, d) {
+          var geo = topojson.feature(d, d.objects.districts);
+          geo_data["tl_2010_tract_" + geoid] = {high:geo};
+          loaded = true;
+          resolve();
+        });
+      }),
+      new Promise((resolve)=>{
+        g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/redlining_"+geoid + ".bin", function(err, d) {
+          if (d.objects.districts.geometries.length===0) {
+            disableRedline();
+          } else {
+            enableRedline();
+          }
+          var geo = topojson.feature(d, d.objects.districts);
+          geo_data["redlining_" + geoid] = {high:geo};
+          red_loaded = true;
+          resolve();
+        });
+      }),
+      new Promise((resolve)=> {
+        g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2015_us_cbsa_" + geoid + ".bin", function(err, d) {
+          var geo = topojson.feature(d, d.objects.districts);
+          geo_data["tl_2015_us_cbsa"].high = geo_data["tl_2015_us_cbsa"].high || {type:"FeatureCollection", features:[]};
+          var already_loaded_features = geo_data["tl_2015_us_cbsa"].high.features;
+          var feature_loaded = false;
+          already_loaded_features.forEach((feature)=>{
+            if (feature.properties.GEOID === geo.features[0].properties.GEOID) {
+              feature_loaded = true;
+            }
+          });
+          if (!feature_loaded) {
+            geo_data["tl_2015_us_cbsa"].high.features.push(geo.features[0]);
+          }
+          resolve();
+        });
+      }),
+      new Promise((resolve)=>{
+        Promise.all(water_requests).then(function() {
+          water_loaded = true;
+          resolve();
+        })
+      })
+    ]).then(checkZoomAndLoad);
+    
     m.zoomToCBSA(d, "in", function() {
       zoomed = true;
       checkZoomAndLoad();
@@ -109,7 +134,10 @@ module.exports = function(
   };
   m.updateDrawData = function() {
     var svg = m.svg;
-    drawData = filterToVisible(geo_data, svg.attr("viewBox"));
+    var viewBox = svg.attr("viewBox");
+    var viewBox_arr = viewBox.split(" ");
+    drawData = filterToVisible(geo_data,viewBox);
+
     drawData = (function(r) {
       for (var size in r) {
         if (r.hasOwnProperty(size)) {
@@ -210,12 +238,15 @@ module.exports = function(
           return d.properties.GEOID;
         })
         .merge(paths)
-        .attr("stroke-width",function() {
+        .attr("stroke-width",function(d) {
           if (whichLayer==="state") {
             return 0.8*scaling[size];
           }
           if (whichLayer==="cbsa") {
             if (m.active_cbsa) {
+              if (size==="high" && d.properties.GEOID === m.active_cbsa.properties.GEOID) {
+                return 0.005*viewBox_arr[2];
+              }
               return 0; 
             }
             return 1*scaling[size];
@@ -226,9 +257,9 @@ module.exports = function(
           return 0.5*scaling[size];
         })
         .attr("visibility", function(d) {
-          if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa" && m.active_cbsa) {
+          /*if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa" && m.active_cbsa) {
             return "hidden";
-          }
+          }*/
           if (m.dataset==="holc" && whichLayer==="tract") {
             return "hidden";
           }
@@ -248,6 +279,9 @@ module.exports = function(
             if (m.dataset==="holc") {
               return m.redlining_colors[d.properties.holc_grade];
             }
+          }
+          if (whichLayer==="cbsa" && size==="high") {
+            return "transparent";
           }
           if (whichLayer==="tract") {
             if (m.dataset==="holc") {
@@ -340,6 +374,9 @@ module.exports = function(
             return "#0C61A4";
           }
           if (whichLayer==="cbsa") {
+            if (size==="high") {
+              return "#e6d0ae";
+            }
             return "#0C61A4";
           }
           if (whichLayer==="redline") {
@@ -355,6 +392,9 @@ module.exports = function(
             return 1;
           }
           if (whichLayer==="cbsa") {
+            if (size==="high") {
+              return 1;
+            }
             return 0.3;
           }
           if (whichLayer==="redline") {
@@ -369,7 +409,6 @@ module.exports = function(
           if (d.length > 0) {
             var cbsa = m.active_cbsa.properties.GEOID;
             d = applyData(m.csv,cbsa, d);
-            console.log(d);
           }
         }
       }
@@ -422,11 +461,12 @@ module.exports = function(
     /*for (var k = 0, kk=m.checked_dots.length;k<kk;k++) {
       m.updateDotData(drawData, m.checked_dots[k]);
     }*/
-    m.updateDotData(drawData, "vouchers");
-    m.updateDotData(drawData, "affordable_units");
-    m.updateDotData(drawData, "with_kids");
-    m.updateDotData(drawData, "with_kids_nonwhite");
+    m.updateDotData(drawData, "hcv_hh");
+    m.updateDotData(drawData, "aff_units");
+    m.updateDotData(drawData, "hcv_kids");
+    m.updateDotData(drawData, "nwkids_hcv");
     m.makeLegend();
+    console.log(m.checked_dots);
     m.updateDots(drawData, m.checked_dots);
 
     function filterToVisible(geo_data, viewbox) {
@@ -572,7 +612,6 @@ module.exports = function(
   }
 
   function applyData(d, cbsa, pathData) {
-    console.log(d);
     var selector = "g.tl_2010_tract_" + cbsa + " path";
     var paths = m.svg.selectAll(selector);
     paths.each(function(gd, i) {
@@ -602,6 +641,13 @@ module.exports = function(
       .attr("viewBox",m.fullUSViewbox)
       .attr("preserveAspectRatio", "xMidYMid")
       .attr("class","dotsSVG");
+      
+    var defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    defs.innerHTML = glow_filter;
+    m.dotsSVG.node().appendChild(defs);
+    m.dotsSVG_layers = {};
+    m.dotsSVG_layers.affordable_units = m.dotsSVG.append("g").attr("class","affordable_units").attr("opacity", 0.8);
+    m.dotsSVG_layers.vouchers = m.dotsSVG.append("g").attr("class","vouchers").attr("opacity", 0.8);
      m.updateDrawData();
     require("./zoom.js")(sel + " .mapwrap", m, $, d3);
     require("./drag.js")(sel + " .mapwrap", m, $, d3);

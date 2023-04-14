@@ -13,7 +13,6 @@
     "simplify":0.000001,
     "dest":"./webroot/topojson/high/",
     "exclude": [
-      "tl_2015",
       "cb_2015"
     ]
   }

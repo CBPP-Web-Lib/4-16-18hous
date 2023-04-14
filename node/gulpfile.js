@@ -418,7 +418,15 @@ gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
 //    return;
 //  }
   var cbsa = JSON.parse(fs.readFileSync("./tmp/cbsa_filtered_unclipped.json"));
-  fs.writeFileSync("./filtered/tl_2015_us_cbsa.json", JSON.stringify(clip_cbsa(cbsa), null, " "));
+  var clipped_cbsa = clip_cbsa(cbsa);
+  fs.writeFileSync("./filtered/tl_2015_us_cbsa.json", JSON.stringify(clipped_cbsa, null, " "));
+  clipped_cbsa.features.forEach((feature)=>{
+    var cbsa_file = {
+      type: "FeatureCollection",
+      features: [feature]
+    };
+    fs.writeFileSync("./filtered/tl_2015_us_cbsa_" + feature.properties.GEOID + ".json", JSON.stringify(cbsa_file, null, " "));
+  });
   cb();
 });
 
@@ -597,7 +605,7 @@ gulp.task("split_data",  function(cb) {
   makeDirectory("./webroot/data");
   for (var cbsa in blurred_split) {
     if (blurred_split.hasOwnProperty(cbsa)) {
-      fs.writeFileSync("./webroot/data/"+cbsa+".csv", splitDataToCSV(blurred_split[cbsa]));
+      fs.writeFileSync("./webroot/data/"+cbsa+".bin", pako.deflate(splitDataToCSV(blurred_split[cbsa])));
     }
   }
   cb();
@@ -878,26 +886,15 @@ gulp.task("binCBSA", gulp.series("temp","split_data", function(cb) {
   Object.keys(all_bins_json.data).forEach((tract_id)=>{
     all_bins.push(all_bins_json.data[tract_id]);
   })
-  var file_handler = function(data, cbsa, nonwhite_bins) {
-    var dArr = [];
-    var headers = data[0];
-    for (var i = 1; i < data.length; i++) {
-      dArr.push(data[i]);
-    }
-    var bins = binner(data, true, {"znonwhite":nonwhite_bins}, cbsa);
-    var r = {};
-    bins.forEach((column, j)=> {
-      r[headers[j]] = column;
-    });
-    //fs.writeFileSync("./webroot/data/bin_"+cbsa+".json", JSON.stringify(r));
-    return r;
+  var file_handler = function(data, cbsa) {
+    return binner(data, true, cbsa);
   }
   var all_json = file_handler(all_bins, null, 8);
   fs.writeFileSync("./tmp/bins.json", JSON.stringify(all_json));
   Object.keys(names).forEach((cbsa)=> {
     tasks.push(new Promise((resolve)=>{
       csv_parse(fs.readFileSync("./webroot/data/"+cbsa+".csv","utf-8"), function(err, data) {
-        var bin_json = file_handler(data, cbsa, 6);
+        var bin_json = file_handler(data, cbsa);
         fs.writeFileSync("./webroot/data/bin_"+cbsa+".json", JSON.stringify(bin_json));
         resolve();
       });

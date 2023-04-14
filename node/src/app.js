@@ -158,7 +158,7 @@ var Interactive = function(sel) {
     URL_BASE = g.URL_BASE = $("#script_hous4-16-18")[0].src.replace("/js/app.js","");
     m.projection = d3.geoAlbers();
     m.dataset = "poverty_rate";
-    m.checked_dots = ["vouchers"];
+    m.checked_dots = ["hcv_hh"];
     m.path = d3.geoPath(m.projection);
     m.fullUSViewbox = [50, 5, 820, 499].join(" ");
     m.csv = {};
