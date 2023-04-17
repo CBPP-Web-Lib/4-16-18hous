@@ -65,10 +65,10 @@ module.exports = function(sel, obj, $, d3) {
       .ease(d3.easeLinear)
       .attr("viewBox", newviewport.join(" "))
       .on("end", function() {
+        m.removeLock("zooming");
         m.updateDrawData();
         zoomedFully=true;
         checkFade();
-        m.removeLock("zooming");
         m.dotsSVG.attr("viewBox",newviewport.join(" "));
         $(m.dotsSVG.node()).show();
         m.hideDependingOnZoom();

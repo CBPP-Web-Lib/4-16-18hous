@@ -55,10 +55,10 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
   };
 
   m.dotRepresentsZoom = {
-    "hcv_hh": [200, 100, 50, 25, 12],
+    "hcv_hh": [200, 200, 100, 50, 25, 12],
     "hcv_kids": [200, 100, 50, 25, 12],
     "nwkids_hcv": [200, 100, 50, 25, 12],
-    "aff_units": [1000, 200, 100, 50, 12]
+    "aff_units": [1000, 500, 200, 100, 50, 25]
   };
 
   m.updateDots = function(d, dot_datasets) {
@@ -99,44 +99,73 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
     view_dot_data_split.vouchers = view_dot_data.filter(a=>a[1]!=="aff_units");
     view_dot_data_split.affordable_units = view_dot_data.filter(a=>a[1]=="aff_units");
 
-  
+    clearInterval(m.dotDrawInteval);
+    
+    var dot_data_chunked = {};
+    var chunk_size = 50;
     ["vouchers", "affordable_units"].forEach((dot_type)=>{
-      var dots = m.dotsSVG_layers[dot_type].selectAll("circle.household")
-      .data(view_dot_data_split[dot_type], function(d) {
-        return d[1] + (d[0][0]*d[0][1]);
-      });
-      var dotScaleM = {};
-      for (var dot_dataset in m.dotScale) {
-        if (m.dotScale.hasOwnProperty(dot_dataset)) {
-          dotScaleM[dot_dataset] = Math.sqrt(m.dotScale[dot_dataset]);
-        }
-      }
-      dots.enter()
-        .append("circle")
-        .attr("class","household")
-        .attr("stroke",function(d) {
-          return d[1]!=="aff_units" ? "#333333" : "rgba(100, 0, 0, 0.4)";
-        })
-        .attr("stroke-width",function(d) {
-          return d[1]==="aff_units" ? (circle_size*dotScaleM[d[1]])/3 : 0;
-          //return (circle_size*dotScaleM[d[1]])/3;
-        })
-        .attr("fill",function(d) {
-          return (d[1]!=="aff_units" ? "rgba(83, 41, 110, 0.8)" : "none");
-        })
-        .attr("filter", "url(#f1)")
-        .merge(dots)
-        .attr("r",function(d) {
-          return (d[1]==="aff_units" ? 1 : 0.7)*circle_size*dotScaleM[d[1]]/* - (d[1]==="vouchers" ? 0 : (circle_size*dotScaleM[d[1]])/3)*/;
-        })
-        .each(function(d) {
-          var el = d3.select(this);
-          var coords = m.projection(d[0]);
-          el.attr("cx", coords[0]);
-          el.attr("cy", coords[1]);
-        });
-      dots.exit().remove();
+      dot_data_chunked[dot_type] = [];
     });
+    var current_chunk = 0;
+    var dotDrawTimerFunction = function() {
+      var chunk_done = {};
+      ["vouchers", "affordable_units"].forEach((dot_type)=>{
+        var this_chunk = view_dot_data_split[dot_type].slice(current_chunk*chunk_size, (current_chunk + 1)*chunk_size);
+        dot_data_chunked[dot_type] = dot_data_chunked[dot_type].concat(this_chunk);
+        if ((current_chunk+ 1)*chunk_size > dot_data_chunked[dot_type].length) {
+          chunk_done[dot_type] = true;
+        }
+      });
+      ["vouchers", "affordable_units"].forEach((dot_type)=>{
+        var dots = m.dotsSVG_layers[dot_type].selectAll("circle.household")
+        .data(dot_data_chunked[dot_type], function(d) {
+          return d[1] + (d[0][0]*d[0][1]);
+        });
+        var dotScaleM = {};
+        for (var dot_dataset in m.dotScale) {
+          if (m.dotScale.hasOwnProperty(dot_dataset)) {
+            dotScaleM[dot_dataset] = Math.sqrt(m.dotScale[dot_dataset]);
+          }
+        }
+        m.dotsSVG.selectAll("filter#f1")
+        .select("feMorphology")
+        .attr("radius", circle_size*0.2);
+        dots.enter()
+          .append("circle")
+          .attr("class","household")
+          .attr("stroke",function(d) {
+            return d[1]!=="aff_units" ? "#111111" : "rgba(100, 0, 0, 0.4)";
+          })
+          .attr("stroke-width",function(d) {
+            return d[1]==="aff_units" ? (circle_size*dotScaleM[d[1]])/2 : 0;
+            //return (circle_size*dotScaleM[d[1]])/3;
+          })
+          .attr("fill",function(d) {
+            return (d[1]!=="aff_units" ? "rgba(83, 41, 110, 0.8)" : "none");
+          })
+          .attr("filter", "url(#f1)")
+          .merge(dots)
+          .attr("r",function(d) {
+            return (d[1]==="aff_units" ? 1 : 0.7)*circle_size*dotScaleM[d[1]]/* - (d[1]==="vouchers" ? 0 : (circle_size*dotScaleM[d[1]])/3)*/;
+          })
+          .each(function(d) {
+            var el = d3.select(this);
+            var coords = m.projection(d[0]);
+            el.attr("cx", coords[0]);
+            el.attr("cy", coords[1]);
+          });
+        dots.exit().remove();
+      });
+      if (chunk_done.vouchers && chunk_done.affordable_units) {
+      } else {
+        m.dotDrawInterval = setTimeout(dotDrawTimerFunction, 10);
+      }
+      current_chunk++;
+    }
+    dotDrawTimerFunction();
+   //m.dotDrawInterval = setTimeout(dotDrawTimerFunction, 500);
+
+    
   };
   m.updateDotData = function(drawData, dot_dataset) {
     var dotLeftOver = 0;
@@ -146,15 +175,9 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       var dot_z_index = z - 7;
       dot_z_index = Math.max(0, dot_z_index);
       dot_z_index = Math.min(4, dot_z_index);
-      console.log(dot_z_index);
-      console.log(m.dotRepresentsZoom);
-      console.log(dot_dataset);
       m.dotRepresents[dot_dataset] = m.dotRepresentsZoom[dot_dataset][dot_z_index];
       var dot_represents = m.dotRepresents[dot_dataset];
       //var dot_represents = 12;
-      console.log(tract);
-      console.log(dot_represents);
-      console.log(tract, dot_dataset);
       
       if (typeof(dot_data[z])==="undefined") {
         dot_data[z] = {};
@@ -169,7 +192,6 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       }
       var numDots = tract.properties.csvData[dot_dataset + "_" + dot_represents];
       var doneDots = 0;
-      console.log(numDots);
       //return tract.properties.csvData[dot_dataset + "_" + dot_represents];
       /*var dot_parms = {
         "vouchers": {

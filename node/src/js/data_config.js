@@ -2,7 +2,8 @@ var colorgen = require("cbpp_colorgen");
 var bins = require("../../tmp/bins.json");
 
 module.exports = function($, m) {
-  var binDefGen = function(startColor, endColor, dataIndex, labelFormatter, customBins, customColors, extraBin, useCBSABins) {
+  var binDefGen = function(config) {
+    var {startColor, endColor, dataIndex, labelFormatter, customBins, customColors, extraBin, useCBSABins} = config;
     if (!useCBSABins && recalc) {return undefined;}
     if (typeof(labelFormatter)==="undefined") {
       labelFormatter = function(n) {return n;};
@@ -83,9 +84,21 @@ module.exports = function($, m) {
           [40, [235, 145, 35, 1]]
         ],*/
         hoverColor: "#EB9123",
-        bins: binDefGen("#f5f8fa",/*"#ED1C24"*/"#8fa5b8","pov_pct", function(n) {
-          return n + "%";
-        }, [0,5,10,15,20,25,30,35,40,100.01], undefined, true),
+        bins: binDefGen({
+          startColor: "#f5f8fa",/*"#ED1C24"*/
+          endColor: "#8fa5b8",
+          dataIndex: "pov_pct", 
+          labelFormatter: function(n) {
+            return n + "%";
+          }, 
+          customBins: [0,5,10,15,20,25,30,35,40,100.01],
+          extraBin: true,
+          customColors: (function() {
+            var secRange = colorgen("#F6EDA2","#EFC0BF", 5);
+            secRange.shift();
+            return colorgen("#f0f2f2", "#F6EDA2", 5).concat(secRange);
+          })()
+        }),
         labels: ["0%","","40% or more"],
         dataIndex: "pov_pct"
       },
@@ -97,34 +110,50 @@ module.exports = function($, m) {
           [30, [237,28,36,1]]
         ],
         labels: ["-5","0","30"],*/
-        bins: binDefGen("#d2dae0",/*"#0b4a1b"*/"#266975","opp_quin", function(n) {
-          if (n<0.5) {
-            return "Unknown";
-          }
-          n = Math.ceil(n);
-          var suffixes = {
-            1:"st",
-            2:"nd",
-            3:"rd",
-            4:"th",
-            5:"th"
-          };
-          var r = n + suffixes[n] + " quintile";
-          if (n===1) {r += "<br>(Low Opportunity)";}
-          if (n===5) {r += "<br>(High Opportunity)";}
-          return r;
-        },[-0.5,0.5,1.5,2.5,3.5,4.5,5.5], ["#baa8a5"].concat(colorgen("#d2dae0","#266975",5))),
+        bins: binDefGen({
+            startColor: "#d2dae0",/*"#0b4a1b"*/
+            endColor: "#266975",
+            dataIndex: "opp_quin", 
+            labelFormatter: function(n) {
+              if (n<0.5) {
+                return "Unknown";
+              }
+              n = Math.ceil(n);
+              var suffixes = {
+                1:"st",
+                2:"nd",
+                3:"rd",
+                4:"th",
+                5:"th"
+              };
+              var r = n + suffixes[n] + " quintile";
+              if (n===1) {r += "<br>(Low Opportunity)";}
+              if (n===5) {r += "<br>(High Opportunity)";}
+              return r;
+            },
+            customBins: [-0.5,0.5,1.5,2.5,3.5,4.5,5.5], 
+            customColors: ["#baa8a5"].concat(colorgen("#d2dae0","#266975",5))
+        }),
         binLabel:"central",
         dataIndex: "opp_quin"
       },
       "nonwhite" : {
         name:"Share people of color",
-        bins: binDefGen("#d3e7f1",/*"#532e67"*/"#7a5e89","znonwhite", function(n, i) {
-          if (i===4) {
-            return Math.round(n*10000)/100 + "%";
-          }
-          return Math.round(n*100) + "%";
-        }, undefined, colorgen("#d7cabd","#a3876a",4).concat(colorgen("#b2b2f8","#6a6aa3",4)), true, true),
+        bins: binDefGen({
+          startColor: "#d3e7f1",/*"#532e67"*/
+          endColor: "#7a5e89",
+          dataIndex: "znonwhite", 
+          labelFormatter: function(n, i) {
+            if (i===4) {
+              return Math.round(n*10000)/100 + "%";
+            }
+            return Math.round(n*100) + "%";
+          }, 
+          customBins: undefined, 
+          customColors: colorgen("#d7cabd","#a3876a",4).concat(colorgen("#b2b2f8","#6a6aa3",4)), 
+          extraBin: true, 
+          useCBSABins: true
+        }),
         colors: [
           [0,[200,200,200,1]],
           [1,[15,99,33,1]]
