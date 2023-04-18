@@ -1,4 +1,4 @@
-
+"use strict";
 
 module.exports = function($, d3, m, sel, g) {
   var img_to_canvas = require("./img_to_canvas.js")($, m); 

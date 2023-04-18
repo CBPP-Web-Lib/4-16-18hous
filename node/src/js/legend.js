@@ -1,4 +1,4 @@
-
+"use strict";
 var dotExplainer = require("../dotExplainer.html").default;
 var legend_dot_svg = require("../legend_dot_svg.html").default;
 
@@ -186,7 +186,6 @@ module.exports = function($, d3, m, sel) {
     } else {
       $(sel).find(".minorityConcExp").remove();
     }
-    console.log(m.dotRepresents);
     m.makeDotExplainer(m.dotRepresents);
     var toCheck;
     for (i = 0, ii = m.checked_dots.length; i<ii; i++) {

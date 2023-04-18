@@ -1,5 +1,5 @@
 /*globals require, document, console, window, Promise*/
-
+"use strict";
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 
@@ -7,7 +7,6 @@ if (typeof(window.runOnce)==="undefined") {
   window.runOnce = false;
 }
 (function() {
-"use strict";
 /*prevent double code execution in Drupal*/
 if (window.runOnce) {
   return;

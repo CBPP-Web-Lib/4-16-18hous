@@ -7,6 +7,7 @@ $x = $_GET["x"]*1;
 $y = $_GET["y"]*1;
 $r = $_GET["r"]*1;
 $allow_dynamic = isset($_GET["dynamic"]);
+$allow_dynamic = true;
 $ext = ($r==2) ? ".png?scale=3&metatile=4" : ".png?scale=1.5&metatile=4";
 $size = pow(2, $z);
 $dir = getcwd() . "/cache/";
@@ -51,7 +52,7 @@ try {
   if (
    $valid_referer || $is_cgi
   ) {
-    if ((!file_exists($filename) && $allow_dynamic) || true) {
+    if ((!file_exists($filename) && $allow_dynamic)) {
       if ($r==2) {
         $mh = curl_multi_init();
         $urls = array(
@@ -85,8 +86,6 @@ try {
         $raw = ob_get_clean();
       } else {
         $url = "http://host.docker.internal:20008/tile/OSMBright/".$z."/".$x."/".$y. $ext;
-        var_dump($url);
-        die();
         $ch = curl_init ($url);
         curl_setopt($ch, CURLOPT_HEADER, 0);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -94,16 +93,16 @@ try {
         $raw=curl_exec($ch);
         curl_close ($ch);
       }
-      /*$fp = fopen($filename,'x'); 
+      $fp = fopen($filename,'x'); 
       fwrite($fp, $raw);
-      fclose($fp);*/
+      fclose($fp);
     }
     $origin = "https://www.cbpp.org";
     if (array_key_exists("HTTP_ORIGIN",$_SERVER)) { 
       $origin = $_SERVER['HTTP_ORIGIN'];
     }
-    echo $raw;
-    die();
+    //echo $raw;
+   // die();
     if (file_exists($filename)) {
       header('Access-Control-Allow-Origin: '.$origin);
       header('max-age: 86400');
@@ -111,7 +110,7 @@ try {
       header('Access-Control-Allow-Headers: referer, range, accept-encoding, x-requested-with');
       header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
       header('Content-type: image/png');
-      //echo file_get_contents($filename);
+      echo file_get_contents($filename);
       //echo $raw;
     } else {
       http_response_code(404);

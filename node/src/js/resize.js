@@ -1,3 +1,4 @@
+"use strict";
 module.exports = function($, d3, m, sel) {
   function setupWindowResize() {
     var windowResize = function() {

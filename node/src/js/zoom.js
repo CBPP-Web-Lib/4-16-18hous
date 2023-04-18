@@ -60,16 +60,28 @@ module.exports = function(sel, obj, $, d3) {
       .duration(750)
       .ease(d3.easeLinear)
       .attr("viewBox", newviewport.join(" "));*/
+    var viewBoxSync = true;
+    var frame = function() {
+      if (viewBoxSync) {
+        var frameViewBox = m.svg.attr("viewBox");
+        m.dotsSVG.attr("viewBox",frameViewBox);
+        m.aboveTilesSVG.attr("viewBox", frameViewBox);
+        window.requestAnimationFrame(frame);
+      }
+    }
+    frame();
     svg.transition()
       .duration(750)
       .ease(d3.easeLinear)
       .attr("viewBox", newviewport.join(" "))
       .on("end", function() {
+        viewBoxSync = false;
         m.removeLock("zooming");
         m.updateDrawData();
         zoomedFully=true;
         checkFade();
         m.dotsSVG.attr("viewBox",newviewport.join(" "));
+        m.aboveTilesSVG.attr("viewBox", newviewport.join(" "));
         $(m.dotsSVG.node()).show();
         m.hideDependingOnZoom();
       });

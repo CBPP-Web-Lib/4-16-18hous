@@ -1,3 +1,5 @@
+"use strict";
+
 module.exports = function($, m) {
   function filterCachedCanvas() {
     var arr = [];

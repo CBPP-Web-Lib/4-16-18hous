@@ -1,3 +1,4 @@
+"use strict";
 var popup_html = require("../popup.html");
 module.exports = function($, m, sel) {
   m.makePopup = function(e, d) {

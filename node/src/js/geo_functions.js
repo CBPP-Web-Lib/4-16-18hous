@@ -1,3 +1,5 @@
+"use strict";
+
 module.exports = function($, d3, m, sel) {
   var exports = {};
   m.bbox_overlap = function(box1, box2) {

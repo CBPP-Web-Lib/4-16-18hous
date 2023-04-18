@@ -1,3 +1,5 @@
+"use strict";
+
 module.exports = function($, d3, m, sel) {
 
   m.makeFullScreen = function() {
@@ -28,6 +30,7 @@ module.exports = function($, d3, m, sel) {
     vb[3] = vb[2]*map_height_percent;
     svg.attr("viewBox",vb.join(" "));
     m.dotsSVG.attr("viewBox",vb.join(" "));
+    m.aboveTilesSVG.attr("viewBox", vb.join(" "));
     $(sel).find(".fullscreenButton").html(require("../exit_fullscreen_svg.txt"));
     if (m.active_cbsa) {
       m.fixViewbox();

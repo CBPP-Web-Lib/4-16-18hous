@@ -1,3 +1,5 @@
+"use strict";
+
 var colorgen = require("cbpp_colorgen");
 var bins = require("../../tmp/bins.json");
 
@@ -9,17 +11,13 @@ module.exports = function($, m) {
       labelFormatter = function(n) {return n;};
     }
     var r = [];
-    console.log(bins);
     var theseBins = bins[dataIndex];
-    console.log(useCBSABins);
     if (useCBSABins && m.active_cbsa) {
       var _theseBins = m.cbsaBins[m.active_cbsa.properties.GEOID][dataIndex];
-      console.log(_theseBins);
       if (typeof(_theseBins)!=="undefined") {
         theseBins = _theseBins;
       }
     }
-    console.log(theseBins);
     if (typeof(customBins)!=="undefined") {
       theseBins = customBins;
     }
@@ -94,9 +92,9 @@ module.exports = function($, m) {
           customBins: [0,5,10,15,20,25,30,35,40,100.01],
           extraBin: true,
           customColors: (function() {
-            var secRange = colorgen("#F6EDA2","#EFC0BF", 5);
+            var secRange = colorgen("#9dbed4","#edaf42", 5);
             secRange.shift();
-            return colorgen("#f0f2f2", "#F6EDA2", 5).concat(secRange);
+            return colorgen("#f9fbff", "#9dbed4", 5).concat(secRange);
           })()
         }),
         labels: ["0%","","40% or more"],

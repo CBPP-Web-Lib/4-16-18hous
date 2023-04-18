@@ -1,3 +1,5 @@
+"use strict";
+
 module.exports = function($, m, sel) {
   var instructions = $(document.createElement("div")).html(m.initialContents).find(".instructions_popup");
   $(sel).append(instructions);

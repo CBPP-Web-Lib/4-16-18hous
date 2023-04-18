@@ -1,3 +1,5 @@
+"use strict";
+
 module.exports = function(viewport, options) {
   for (var i = 0, ii = viewport.length; i<ii; i++) {
     viewport[i]*=1;

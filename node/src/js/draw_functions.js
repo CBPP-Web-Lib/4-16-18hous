@@ -1,4 +1,5 @@
 
+"use strict";
 var glow_filter = require("../glowfilter.txt").default;
 
 module.exports = function(
@@ -20,7 +21,7 @@ module.exports = function(
   var water_uid = 0; 
   var getBounds = require("svg-path-bounds");
   var textOffsets = require("../textOffsets.json");
-  var svg_path_data = {};
+  var svg_path_data = {low:{},high:{}};
 
   function disableRedline() {
     var s = $(sel).find(".data-picker-wrapper select");
@@ -43,6 +44,7 @@ module.exports = function(
     //if (m.zoomingToCBSA) {
     //  return false;
    // }
+    var loaded = false;
     var geoid = d.properties.GEOID;
     if (m.active_cbsa) {
       m.removeTractsFromGeoData();
@@ -80,6 +82,8 @@ module.exports = function(
       }
       water_requests.push(new WaterRequest(g.URL_BASE + "/water/tl_2017_" + water_files[i] + "_areawater.bin"));
     }
+    var red_loaded = false;
+    var water_loaded = false;
     Promise.all([
       new Promise((resolve)=>{
         g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2010_tract_" + geoid + ".bin", function(err, d) {
@@ -133,411 +137,463 @@ module.exports = function(
     });
   };
   m.updateDrawData = function() {
-    var svg = m.svg;
-    var viewBox = svg.attr("viewBox");
+    var main_svg = m.svg;
+    var viewBox = main_svg.attr("viewBox");
     var viewBox_arr = viewBox.split(" ");
-    svg.selectAll("g.size").selectAll("g.layer").each(function() {
-      var paths = svg.selectAll("path");
-      paths.exit().each(function() {
-        d3.select(this).remove();
+    merge_csv(geo_data, m.csv);
+    var allDrawDataLayers = filterToVisible(geo_data,viewBox);
+    Object.keys(allDrawDataLayers).forEach((svg_layer) => {
+      var svg = main_svg;
+      if (svg_layer==="above") {
+        svg = m.aboveTilesSVG;
+      } 
+      svg.selectAll("g.size").selectAll("g.layer").each(function() {
+        var paths = svg.selectAll("path");
+        paths.exit().each(function() {
+          d3.select(this).remove();
+        });
+        d3.select(this).selectAll("text").remove();
       });
-      d3.select(this).selectAll("text").remove();
-    });
-
-    allDrawData = filterToVisible(geo_data,viewBox);
-
-    allDrawData = (function(r) {
-      for (var size in r) {
-        if (r.hasOwnProperty(size)) {
-          var topo, merged;
-          if (size==="low") {
-            if (!r[size].national) {
-              topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k[size]}, 50000);
-              merged = topojson.merge(topo, topo.objects.districts.geometries);
-              merged.properties = {GEOID:"us_national_outline"};
-              r[size].national = [merged];
+      var allDrawData = allDrawDataLayers[svg_layer];
+      allDrawData = (function(r) {
+        for (var size in r) {
+          if (r.hasOwnProperty(size)) {
+            var topo, merged;
+            if (size==="low") {
+              if (!r[size].national) {
+                topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k[size]}, 50000);
+                merged = topojson.merge(topo, topo.objects.districts.geometries);
+                merged.properties = {GEOID:"us_national_outline"};
+                r[size].national = [merged];
+              }
             }
+           /* else {
+              for (var layer in r[size]) {
+                if (layer.indexOf("tract")!==-1) {
+                  var quantFactor = Math.pow(2,m.zoomLevel);
+                  var geojson = [{"type":"FeatureCollection","features":r[size][layer]}];
+                  topo = topojson.topology(geojson,quantFactor);
+                  r[size][layer] = topojson.feature(topo, topo.objects[0]).features;
+                }
+              }
+            }*/
           }
-         /* else {
-            for (var layer in r[size]) {
-              if (layer.indexOf("tract")!==-1) {
-                var quantFactor = Math.pow(2,m.zoomLevel);
-                var geojson = [{"type":"FeatureCollection","features":r[size][layer]}];
-                topo = topojson.topology(geojson,quantFactor);
-                r[size][layer] = topojson.feature(topo, topo.objects[0]).features;
+        }
+        return r;
+      })(allDrawData);
+      
+      var drawData = {};
+      var chunkDone = {};
+      Object.keys(allDrawData).forEach((size)=>{
+        drawData[size] = {};
+        chunkDone[size] = {};
+        Object.keys(allDrawData[size]).forEach((layer)=>{
+          drawData[size][layer] = [];
+          chunkDone[size][layer] = false;
+        });
+      });
+  
+      var currentChunk = 0;
+      var chunkSize = 50;
+      var drawFrame = function() {
+        if (m.getLock("zooming")) {
+          return;
+        }
+        svg.selectAll("g")
+          .data((function(g) {
+            var r = [];
+            for (var size in g) {
+              if (g.hasOwnProperty(size)) {
+                r.push(size);
+              }
+            }
+            return r;
+          })(GridConfig))
+          .enter()
+          .append("g")
+          .attr("class", function(d) {return "size " + d;});
+        svg.selectAll("g.size").selectAll("g")
+          .data(FileIndex.concat(["national","water"]))
+          .enter()
+          .append("g")
+          .attr("class", function(d) {
+            return "layer " + d;
+          });
+  
+        Object.keys(allDrawData).forEach((size)=>{
+          Object.keys(allDrawData[size]).forEach((layer)=>{
+            drawData[size][layer] = [];
+            drawData[size][layer] = allDrawData[size][layer].slice(currentChunk*chunkSize, (currentChunk + 50)*chunkSize);
+            if (drawData[size][layer].length === 0) {
+              chunkDone[size] = chunkDone[size] || {};
+              chunkDone[size][layer] = true;
+            }
+          });
+        });
+        currentChunk++;
+        svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
+          if (layer==="water") {return;}
+          var size = d3.select(this.parentNode).attr("class").split(" ")[1];
+          var scaling ={"low":1,"high":0.1};
+          var pathData = function() {
+  
+            if (!drawData[size]) {
+              drawData[size] = {};
+            }
+            var d = drawData[size][layer];
+            if (!d) {
+              d = [];
+            }
+            return d;
+          }();
+          var pathIndex = function(pathData, i) {
+            var r = i;
+            if (pathData.properties) {
+              if (pathData.properties.GEOID10) {
+                r = pathData.properties.GEOID10;
+              }
+              if (pathData.properties.GEOID) {
+                r = pathData.properties.GEOID;
+              }
+              if (pathData.properties.WATERUID) {
+                r = pathData.properties.WATERUID;
+              }
+            }
+            return r;
+          };
+          var paths = d3.select(this).selectAll("path")
+            .data(pathData, pathIndex);
+          /*paths.exit().each(function() {
+            d3.select(this).remove();
+          });
+          d3.select(this).selectAll("text").remove();*/
+          var whichLayer = (function() {
+            if (layer.indexOf("state")!==-1) return "state";
+            if (layer.indexOf("cbsa")!==-1) return "cbsa";
+            if (layer.indexOf("redlin")!==-1) return "redline";
+            if (layer.indexOf("tl_2010_trac")!==-1) return "tract";
+            if (layer.indexOf("national")!==-1) return "national";
+          })();
+          paths.enter()
+            .append("path")
+            .on("click touchstart", function(d) {
+              if (d.properties.invert) {
+                return;
+              }
+              if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa") {
+                cbsa_click(d);
+              }
+            })
+            .attr("data-nomouse", function(d) {
+              if (d.properties.invert) {
+                return "true";
+              } else {
+                return "false";
+              }
+            })
+            .attr("data-geoid",function(d) {
+              return d.properties.GEOID;
+            })
+            .attr("d", function(el) {
+              if (!el.properties) {
+                el.properties = {};
+              }
+              var geoid = el.properties.GEOID | el.properties.GEOID10;
+              /*if (layer==="tl_2015_us_cbsa" && size==="high") {
+                console.log(el);
+                console.log(geoid);
+                if (svg_path_data[size][geoid]) {
+                  console.log(JSON.parse(JSON.stringify(svg_path_data[size][geoid])));
+                } else {
+                  console.log(undefined);
+                }
+              }*/
+              try {
+                if (!geoid || !svg_path_data[size][geoid]) {
+                  var the_path = m.path(el);
+                  if (el.properties.invert) {
+                    var bbox = el.properties.invertBBox;
+                    var pre_path = ["M" + bbox[0] + "," + bbox[1]];
+                    pre_path.push("l" + bbox[2] + ",0");
+                    pre_path.push("l0," + bbox[3]);
+                    pre_path.push("l-" + bbox[2] + ",0");
+                    pre_path.push("l0,-" + bbox[3]);
+                    the_path = pre_path.join("") + "z " + the_path;
+                  }
+                  svg_path_data[size][geoid] = the_path;
+                }
+                return svg_path_data[size][geoid];
+              } catch (ex) {
+                console.error(geoid, ex);
+              }
+            })
+            .attr("fill-rule","evenodd")
+            .attr("fill", function(d) {
+              if (d.properties.invert) {
+                return "rgba(255, 255, 255, 0.5)";
+              }
+              if (whichLayer==="state") {
+                return "#D6E4F0";
+              }
+              if (whichLayer==="national") {
+                return "none";
+              }
+              if (whichLayer==="redline") {
+                if (m.dataset==="holc") {
+                  return m.redlining_colors[d.properties.holc_grade];
+                }
+              }
+              if (whichLayer==="cbsa" && size==="high") {
+                return "transparent";
+              }
+              if (whichLayer==="tract") {
+                if (m.dataset==="holc") {
+                  return "#cccccc";
+                }
+                return fillFromData(d.properties.csvData);
+              }
+              if (m.active_cbsa) {
+                return "#cccccc";
+              }
+              return "#EB9123";
+            })
+            .attr("data-orgfill", function() {
+              return d3.select(this).attr("fill");
+            })
+            .on("mousemove touchstart touchmove", function(d) {
+              d3.event.preventDefault();
+              if (m.dragOn && d3.event.type==="mousemove") return true;
+              if (d3.event.touches) {
+                if (d3.event.touches.length > 1) {
+                  return true;
+                }
+              }
+              var hoverColor = "#ED1C24";
+              if (typeof(m.gradientConfig[m.dataset].hoverColor)!=="undefined") {
+                hoverColor = m.gradientConfig[m.dataset].hoverColor;
+              }
+              if (d.properties.csvData && !m.locked()) {
+                if (m.showTractInfo) {
+                  m.makePopup(d3.event, d);
+                  $(this).css("cursor","pointer");
+                  d3.select(this).attr("opacity",1);
+                  d3.select(this).attr("fill",hoverColor);
+                }
+              } else {
+                $(sel).find(".popup-outer").remove();
+              }
+              return true;
+            })
+            .on("mouseout", function(d) {
+              d3.event.preventDefault();
+              if (d.properties.csvData) {
+                $(this).css("cursor","auto");
+                d3.select(this).attr("fill",fillFromData(d.properties.csvData));
+                if (!d3.event.relatedTarget) {
+                  $(sel).find(".popup-outer").remove();
+                  return;
+                }
+                if (d3.event.relatedTarget.tagName!=="path") {
+                  $(sel).find(".popup-outer").remove();
+                }
+              }
+            })
+            .on("touchstart", function() {
+              clearTimeout(m.touchEndTimer);
+            })
+            .on("touchend", function(d) {
+              var el = this;
+              m.touchEndTimer = setTimeout(function() {
+                $(sel).find(".popup-outer").remove();
+                d3.select(el).attr("fill",fillFromData(d.properties.csvData));
+              }, 500);
+            })
+            .attr("fill-opacity", function() {
+              //if (whichLayer==="state") {
+                return 1;
+              //}
+  
+              //return 0.7;
+            })
+            .attr("stroke",function(d) {
+              if (whichLayer==="state") {
+                return "#fff";
+              }
+              if (whichLayer==="national") {
+                return "#0C61A4";
+              }
+              if (whichLayer==="cbsa") {
+                if (d.properties.invert) {
+                  return "#333";
+                }
+                if (size==="high") {
+                  return "#e6d0ae";
+                }
+                return "#0C61A4";
+              }
+              if (whichLayer==="redline") {
+                return m.redlining_colors[d.properties.holc_grade];
+              }
+              return "#000000";
+            })
+            .attr("stroke-opacity", function() {
+              if (whichLayer==="state") {
+                return 1;
+              }
+              if (whichLayer==="national") {
+                return 1;
+              }
+              if (whichLayer==="cbsa") {
+                if (size==="high") {
+                  return 1;
+                }
+                return 0.3;
+              }
+              if (whichLayer==="redline") {
+                return 1;
+              }
+              return 0;
+            })
+            .merge(paths)
+            .attr("stroke-width",function(d) {
+              
+              if (d.properties.invert) {
+                return 0.001*viewBox_arr[2];
+              }
+              if (whichLayer==="state") {
+                return 0.8*scaling[size];
+              }
+              if (whichLayer==="cbsa") {
+                if (m.active_cbsa) {
+                  if (size==="high" && d.properties.GEOID === m.active_cbsa.properties.GEOID) {
+                    return 0.005*viewBox_arr[2];
+                  }
+                  return 0; 
+                }
+                return 1*scaling[size];
+              }
+              if (whichLayer==="redline") {
+                return 0;
+              }
+              return 0.5*scaling[size];
+            })
+            .attr("visibility", function(d) {
+              /*if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa" && m.active_cbsa) {
+                return "hidden";
+              }*/
+              if (m.dataset==="holc" && whichLayer==="tract") {
+                return "hidden";
+              }
+              if (m.dataset!=="holc" && whichLayer==="redline") {
+                return "hidden";
+              }
+              return "visible";
+            });
+            
+            
+  
+          /*if (m.active_cbsa) {
+            if (whichLayer==="tract") {
+              var d = d3.select(this).selectAll("path").data();
+              if (d.length > 0) {
+                var cbsa = m.active_cbsa.properties.GEOID;
+                console.log(d);
               }
             }
           }*/
+          
+        });
+  
+        
+  
+        var all_done = true;
+        
+        Object.keys(chunkDone).forEach((size)=>{
+          Object.keys(chunkDone[size]).forEach((layer)=>{
+            all_done = all_done && chunkDone[size][layer];
+          });
+        });
+        if (!all_done) {
+          setTimeout(drawFrame, 50);
+        } else {
+          finish();
         }
-      }
-      return r;
-    })(allDrawData);
+      };
+  
+      
+      
+      drawFrame();
+  
+      function finish() {
+  
+        svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
+          d3.select(this).selectAll("path").each(function(d) {
+            if (d.properties && d3.select(this.parentNode).attr("class").indexOf("cbsa")!==-1) {
+              var bbox = this.getBBox();
+              if (!d.properties.NAME) {return;}
+              var name = d.properties.NAME.split(",");
+              name[0] = name[0].split("-")[0];
+              name[1] = name[1].split("-")[0];
+              name = name.join(",");
+              if (m.active_cbsa) {return;}
+              d3.select(this.parentNode)
+                .append("text")
+                .attr("class","label")
+                .attr("data-geoid",d.properties.GEOID)
+                .attr("x",function() {
+                  var o = 0;
+                  for (var offset in textOffsets) {
+                    if (textOffsets.hasOwnProperty(offset)) {
+                      if (d.properties.NAME.indexOf(offset)!==-1) {
+                        o = textOffsets[offset][0];
+                      }
+                    }
+                  }
+                  return bbox.x+bbox.width/2 + o;
+                })
+                .attr("y",function() {
+                  var o = 0;
+                  for (var offset in textOffsets) {
+                    if (textOffsets.hasOwnProperty(offset)) {
+                      if (d.properties.NAME.indexOf(offset)!==-1) {
+                        o = 0-textOffsets[offset][1];
+                      }
+                    }
+                  }
+                  return bbox.y+bbox.height/2 + o;
+                })
+                .attr("text-anchor","end")
+                .attr("fill","#0C61A4")
+                .attr("font-size",10)
+                .text(name)
+                .on("click touchstart", function() {
+                  cbsa_click(d);
+                })
+                .attr("font-family","proxima-nova-condensed,sans-serif");
+            }
+          });
+        });
+      };
     
-    var drawData = {};
-    var chunkDone = {};
-    Object.keys(allDrawData).forEach((size)=>{
-      drawData[size] = {};
-      chunkDone[size] = {};
-      Object.keys(allDrawData[size]).forEach((layer)=>{
-        drawData[size][layer] = [];
-        chunkDone[size][layer] = false;
-      });
+
+      
+
     });
 
-    var currentChunk = 0;
-    var chunkSize = 50;
-    var drawFrame = function() {
-      if (m.getLock("zooming")) {
-        return;
-      }
-      svg.selectAll("g")
-        .data((function(g) {
-          var r = [];
-          for (var size in g) {
-            if (g.hasOwnProperty(size)) {
-              r.push(size);
-            }
-          }
-          return r;
-        })(GridConfig))
-        .enter()
-        .append("g")
-        .attr("class", function(d) {return "size " + d;});
-      svg.selectAll("g.size").selectAll("g")
-        .data(FileIndex.concat(["national","water"]))
-        .enter()
-        .append("g")
-        .attr("class", function(d) {
-          return "layer " + d;
-        });
+  /*for (var k = 0, kk=m.checked_dots.length;k<kk;k++) {
+      m.updateDotData(drawData, m.checked_dots[k]);
+    }*/
 
-      Object.keys(allDrawData).forEach((size)=>{
-        Object.keys(allDrawData[size]).forEach((layer)=>{
-          drawData[size][layer] = allDrawData[size][layer].slice(currentChunk*chunkSize, (currentChunk + 1)*chunkSize);
-          if ((currentChunk + 1)*chunkSize > allDrawData[size][layer].length) {
-            chunkDone[size][layer] = true;
-          }
-        });
-      });
-      currentChunk++;
-      svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
-        if (layer==="water") {return;}
-        var size = d3.select(this.parentNode).attr("class").split(" ")[1];
-        var scaling ={"low":1,"high":0.1};
-        var pathData = function() {
-
-          if (!drawData[size]) {
-            drawData[size] = {};
-          }
-          var d = drawData[size][layer];
-          if (!d) {
-            d = [];
-          }
-          return d;
-        }();
-        var pathIndex = function(pathData, i) {
-          if (pathData.properties) {
-            if (pathData.properties.GEOID10) {
-              return pathData.properties.GEOID10;
-            }
-            if (pathData.properties.GEOID) {
-              return pathData.properties.GEOID;
-            }
-            if (pathData.properties.WATERUID) {
-              return pathData.properties.WATERUID;
-            }
-          }
-          return i;
-        };
-        var paths = d3.select(this).selectAll("path")
-          .data(pathData, pathIndex);
-        /*paths.exit().each(function() {
-          d3.select(this).remove();
-        });
-        d3.select(this).selectAll("text").remove();*/
-        var whichLayer = (function() {
-          if (layer.indexOf("state")!==-1) return "state";
-          if (layer.indexOf("cbsa")!==-1) return "cbsa";
-          if (layer.indexOf("redlin")!==-1) return "redline";
-          if (layer.indexOf("tl_2010_trac")!==-1) return "tract";
-          if (layer.indexOf("national")!==-1) return "national";
-        })();
-        paths.enter()
-          .append("path")
-          .on("click touchstart", function(d) {
-            if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa") {
-              cbsa_click(d);
-            }
-          })
-          .attr("data-geoid",function(d) {
-            return d.properties.GEOID;
-          })
-          .attr("d", function(el) {
-            if (!el.properties) {
-              el.properties = {};
-            }
-            var geoid = el.properties.GEOID | el.properties.GEOID10;
-            try {
-              if (!geoid || !svg_path_data[geoid]) {
-                return m.path(el);
-              }
-              return svg_path_data[geoid][size];
-            } catch (ex) {
-              console.log(geoid, ex);
-            }
-          }).attr("fill", function(d) {
-            if (whichLayer==="state") {
-              return "#D6E4F0";
-            }
-            if (whichLayer==="national") {
-              return "none";
-            }
-            if (whichLayer==="redline") {
-              if (m.dataset==="holc") {
-                return m.redlining_colors[d.properties.holc_grade];
-              }
-            }
-            if (whichLayer==="cbsa" && size==="high") {
-              return "transparent";
-            }
-            if (whichLayer==="tract") {
-              if (m.dataset==="holc") {
-                return "#cccccc";
-              }
-              return fillFromData(d.properties.csvData);
-            }
-            if (m.active_cbsa) {
-              return "#cccccc";
-            }
-            return "#EB9123";
-          })
-          .attr("data-orgfill", function() {
-            return d3.select(this).attr("fill");
-          })
-          .on("mousemove touchstart touchmove", function(d) {
-            d3.event.preventDefault();
-            if (m.dragOn && d3.event.type==="mousemove") return true;
-            if (d3.event.touches) {
-              if (d3.event.touches.length > 1) {
-                return true;
-              }
-            }
-            var hoverColor = "#ED1C24";
-            if (typeof(m.gradientConfig[m.dataset].hoverColor)!=="undefined") {
-              hoverColor = m.gradientConfig[m.dataset].hoverColor;
-            }
-            if (d.properties.csvData && !m.locked()) {
-              if (m.showTractInfo) {
-                m.makePopup(d3.event, d);
-                $(this).css("cursor","pointer");
-                d3.select(this).attr("opacity",1);
-                d3.select(this).attr("fill",hoverColor);
-              }
-            } else {
-              $(sel).find(".popup-outer").remove();
-            }
-            return true;
-          })
-          .on("mouseout", function(d) {
-            d3.event.preventDefault();
-            if (d.properties.csvData) {
-              $(this).css("cursor","auto");
-              d3.select(this).attr("fill",fillFromData(d.properties.csvData));
-              if (!d3.event.relatedTarget) {
-                $(sel).find(".popup-outer").remove();
-                return;
-              }
-              if (d3.event.relatedTarget.tagName!=="path") {
-                $(sel).find(".popup-outer").remove();
-              }
-            }
-          })
-          .on("touchstart", function() {
-            clearTimeout(m.touchEndTimer);
-          })
-          .on("touchend", function(d) {
-            var el = this;
-            m.touchEndTimer = setTimeout(function() {
-              $(sel).find(".popup-outer").remove();
-              d3.select(el).attr("fill",fillFromData(d.properties.csvData));
-            }, 500);
-          })
-          .attr("fill-opacity", function() {
-            //if (whichLayer==="state") {
-              return 1;
-            //}
-
-            //return 0.7;
-          })
-          .attr("stroke",function(d) {
-            if (whichLayer==="state") {
-              return "#fff";
-            }
-            if (whichLayer==="national") {
-              return "#0C61A4";
-            }
-            if (whichLayer==="cbsa") {
-              if (size==="high") {
-                return "#e6d0ae";
-              }
-              return "#0C61A4";
-            }
-            if (whichLayer==="redline") {
-              return m.redlining_colors[d.properties.holc_grade];
-            }
-            return "#000000";
-          })
-          .attr("stroke-opacity", function() {
-            if (whichLayer==="state") {
-              return 1;
-            }
-            if (whichLayer==="national") {
-              return 1;
-            }
-            if (whichLayer==="cbsa") {
-              if (size==="high") {
-                return 1;
-              }
-              return 0.3;
-            }
-            if (whichLayer==="redline") {
-              return 1;
-            }
-            return 0;
-          })
-          .each(function() {
-            console.log(this);
-          })
-          .merge(paths)
-          .attr("stroke-width",function(d) {
-            if (whichLayer==="state") {
-              return 0.8*scaling[size];
-            }
-            if (whichLayer==="cbsa") {
-              if (m.active_cbsa) {
-                if (size==="high" && d.properties.GEOID === m.active_cbsa.properties.GEOID) {
-                  return 0.005*viewBox_arr[2];
-                }
-                return 0; 
-              }
-              return 1*scaling[size];
-            }
-            if (whichLayer==="redline") {
-              return 0;
-            }
-            return 0.5*scaling[size];
-          })
-          .attr("visibility", function(d) {
-            /*if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa" && m.active_cbsa) {
-              return "hidden";
-            }*/
-            if (m.dataset==="holc" && whichLayer==="tract") {
-              return "hidden";
-            }
-            if (m.dataset!=="holc" && whichLayer==="redline") {
-              return "hidden";
-            }
-            return "visible";
-          });
-          
-          
-
-        if (m.active_cbsa) {
-          if (whichLayer==="tract") {
-            var d = d3.select(this).selectAll("path").data();
-            if (d.length > 0) {
-              var cbsa = m.active_cbsa.properties.GEOID;
-              d = applyData(m.csv,cbsa, d);
-            }
-          }
-        }
-        
-      });
-
-      
-
-      var all_done = true;
-      
-      Object.keys(chunkDone).forEach((size)=>{
-        Object.keys(chunkDone[size]).forEach((layer)=>{
-          all_done = all_done && chunkDone[size][layer];
-        });
-      });
-      if (!all_done) {
-        setTimeout(drawFrame, 50);
-      } else {
-        finish();
-      }
-    };
-
-    
-    
-    drawFrame();
-
-    function finish() {
-
-      svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
-        d3.select(this).selectAll("path").each(function(d) {
-          if (d.properties && d3.select(this.parentNode).attr("class").indexOf("cbsa")!==-1) {
-            var bbox = this.getBBox();
-            if (!d.properties.NAME) {return;}
-            var name = d.properties.NAME.split(",");
-            name[0] = name[0].split("-")[0];
-            name[1] = name[1].split("-")[0];
-            name = name.join(",");
-            if (m.active_cbsa) {return;}
-            d3.select(this.parentNode)
-              .append("text")
-              .attr("class","label")
-              .attr("data-geoid",d.properties.GEOID)
-              .attr("x",function() {
-                var o = 0;
-                for (var offset in textOffsets) {
-                  if (textOffsets.hasOwnProperty(offset)) {
-                    if (d.properties.NAME.indexOf(offset)!==-1) {
-                      o = textOffsets[offset][0];
-                    }
-                  }
-                }
-                return bbox.x+bbox.width/2 + o;
-              })
-              .attr("y",function() {
-                var o = 0;
-                for (var offset in textOffsets) {
-                  if (textOffsets.hasOwnProperty(offset)) {
-                    if (d.properties.NAME.indexOf(offset)!==-1) {
-                      o = 0-textOffsets[offset][1];
-                    }
-                  }
-                }
-                return bbox.y+bbox.height/2 + o;
-              })
-              .attr("text-anchor","end")
-              .attr("fill","#0C61A4")
-              .attr("font-size",10)
-              .text(name)
-              .on("click touchstart", function() {
-                cbsa_click(d);
-              })
-              .attr("font-family","proxima-nova-condensed,sans-serif");
-          }
-        });
-      });
-
-      /*for (var k = 0, kk=m.checked_dots.length;k<kk;k++) {
-        m.updateDotData(drawData, m.checked_dots[k]);
-      }*/
-      m.updateDotData(allDrawData, "hcv_hh");
-      m.updateDotData(allDrawData, "aff_units");
-      m.updateDotData(allDrawData, "hcv_kids");
-      m.updateDotData(allDrawData, "nwkids_hcv");
-      m.makeLegend();
-      m.updateDots(allDrawData, m.checked_dots);
-
-    };
+    m.updateDotData(allDrawDataLayers.below, "hcv_hh");
+    m.updateDotData(allDrawDataLayers.below, "aff_units");
+    m.updateDotData(allDrawDataLayers.below, "hcv_kids");
+    m.updateDotData(allDrawDataLayers.below, "nwkids_hcv");
+    m.makeLegend();
+    m.updateDots(allDrawDataLayers.below, m.checked_dots);
 
     function filterToVisible(geo_data, viewbox) {
-      var r = {};
+      var toReturn = {above: [], below: []};
+      var r = toReturn.below;
       viewbox = viewbox.split(" ");
       for (var layer in geo_data) {
         if (geo_data.hasOwnProperty(layer)) {
@@ -559,6 +615,16 @@ module.exports = function(
                       viewbox[0]*1 < bbox[2] &&
                       viewbox[1]*1 < bbox[3]) {
                     r[size][layer].push(geo_data[layer][size].features[i]);
+                    if (layer==="tl_2015_us_cbsa" && size==="high") {
+                      var clone = {};
+                      $.extend(true, clone, geo_data[layer][size].features[i]);
+                      clone.properties.invert = true;
+                      clone.properties.GEOID = 0 - clone.properties.GEOID;
+                      clone.properties.invertBBox = viewbox;
+                      toReturn["above"] = {};
+                      toReturn["above"][size] = {};
+                      toReturn["above"][size][layer] = [clone];
+                    }
                   }
                 }
               }
@@ -566,7 +632,7 @@ module.exports = function(
           }
         }
       }
-      return r;
+      return toReturn;
     }
   };
 
@@ -583,6 +649,7 @@ module.exports = function(
   m.CBSAZoomSVGUpdate = function(direction, viewbox) {
     var svg = m.svg;
     var dotsSVG = m.dotsSVG;
+    var aboveTilesSVG = m.aboveTilesSVG;
     svg.selectAll("circle.household").remove();
     svg.selectAll("text.label")
       .attr("opacity",0)
@@ -601,11 +668,17 @@ module.exports = function(
     dotsSVG.transition()
         .duration(1000)
         .attr("viewBox", viewbox.join(" "));
+    aboveTilesSVG.transition()
+        .duration(1000)
+        .attr("viewBox", viewbox.join(" "));
     } else {
       svg.transition()
         .duration(1000)
         .attr("viewBox", m.fullUSViewbox);
       dotsSVG.transition()
+        .duration(1000)
+        .attr("viewBox", m.fullUSViewbox);
+      aboveTilesSVG.transition()
         .duration(1000)
         .attr("viewBox", m.fullUSViewbox);
       m.removeTractsFromGeoData();
@@ -635,13 +708,6 @@ module.exports = function(
       .attr("opacity",1);
   }
 
-  function rowToObj(row, headers) {
-    var r = {};
-    row.forEach((cell, i)=>{
-      r[headers[i]] = cell;
-    })
-    return r;
-  }
 
   function fillFromData(d) {
     if (typeof(d)==="undefined") {
@@ -678,18 +744,7 @@ module.exports = function(
     }
   }
 
-  function applyData(d, cbsa, pathData) {
-    var selector = "g.tl_2010_tract_" + cbsa + " path";
-    var paths = m.svg.selectAll(selector);
-    paths.each(function(gd, i) {
-      pathData[i] = gd;
-      gd.properties.csvData = rowToObj(d[cbsa].data[gd.properties.GEOID10*1], d[cbsa].headers);
-      d3.select(this).attr("fill", function() {
-        return fillFromData(gd.properties.csvData);
-      });
-    });
-    return pathData;
-  }
+  
 
   m.DrawInitialMap = function() {
 
@@ -708,7 +763,10 @@ module.exports = function(
       .attr("viewBox",m.fullUSViewbox)
       .attr("preserveAspectRatio", "xMidYMid")
       .attr("class","dotsSVG");
-      
+    m.aboveTilesSVG = d3.select(sel + " .mapwrap").append("svg")
+      .attr("viewBox",m.fullUSViewbox)
+      .attr("preserveAspectRatio", "xMidYMid")
+      .attr("class","aboveTilesSVG");
     var defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
     defs.innerHTML = glow_filter;
     m.dotsSVG.node().appendChild(defs);
@@ -785,3 +843,24 @@ module.exports = function(
 
   return exports;
 };
+
+function merge_csv(geo_data, csv) {
+  Object.keys(geo_data).forEach((layer)=>{
+    if (layer.indexOf("_tract_")!==-1) {
+      var cbsa = layer.replace("tl_2010_tract_","");
+      var tracts = geo_data[layer].high.features;
+      tracts.forEach((tract)=>{
+        tract.properties.csvData = rowToObj(csv[cbsa].data[tract.properties.GEOID10*1], csv[cbsa].headers);
+      })
+    }
+  })
+}
+
+
+function rowToObj(row, headers) {
+  var r = {};
+  row.forEach((cell, i)=>{
+    r[headers[i]] = cell;
+  })
+  return r;
+}

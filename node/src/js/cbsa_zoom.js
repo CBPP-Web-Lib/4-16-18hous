@@ -1,3 +1,5 @@
+"use strict";
+
 module.exports = function($, d3, m, sel, g, geojson_bbox) {
 
   function get_final_viewbox(bbox, projection, width, height, zoom) {
@@ -148,7 +150,6 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
     g.getCSVAndSaveInMemory(g.URL_BASE + "/data/" + cbsa.properties.GEOID + ".csv", function(err, d) {
       csvDataLoaded = true;
       m.csv[cbsa.properties.GEOID] = organize_csv(d);
-      console.log(m.csv);
       m.getDotDeflator(m.csv, cbsa.properties.GEOID);
       checkDisplay();
     });
@@ -251,7 +252,16 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
         m.path = d3.geoPath(m.projection);
       }
       m.svg.selectAll("path")
-        .attr("d", m.path);
+        .attr("d", function(d) {
+          if (d.properties) {
+            /*the "invert" shapes do some post processing on the path
+            after the projection so can't use this*/
+            if (d.properties.invert) {
+              return d3.select(this).attr("d");
+            }
+          }
+          return m.path(d);
+        });
     });
   };
 

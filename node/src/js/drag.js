@@ -1,3 +1,5 @@
+"use strict";
+
 module.exports = function(sel, m, $, d3) {
 	$(sel + " svg").bind('mousedown touchstart', function(e) {
 		if (!m.active_cbsa) return true;
@@ -119,5 +121,6 @@ module.exports = function(sel, m, $, d3) {
     viewport = viewport.join(" ");
 		svg.attr("viewBox", viewport);
 		m.dotsSVG.attr("viewBox", viewport);
+		m.aboveTilesSVG.attr("viewBox", viewport);
   };
 };
