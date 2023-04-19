@@ -2,6 +2,7 @@
 
 module.exports = function(sel, m, $, d3) {
 	$(sel + " svg").bind('mousedown touchstart', function(e) {
+		if (e.button == 2) return true;
 		if (!m.active_cbsa) return true;
 		if (m.locked()) {
 			return;

@@ -146,14 +146,7 @@ module.exports = function(
       var svg = main_svg;
       if (svg_layer==="above") {
         svg = m.aboveTilesSVG;
-      } 
-      svg.selectAll("g.size").selectAll("g.layer").each(function() {
-        var paths = svg.selectAll("path");
-        paths.exit().each(function() {
-          d3.select(this).remove();
-        });
-        d3.select(this).selectAll("text").remove();
-      });
+      }
       var allDrawData = allDrawDataLayers[svg_layer];
       allDrawData = (function(r) {
         for (var size in r) {
@@ -194,7 +187,8 @@ module.exports = function(
       });
   
       var currentChunk = 0;
-      var chunkSize = 50;
+      var chunkSize = 5000;
+      var deferredDraw = [];
       var drawFrame = function() {
         if (m.getLock("zooming")) {
           return;
@@ -223,8 +217,9 @@ module.exports = function(
         Object.keys(allDrawData).forEach((size)=>{
           Object.keys(allDrawData[size]).forEach((layer)=>{
             drawData[size][layer] = [];
-            drawData[size][layer] = allDrawData[size][layer].slice(currentChunk*chunkSize, (currentChunk + 50)*chunkSize);
-            if (drawData[size][layer].length === 0) {
+            drawData[size][layer] = allDrawData[size][layer].slice(0, (currentChunk + 50)*chunkSize);
+            var newData = allDrawData[size][layer].slice(currentChunk*chunkSize, (currentChunk + 50)*chunkSize);
+            if (newData.length === 0) {
               chunkDone[size] = chunkDone[size] || {};
               chunkDone[size][layer] = true;
             }
@@ -263,10 +258,8 @@ module.exports = function(
           };
           var paths = d3.select(this).selectAll("path")
             .data(pathData, pathIndex);
-          /*paths.exit().each(function() {
-            d3.select(this).remove();
-          });
-          d3.select(this).selectAll("text").remove();*/
+          d3.select(this).selectAll("text").remove();
+          paths.exit().remove();
           var whichLayer = (function() {
             if (layer.indexOf("state")!==-1) return "state";
             if (layer.indexOf("cbsa")!==-1) return "cbsa";
@@ -285,6 +278,9 @@ module.exports = function(
               }
             })
             .attr("data-nomouse", function(d) {
+              if (whichLayer === "cbsa" && size === "high") {
+                return "false";
+              }
               if (d.properties.invert) {
                 return "true";
               } else {
@@ -294,69 +290,11 @@ module.exports = function(
             .attr("data-geoid",function(d) {
               return d.properties.GEOID;
             })
-            .attr("d", function(el) {
-              if (!el.properties) {
-                el.properties = {};
-              }
-              var geoid = el.properties.GEOID | el.properties.GEOID10;
-              /*if (layer==="tl_2015_us_cbsa" && size==="high") {
-                console.log(el);
-                console.log(geoid);
-                if (svg_path_data[size][geoid]) {
-                  console.log(JSON.parse(JSON.stringify(svg_path_data[size][geoid])));
-                } else {
-                  console.log(undefined);
-                }
-              }*/
-              try {
-                if (!geoid || !svg_path_data[size][geoid]) {
-                  var the_path = m.path(el);
-                  if (el.properties.invert) {
-                    var bbox = el.properties.invertBBox;
-                    var pre_path = ["M" + bbox[0] + "," + bbox[1]];
-                    pre_path.push("l" + bbox[2] + ",0");
-                    pre_path.push("l0," + bbox[3]);
-                    pre_path.push("l-" + bbox[2] + ",0");
-                    pre_path.push("l0,-" + bbox[3]);
-                    the_path = pre_path.join("") + "z " + the_path;
-                  }
-                  svg_path_data[size][geoid] = the_path;
-                }
-                return svg_path_data[size][geoid];
-              } catch (ex) {
-                console.error(geoid, ex);
-              }
+            .each(function(d) {
+              deferredDraw.push({el: this, data: d, size});
             })
+            
             .attr("fill-rule","evenodd")
-            .attr("fill", function(d) {
-              if (d.properties.invert) {
-                return "rgba(255, 255, 255, 0.5)";
-              }
-              if (whichLayer==="state") {
-                return "#D6E4F0";
-              }
-              if (whichLayer==="national") {
-                return "none";
-              }
-              if (whichLayer==="redline") {
-                if (m.dataset==="holc") {
-                  return m.redlining_colors[d.properties.holc_grade];
-                }
-              }
-              if (whichLayer==="cbsa" && size==="high") {
-                return "transparent";
-              }
-              if (whichLayer==="tract") {
-                if (m.dataset==="holc") {
-                  return "#cccccc";
-                }
-                return fillFromData(d.properties.csvData);
-              }
-              if (m.active_cbsa) {
-                return "#cccccc";
-              }
-              return "#EB9123";
-            })
             .attr("data-orgfill", function() {
               return d3.select(this).attr("fill");
             })
@@ -455,6 +393,35 @@ module.exports = function(
               return 0;
             })
             .merge(paths)
+            .attr("fill", function(d) {
+              if (d.properties.invert) {
+                return "rgba(255, 255, 255, 0.5)";
+              }
+              if (whichLayer==="state") {
+                return "#D6E4F0";
+              }
+              if (whichLayer==="national") {
+                return "none";
+              }
+              if (whichLayer==="redline") {
+                if (m.dataset==="holc") {
+                  return m.redlining_colors[d.properties.holc_grade];
+                }
+              }
+              if (whichLayer==="cbsa" && size==="high") {
+                return "transparent";
+              }
+              if (whichLayer==="tract") {
+                if (m.dataset==="holc") {
+                  return "#cccccc";
+                }
+                return fillFromData(d.properties.csvData);
+              }
+              if (m.active_cbsa) {
+                return "#cccccc";
+              }
+              return "#EB9123";
+            })
             .attr("stroke-width",function(d) {
               
               if (d.properties.invert) {
@@ -481,6 +448,17 @@ module.exports = function(
               /*if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa" && m.active_cbsa) {
                 return "hidden";
               }*/
+              if (whichLayer==="cbsa") {
+                if (m.active_cbsa) {
+                  if (size==="high" && 
+                    (d.properties.GEOID == m.active_cbsa.properties.GEOID) ||
+                    (0 - d.properties.GEOID == m.active_cbsa.properties.GEOID )
+                  ) {
+                    return "visible";
+                  }
+                  return "hidden"; 
+                }
+              }
               if (m.dataset==="holc" && whichLayer==="tract") {
                 return "hidden";
               }
@@ -488,9 +466,7 @@ module.exports = function(
                 return "hidden";
               }
               return "visible";
-            });
-            
-            
+            })
   
           /*if (m.active_cbsa) {
             if (whichLayer==="tract") {
@@ -502,6 +478,8 @@ module.exports = function(
             }
           }*/
           
+          
+
         });
   
         
@@ -514,7 +492,7 @@ module.exports = function(
           });
         });
         if (!all_done) {
-          setTimeout(drawFrame, 50);
+          window.requestAnimationFrame(drawFrame);
         } else {
           finish();
         }
@@ -525,54 +503,57 @@ module.exports = function(
       drawFrame();
   
       function finish() {
-  
-        svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
-          d3.select(this).selectAll("path").each(function(d) {
-            if (d.properties && d3.select(this.parentNode).attr("class").indexOf("cbsa")!==-1) {
-              var bbox = this.getBBox();
-              if (!d.properties.NAME) {return;}
-              var name = d.properties.NAME.split(",");
-              name[0] = name[0].split("-")[0];
-              name[1] = name[1].split("-")[0];
-              name = name.join(",");
-              if (m.active_cbsa) {return;}
-              d3.select(this.parentNode)
-                .append("text")
-                .attr("class","label")
-                .attr("data-geoid",d.properties.GEOID)
-                .attr("x",function() {
-                  var o = 0;
-                  for (var offset in textOffsets) {
-                    if (textOffsets.hasOwnProperty(offset)) {
-                      if (d.properties.NAME.indexOf(offset)!==-1) {
-                        o = textOffsets[offset][0];
+        drawDeferred(deferredDraw).then(function() {
+          console.log("finished");
+          svg.selectAll("g.size").selectAll("g.layer").each(function(layer) {
+            d3.select(this).selectAll("path").each(function(d) {
+              if (d.properties && d3.select(this.parentNode).attr("class").indexOf("cbsa")!==-1) {
+                var bbox = this.getBBox();
+                if (!d.properties.NAME) {return;}
+                var name = d.properties.NAME.split(",");
+                name[0] = name[0].split("-")[0];
+                name[1] = name[1].split("-")[0];
+                name = name.join(",");
+                if (m.active_cbsa) {return;}
+                d3.select(this.parentNode)
+                  .append("text")
+                  .attr("class","label")
+                  .attr("data-geoid",d.properties.GEOID)
+                  .attr("x",function() {
+                    var o = 0;
+                    for (var offset in textOffsets) {
+                      if (textOffsets.hasOwnProperty(offset)) {
+                        if (d.properties.NAME.indexOf(offset)!==-1) {
+                          o = textOffsets[offset][0];
+                        }
                       }
                     }
-                  }
-                  return bbox.x+bbox.width/2 + o;
-                })
-                .attr("y",function() {
-                  var o = 0;
-                  for (var offset in textOffsets) {
-                    if (textOffsets.hasOwnProperty(offset)) {
-                      if (d.properties.NAME.indexOf(offset)!==-1) {
-                        o = 0-textOffsets[offset][1];
+                    return bbox.x+bbox.width/2 + o;
+                  })
+                  .attr("y",function() {
+                    var o = 0;
+                    for (var offset in textOffsets) {
+                      if (textOffsets.hasOwnProperty(offset)) {
+                        if (d.properties.NAME.indexOf(offset)!==-1) {
+                          o = 0-textOffsets[offset][1];
+                        }
                       }
                     }
-                  }
-                  return bbox.y+bbox.height/2 + o;
-                })
-                .attr("text-anchor","end")
-                .attr("fill","#0C61A4")
-                .attr("font-size",10)
-                .text(name)
-                .on("click touchstart", function() {
-                  cbsa_click(d);
-                })
-                .attr("font-family","proxima-nova-condensed,sans-serif");
-            }
+                    return bbox.y+bbox.height/2 + o;
+                  })
+                  .attr("text-anchor","end")
+                  .attr("fill","#0C61A4")
+                  .attr("font-size",10)
+                  .text(name)
+                  .on("click touchstart", function() {
+                    cbsa_click(d);
+                  })
+                  .attr("font-family","proxima-nova-condensed,sans-serif");
+              }
+            });
           });
-        });
+        })
+        
       };
     
 
@@ -583,14 +564,13 @@ module.exports = function(
   /*for (var k = 0, kk=m.checked_dots.length;k<kk;k++) {
       m.updateDotData(drawData, m.checked_dots[k]);
     }*/
-
+    console.log("updateDotData");
     m.updateDotData(allDrawDataLayers.below, "hcv_hh");
     m.updateDotData(allDrawDataLayers.below, "aff_units");
     m.updateDotData(allDrawDataLayers.below, "hcv_kids");
     m.updateDotData(allDrawDataLayers.below, "nwkids_hcv");
     m.makeLegend();
     m.updateDots(allDrawDataLayers.below, m.checked_dots);
-
     function filterToVisible(geo_data, viewbox) {
       var toReturn = {above: [], below: []};
       var r = toReturn.below;
@@ -614,7 +594,6 @@ module.exports = function(
                       viewbox[1]*1 + viewbox[3]*1 > bbox[1] &&
                       viewbox[0]*1 < bbox[2] &&
                       viewbox[1]*1 < bbox[3]) {
-                    r[size][layer].push(geo_data[layer][size].features[i]);
                     if (layer==="tl_2015_us_cbsa" && size==="high") {
                       var clone = {};
                       $.extend(true, clone, geo_data[layer][size].features[i]);
@@ -625,6 +604,7 @@ module.exports = function(
                       toReturn["above"][size] = {};
                       toReturn["above"][size][layer] = [clone];
                     }
+                    r[size][layer].push(geo_data[layer][size].features[i]);
                   }
                 }
               }
@@ -635,6 +615,58 @@ module.exports = function(
       return toReturn;
     }
   };
+
+  function drawDeferred(deferredDraw) {
+    return new Promise(function(resolve) {
+      var frame = function() {
+        var thisFrame = deferredDraw.splice(0, 50);
+        thisFrame.forEach(function(e) {
+          var {el, data, size} = e;
+          d3.select(el).attr("d", function() {
+            if (!data.properties) {
+              data.properties = {};
+            }
+            var geoid = data.properties.GEOID | data.properties.GEOID10;
+            /*if (layer==="tl_2015_us_cbsa" && size==="high") {
+              console.log(el);
+              console.log(geoid);
+              if (svg_path_data[size][geoid]) {
+                console.log(JSON.parse(JSON.stringify(svg_path_data[size][geoid])));
+              } else {
+                console.log(undefined);
+              }
+            }*/
+            try {
+              if (!geoid || !svg_path_data[size][geoid]) {
+                var the_path = m.path(data);
+                if (data.properties.invert) {
+                  var bbox = data.properties.invertBBox;
+                  var pre_path = ["M" + bbox[0] + "," + bbox[1]];
+                  pre_path.push("l" + bbox[2] + ",0");
+                  pre_path.push("l0," + bbox[3]);
+                  pre_path.push("l-" + bbox[2] + ",0");
+                  pre_path.push("l0,-" + bbox[3]);
+                  the_path = pre_path.join("") + "z " + the_path;
+                }
+                svg_path_data[size][geoid] = the_path;
+              }
+              return svg_path_data[size][geoid];
+            } catch (ex) {
+              console.error(geoid, ex);
+            }
+          })
+        })
+        if (deferredDraw.length) {
+          window.requestAnimationFrame(frame);
+          //setTimeout(frame, 500);
+        } else {
+          resolve();
+        }
+      }
+      
+      frame();
+    });
+  }
 
   m.removeTractsFromGeoData = function() {
     for (var file in geo_data) {
@@ -659,27 +691,27 @@ module.exports = function(
         .attr("opacity",1)
         .style("visibility","visible")
         .transition()
-        .duration(100)
+        .duration(0)
         .attr("opacity",0)
         .style("visibiltiy","hidden");
     svg.transition() 
-        .duration(1000)
+        .duration(0)
         .attr("viewBox", viewbox.join(" "));
     dotsSVG.transition()
-        .duration(1000)
+        .duration(0)
         .attr("viewBox", viewbox.join(" "));
     aboveTilesSVG.transition()
-        .duration(1000)
+        .duration(0)
         .attr("viewBox", viewbox.join(" "));
     } else {
       svg.transition()
-        .duration(1000)
+        .duration(0)
         .attr("viewBox", m.fullUSViewbox);
       dotsSVG.transition()
-        .duration(1000)
+        .duration(0)
         .attr("viewBox", m.fullUSViewbox);
       aboveTilesSVG.transition()
-        .duration(1000)
+        .duration(0)
         .attr("viewBox", m.fullUSViewbox);
       m.removeTractsFromGeoData();
       svg.selectAll("g.size.low g.cb_2015_us_state_500k")
@@ -827,7 +859,7 @@ module.exports = function(
       select.append(option);
     }
     select.on("change", function() {
-      $(sel).find(".dotsSVG").empty();
+      $(sel).find(".dotsSVG g").empty();
       $(sel).find(".tilewrap").remove();
       var el = $(this).find("option:selected");
       if (true /*typeof(m.active_cbsa)==="undefined"*/) {
@@ -848,10 +880,12 @@ function merge_csv(geo_data, csv) {
   Object.keys(geo_data).forEach((layer)=>{
     if (layer.indexOf("_tract_")!==-1) {
       var cbsa = layer.replace("tl_2010_tract_","");
-      var tracts = geo_data[layer].high.features;
-      tracts.forEach((tract)=>{
-        tract.properties.csvData = rowToObj(csv[cbsa].data[tract.properties.GEOID10*1], csv[cbsa].headers);
-      })
+      if (geo_data[layer]) {
+        var tracts = geo_data[layer].high.features;
+        tracts.forEach((tract)=>{
+          tract.properties.csvData = rowToObj(csv[cbsa].data[tract.properties.GEOID10*1], csv[cbsa].headers);
+        })
+      }
     }
   })
 }

@@ -98,11 +98,10 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
     var view_dot_data_split = {};
     view_dot_data_split.vouchers = view_dot_data.filter(a=>a[1]!=="aff_units");
     view_dot_data_split.affordable_units = view_dot_data.filter(a=>a[1]=="aff_units");
-
     clearInterval(m.dotDrawInteval);
     
     var dot_data_chunked = {};
-    var chunk_size = 50;
+    var chunk_size = 5000;
     ["vouchers", "affordable_units"].forEach((dot_type)=>{
       dot_data_chunked[dot_type] = [];
     });
@@ -110,9 +109,10 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
     var dotDrawTimerFunction = function() {
       var chunk_done = {};
       ["vouchers", "affordable_units"].forEach((dot_type)=>{
+        var all_dots_up_to_chunk = view_dot_data_split[dot_type].slice(0, (current_chunk + 1)*chunk_size);
         var this_chunk = view_dot_data_split[dot_type].slice(current_chunk*chunk_size, (current_chunk + 1)*chunk_size);
-        dot_data_chunked[dot_type] = dot_data_chunked[dot_type].concat(this_chunk);
-        if ((current_chunk+ 1)*chunk_size > dot_data_chunked[dot_type].length) {
+        dot_data_chunked[dot_type] = all_dots_up_to_chunk;
+        if (this_chunk.length == 0) {
           chunk_done[dot_type] = true;
         }
       });
@@ -128,16 +128,19 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
           }
         }
         m.dotsSVG.selectAll("filter#f1")
-        .select("feMorphology")
-        .attr("radius", circle_size*0.2);
+          .select("feMorphology")
+          .attr("radius", circle_size*1.1)
+        m.dotsSVG.selectAll("filter#f1")
+          .select("feGaussianBlur")
+          .attr("stdDeviation", circle_size*1.2)
         dots.enter()
           .append("circle")
           .attr("class","household")
           .attr("stroke",function(d) {
-            return d[1]!=="aff_units" ? "#111111" : "rgba(100, 0, 0, 0.4)";
+            return d[1]!=="aff_units" ? "rgba(255, 255, 255, 0.6)" : "rgba(100, 0, 0, 0.4)";
           })
           .attr("stroke-width",function(d) {
-            return d[1]==="aff_units" ? (circle_size*dotScaleM[d[1]])/2 : 0;
+            return d[1]==="aff_units" ? (circle_size*dotScaleM[d[1]])/2 : circle_size*dotScaleM[d[1]]/4;
             //return (circle_size*dotScaleM[d[1]])/3;
           })
           .attr("fill",function(d) {
@@ -146,7 +149,7 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
           .attr("filter", "url(#f1)")
           .merge(dots)
           .attr("r",function(d) {
-            return (d[1]==="aff_units" ? 1 : 0.7)*circle_size*dotScaleM[d[1]]/* - (d[1]==="vouchers" ? 0 : (circle_size*dotScaleM[d[1]])/3)*/;
+            return (d[1]==="aff_units" ? 1 : 0.9)*circle_size*dotScaleM[d[1]]/* - (d[1]==="vouchers" ? 0 : (circle_size*dotScaleM[d[1]])/3)*/;
           })
           .each(function(d) {
             var el = d3.select(this);
@@ -158,7 +161,8 @@ module.exports = function($, d3, m, sel, geojson_bbox) {
       });
       if (chunk_done.vouchers && chunk_done.affordable_units) {
       } else {
-        m.dotDrawInterval = setTimeout(dotDrawTimerFunction, 10);
+        window.requestAnimationFrame(dotDrawTimerFunction);
+       // m.dotDrawInterval = setTimeout(dotDrawTimerFunction, 10);
       }
       current_chunk++;
     }

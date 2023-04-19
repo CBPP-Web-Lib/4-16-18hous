@@ -110,6 +110,9 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
   };
 
   m.CBSAZoomInDone = function() {
+    
+    $(m.dotsSVG.node()).show();
+    $(m.aboveTilesSVG.node()).show();
     $(sel).find(".legendwrap").slideDown(100, function() {
       /*if ($(sel).hasClass("fullScreen")) {
         m.fixViewbox();
@@ -184,9 +187,9 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
       startScale = 10000/(org_bbox[2] - org_bbox[0]);
       $(sel).find(".tilewrap").hide();
     }
-    $(m.dotsSVG.node()).show();
     if (direction==="out") {
       $(m.dotsSVG.node()).hide();
+      $(m.aboveTilesSVG.node()).hide();
       $(sel).find("button.zoomOut, div.zoom_tiles").remove();
       m.active_cbsa = undefined;
       var swap = destProjection;
@@ -225,13 +228,15 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
       }
     }
     m.CBSAZoomSVGUpdate(direction, viewbox);
-    
-    var timer = d3.timer(function(elapsed) {
+    console.log("here");
+    /*var timer = d3.timer(function(elapsed) {
       var p = elapsed/1000;
       if (p>=1) {
         p=1;
-        timer.stop();
+        timer.stop();*/
+        var p = 1;
         m.projection = projectInterpolate(orgProjection, destProjection, p, direction, startScale, destScale, center, orgcenter);
+        //m.projection = destProjection();
         m.path = d3.geoPath(m.projection);
         zoomFinished = true;
         m.removeLock("zoomingToCBSA");
@@ -246,23 +251,23 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
           m.svg.select("g.layer.national").attr("opacity",1);
           m.resetCBSALowRes();
         }
-      }
+      /*}
       if (!zoomFinished) {
         m.projection = projectInterpolate(orgProjection, destProjection, p, direction, startScale, destScale, center, orgcenter);
         m.path = d3.geoPath(m.projection);
-      }
-      m.svg.selectAll("path")
+      }*/
+      /*m.svg.selectAll("path")
         .attr("d", function(d) {
           if (d.properties) {
             /*the "invert" shapes do some post processing on the path
-            after the projection so can't use this*/
+            after the projection so can't use this
             if (d.properties.invert) {
               return d3.select(this).attr("d");
             }
           }
           return m.path(d);
-        });
-    });
+        });*/
+   // });
   };
 
   m.makeZoomOutButton = function() {
