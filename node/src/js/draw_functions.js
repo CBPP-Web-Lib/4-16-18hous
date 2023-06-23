@@ -140,6 +140,7 @@ module.exports = function(
     var main_svg = m.svg;
     var viewBox = main_svg.attr("viewBox");
     var viewBox_arr = viewBox.split(" ");
+    console.log(m);
     merge_csv(geo_data, m.csv);
     var allDrawDataLayers = filterToVisible(geo_data,viewBox);
     Object.keys(allDrawDataLayers).forEach((svg_layer) => {
@@ -565,10 +566,12 @@ module.exports = function(
       m.updateDotData(drawData, m.checked_dots[k]);
     }*/
     console.log("updateDotData");
-    m.updateDotData(allDrawDataLayers.below, "hcv_hh");
-    m.updateDotData(allDrawDataLayers.below, "aff_units");
-    m.updateDotData(allDrawDataLayers.below, "hcv_kids");
-    m.updateDotData(allDrawDataLayers.below, "nwkids_hcv");
+    m.checked_dots.forEach((layer)=>{
+      m.updateDotData(allDrawDataLayers.below, layer);
+    });
+    //m.updateDotData(allDrawDataLayers.below, "pbra_total");
+    //m.updateDotData(allDrawDataLayers.below, "hcv_children");
+    //m.updateDotData(allDrawDataLayers.below, "hcv_children_poc");
     m.makeLegend();
     m.updateDots(allDrawDataLayers.below, m.checked_dots);
     function filterToVisible(geo_data, viewbox) {
@@ -805,7 +808,7 @@ module.exports = function(
     m.dotsSVG_layers = {};
     m.dotsSVG_layers.affordable_units = m.dotsSVG.append("g").attr("class","affordable_units").attr("opacity", 0.8);
     m.dotsSVG_layers.vouchers = m.dotsSVG.append("g").attr("class","vouchers").attr("opacity", 0.8);
-     m.updateDrawData();
+    m.updateDrawData();
     require("./zoom.js")(sel + " .mapwrap", m, $, d3);
     require("./drag.js")(sel + " .mapwrap", m, $, d3);
     $(svg.node()).on("mouseover", "g.tl_2015_us_cbsa > path", function() {
@@ -883,7 +886,7 @@ function merge_csv(geo_data, csv) {
       if (geo_data[layer]) {
         var tracts = geo_data[layer].high.features;
         tracts.forEach((tract)=>{
-          tract.properties.csvData = rowToObj(csv[cbsa].data[tract.properties.GEOID10*1], csv[cbsa].headers);
+          tract.properties.csvData = csv[cbsa][tract.properties.GEOID10];
         })
       }
     }

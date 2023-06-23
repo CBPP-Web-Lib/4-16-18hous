@@ -150,10 +150,10 @@ module.exports = function($, d3, m, sel, g, geojson_bbox) {
     if (m.locked()) {return false;}
     m.setLock("zoomingToCBSA");
     var csvDataLoaded = false, binDataLoaded = false;
-    g.getCSVAndSaveInMemory(g.URL_BASE + "/data/" + cbsa.properties.GEOID + ".csv", function(err, d) {
+    g.getJSONAndSaveInMemory(g.URL_BASE + "/data/" + cbsa.properties.GEOID + ".bin", function(err, d) {
       csvDataLoaded = true;
-      m.csv[cbsa.properties.GEOID] = organize_csv(d);
-      m.getDotDeflator(m.csv, cbsa.properties.GEOID);
+      m.csv[cbsa.properties.GEOID] = d;
+      //m.getDotDeflator(m.csv, cbsa.properties.GEOID);
       checkDisplay();
     });
     g.getJSONAndSaveInMemory(g.URL_BASE + "/data/bin_" + cbsa.properties.GEOID + ".json", function(err, d) {

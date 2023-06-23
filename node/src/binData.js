@@ -2,7 +2,7 @@ var numBins = 8;
 var thresholds = require("../tmp/thresholds.json");
 
 var config = {
-  "znonwhite": {
+  "ethnicity_nonwhite_percentage": {
     dataSplit: function(cbsa) {
       if (!cbsa) {return 0.5;}
       if (!thresholds[cbsa]) {
@@ -14,12 +14,23 @@ var config = {
   }
 };
 
-module.exports = function(data, hasHeaders, cbsa) {
+module.exports = function(data, cbsa) {
   var bins = {};
   var data_by_col = {};
-  if (typeof(hasHeaders)==="undefined") {
-    hasHeaders = true;
-  }
+  Object.keys(data).forEach((tract_id)=> {
+    var tract_data = data[tract_id];
+    if (tract_data.data) {
+      tract_data = tract_data.data;
+    }
+    Object.keys(tract_data).forEach((key)=> {
+      var value = tract_data[key];
+      if (typeof(value)==="object") {return;}
+      if (isNaN(value*1)) {return;}
+      data_by_col[key] = data_by_col[key] || [];
+      data_by_col[key].push(value*1);
+    });
+  });
+  /*
   data.forEach((row, i)=> {
     if (i===0) return;
     row.forEach((cell,j)=> {
@@ -31,7 +42,7 @@ module.exports = function(data, hasHeaders, cbsa) {
         data_by_col[header_name].push(cell*1);
       }
     });
-  });
+  });*/
   
   Object.keys(data_by_col).forEach((col_name,j)=> {
     var col = data_by_col[col_name];
@@ -66,7 +77,6 @@ module.exports = function(data, hasHeaders, cbsa) {
           //console.log(l1+n/(numBins-binSplit)*l2);
           bins[col_name].push(col[l1+Math.floor(n/(numBins-binSplit)*l2)]);
         }
-        console.log(bins[col_name]);
       }
     } else {
       for (n = 0; n<numBins;n++) {
@@ -75,6 +85,5 @@ module.exports = function(data, hasHeaders, cbsa) {
     }
     bins[col_name].push(col[col.length-1]+0.001);
   });
-  console.log(bins);
   return bins;
 };

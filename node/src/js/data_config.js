@@ -5,6 +5,7 @@ var bins = require("../../tmp/bins.json");
 
 module.exports = function($, m) {
   var binDefGen = function(config) {
+    console.log(config);
     var {startColor, endColor, dataIndex, labelFormatter, customBins, customColors, extraBin, useCBSABins} = config;
     if (!useCBSABins && recalc) {return undefined;}
     if (typeof(labelFormatter)==="undefined") {
@@ -21,6 +22,7 @@ module.exports = function($, m) {
     if (typeof(customBins)!=="undefined") {
       theseBins = customBins;
     }
+    console.log(bins);
     var colors = colorgen(startColor,endColor,theseBins.length-1);
     if (typeof(customColors)!=="undefined") {
       colors = customColors;
@@ -85,7 +87,7 @@ module.exports = function($, m) {
         bins: binDefGen({
           startColor: "#f5f8fa",/*"#ED1C24"*/
           endColor: "#8fa5b8",
-          dataIndex: "pov_pct", 
+          dataIndex: "poverty_pov_pct", 
           labelFormatter: function(n) {
             return n + "%";
           }, 
@@ -98,49 +100,14 @@ module.exports = function($, m) {
           })()
         }),
         labels: ["0%","","40% or more"],
-        dataIndex: "pov_pct"
-      },
-      "opportunity" : {
-        name:"Opportunity Index",
-        /*colors: [
-          [-5, [12,97,164,1]],
-          [0, [255,255,255,1]],
-          [30, [237,28,36,1]]
-        ],
-        labels: ["-5","0","30"],*/
-        bins: binDefGen({
-            startColor: "#d2dae0",/*"#0b4a1b"*/
-            endColor: "#266975",
-            dataIndex: "opp_quin", 
-            labelFormatter: function(n) {
-              if (n<0.5) {
-                return "Unknown";
-              }
-              n = Math.ceil(n);
-              var suffixes = {
-                1:"st",
-                2:"nd",
-                3:"rd",
-                4:"th",
-                5:"th"
-              };
-              var r = n + suffixes[n] + " quintile";
-              if (n===1) {r += "<br>(Low Opportunity)";}
-              if (n===5) {r += "<br>(High Opportunity)";}
-              return r;
-            },
-            customBins: [-0.5,0.5,1.5,2.5,3.5,4.5,5.5], 
-            customColors: ["#baa8a5"].concat(colorgen("#d2dae0","#266975",5))
-        }),
-        binLabel:"central",
-        dataIndex: "opp_quin"
+        dataIndex: "poverty_pov_pct"
       },
       "nonwhite" : {
         name:"Share people of color",
         bins: binDefGen({
           startColor: "#d3e7f1",/*"#532e67"*/
           endColor: "#7a5e89",
-          dataIndex: "znonwhite", 
+          dataIndex: "ethnicity_nonwhite_percentage", 
           labelFormatter: function(n, i) {
             if (i===4) {
               return Math.round(n*10000)/100 + "%";
@@ -157,29 +124,7 @@ module.exports = function($, m) {
           [1,[15,99,33,1]]
         ],
         labels: ["0%","100%"],
-        dataIndex:"znonwhite"
-      },
-      "holc" : {
-        name:"1930s HOLC Risk Assessment Grades",
-        binLabel:"central",
-        bins: (function() {
-          var names = {
-            "A":"Best",
-            "B":"Still Desireable",
-            "C":"Declining",
-            "D":"Hazardous"
-          };
-          var r = [];
-          for (var color in m.redlining_colors) {
-            if (m.redlining_colors.hasOwnProperty(color)) {
-              r.push({
-                label: names[color],
-                color: m.redlining_colors[color]
-              });
-            }
-          }
-          return r;
-        })()
+        dataIndex:"ethnicity_nonwhite_percentage"
       }
     };
     $.extend(true, m.gradientConfig, newConfig);

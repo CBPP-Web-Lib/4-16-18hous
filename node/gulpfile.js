@@ -431,19 +431,15 @@ gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
 });
 
 gulp.task("tract_csv_parse", function(cb) {
-  var files = [
-    "hcv",
-    "ethnicity",
-    "poverty"
-  ];
+  var files = fs.readdirSync("./src/csv");
   var csvs = [];
   files.forEach((file)=>{
-    csvs.push([fs.readFileSync("./src/csv/tract_" + file + ".csv", "utf-8"), file]); 
-  })
+    csvs.push([fs.readFileSync("./src/csv/" + file, "utf-8"), file]); 
+  });
   makeDirectory("./tmp");
   csvs.forEach((csv)=>{
     csv_parse(csv[0], function(err, d) {
-      fs.writeFileSync("./tmp/tract_data_" + csv[1] + ".json", JSON.stringify(d), "utf-8");
+      fs.writeFileSync("./tmp/" + csv[1].replace(".csv",".json"), JSON.stringify(d), "utf-8");
       cb();
     });
   });
@@ -460,46 +456,74 @@ gulp.task("minority_threshold_parse", function(cb) {
 
 gulp.task("merge_csv", function(cb) {
   /*filename, merge_column*/
-  var files = [
-    ["hcv","tract"],
-    ["ethnicity","st_cnty_tract"],
-    ["poverty","st_cnty_tract"]
-  ];
-  var header_row = [];
+
+  var files = fs.readdirSync("./tmp").filter((f)=>{
+    return f.indexOf("_2023.json") !== -1;
+  });
+
+  var other_data_layers = ["tract_ethnicity","tract_poverty"];
+
+  var postprocess = {
+    "tract_ethnicity" : function(row) {
+      row.data.ethnicity_nonwhite = row.data.ethnicity_tot_pop - row.data.ethnicity_white;
+      row.data.ethnicity_nonwhite_percentage = row.data.ethnicity_nonwhite / row.data.ethnicity_tot_pop;
+      return row;
+    }
+  }
+
   var r = {};
-  var offset = 0;
-  files.forEach((file_details)=>{
-    var filename = file_details[0];
-    var merge_column = file_details[1];
-    var file = JSON.parse(fs.readFileSync("./tmp/tract_data_" + filename + ".json", "utf-8"));
-    var this_header_row = file.shift();
-    var header_indexes = {};
-    this_header_row.forEach((header, i) => {
-      header_indexes[header] = i + offset;
-    });
-    file.forEach((row)=>{
-      var tract = {};
-      var tract_id;
-      this_header_row.forEach((header, i) => {
-        tract[header_indexes[header]] = row[i];
-        if (header === merge_column) {
-          tract_id = row[i];
+  var name_lookup = {};
+
+  files.forEach((filename)=>{
+    var file = JSON.parse(fs.readFileSync("./tmp/" + filename, "utf-8"));
+    var header1 = file.shift();
+    var header2 = file.shift();
+    var dataset = filename.replace("_2023.json","");
+    file.forEach((row, i)=> {
+      var tract_id = row[0];
+      r[tract_id] = r[tract_id] || {};
+      var d = r[tract_id];
+      d.cbsa = row[1];
+      name_lookup[row[1]] = row[2];
+      d.data = d.data || {};
+      d.data[dataset] = {};
+      header2.forEach((cell, j)=> {
+        if (j < 3) {
+          header_name = cell;
+        } else {
+          var dots = cell.replace(" HH","")*1;
+          var value = isNaN(row[j]*1) ? row[j] : row[j]*1;
+          d.data[dataset][dots] = value;
         }
       });
-      r[tract_id] = r[tract_id] || [];
-      Object.keys(tract).forEach((index)=>{
-        r[tract_id][index] = tract[index];
-      })
     });
-    offset += this_header_row.length;
-    header_row = header_row.concat(this_header_row);
   });
+
+  other_data_layers.forEach((layer)=> {
+    var data = JSON.parse(fs.readFileSync("./tmp/" + layer + ".json", "utf-8"));
+    var headers = data.shift();
+    console.log(headers);
+    data.forEach((row)=>{
+      var id = row[0];
+      var cbsa = row[1];
+      r[id] = r[id] || {cbsa: cbsa, data:{}};
+      headers.forEach((header, j)=>{
+        if (j > 2) {
+          var value = isNaN(row[j]*1) ? row[j] : row[j]*1;
+          r[id].data[layer.replace("tract_","") + "_" + header] = value;
+        }
+      });
+      if (postprocess[layer]) {
+        r[id] = postprocess[layer](r[id]);
+      }
+    });
+    //fs.writeFileSync("./tmp/tract_" + layer + "_by_id.json", JSON.stringify(r), "utf-8");
+  });
+
   
-  fs.writeFileSync("./tmp/tract_data_all.json", JSON.stringify({
-    data: r,
-    headers: header_row
-  }, null, " "), "utf-8");
-  cb();
+  fs.writeFileSync("./tmp/tract_data_all.json", JSON.stringify(r, null, " "), "utf-8");
+  fs.writeFileSync("./tmp/names.json", JSON.stringify(name_lookup, null, " "), "utf-8");
+
 });
 
 gulp.task("split_data",  function(cb) {
@@ -508,135 +532,37 @@ gulp.task("split_data",  function(cb) {
     return;
   }*/
   var r = {};
-  var name_lookup = {};
-  var data_file = JSON.parse(fs.readFileSync("./tmp/tract_data_all.json"));
-  var data = data_file.data;
-  var headers = data_file.headers;
+  var data = JSON.parse(fs.readFileSync("./tmp/tract_data_all.json"));
   var split = {};
-
-  /*compliance columns*/
-  var compliance = {"hcv_hh":true, "hcv_kids":true, "nwkids_hcv":true, "aff_units":true};
-  const num_dots = [1000, 200, 100, 50, 25, 12];
 
   Object.keys(data).forEach(function(tract, i) {
     var row = data[tract];
-    var cbsa = row[1];
-    if (typeof(name_lookup[cbsa])==="undefined") {
-      name_lookup[cbsa] = row[2];
-    }
-    var tract = row[0]*1;
+    var {cbsa} = row;
     /*row.splice(2, 1);
     r[tract] = row.slice(1);*/
-    r[tract] = row;
+    //r[tract] = row;
     if (typeof(split[cbsa])==="undefined") {
       split[cbsa] = {};
     }
-    split[cbsa][tract] = r[tract];
+    split[cbsa][tract] = row.data;
     /*do this to comply w/ HUD reporting requirements*/
     /*for (var j = 8;j<=10;j++) {
       r[tract][j] = Math.round(r[tract][j]/12);
     }*/
     
   });
-
-  var myrng = seedrandom("Nick's awesome random seed");
-  console.log(myrng);
-  var blurred_split = {};
-
-  /*don't include these*/
-  var filter_columns = {"tract":true, "st_cnty_tract":true};
-
-  Object.keys(split).forEach((cbsa)=> {
-    var data = split[cbsa];
-    blurred_split[cbsa] = {};
-    var random_tracts = Object.keys(data);
-    var tracts = Object.keys(data);
-    shuffleArray(random_tracts);
-    num_dots.forEach((dot_number)=>{
-      var remainder = 0;
-      random_tracts.forEach((tract_id)=>{
-        headers.forEach((header, j)=>{
-          if (!isNaN(r[tract_id][j]*1)) {
-            r[tract_id][j]*=1;
-          }
-          if (compliance[header]) {
-            var compliance_value = r[tract_id][j];
-            var num_dots_raw = compliance_value / dot_number;
-            var num_dots_rounded = Math.floor(num_dots_raw);
-            var leftover = num_dots_raw%1;
-            remainder += leftover;
-            if (remainder > 1) {
-              remainder -= 1;
-              num_dots_rounded++;
-            }
-            blurred_split[cbsa][tract_id] = blurred_split[cbsa][tract_id] || {};
-            blurred_split[cbsa][tract_id][[header, dot_number].join("_")] = num_dots_rounded;
-          }
-        })
-      })
-    })
-    tracts.forEach((tract_id)=>{
-      headers.forEach((header, j)=>{
-        if (compliance[header] || filter_columns[header]) {
-          /*do nothing*/
-        } else {
-          blurred_split[cbsa][tract_id] = blurred_split[cbsa][tract_id] || {};
-          blurred_split[cbsa][tract_id][header] = data[tract_id][j];
-        }
-      })
-    });
-  });
-
-  /*https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array*/
-  /*Using a seeded RNG so things don't change dramatically from run to run*/
-  
-  function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(myrng() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-  }
-
-  //setTimeout(function(){},86400000);
-
- 
-  fs.writeFileSync("./tmp/names.json", JSON.stringify(name_lookup));
-  fs.writeFileSync("./tmp/data_by_tract.json", JSON.stringify(r, null, " "));
   makeDirectory("./webroot/data");
-  for (var cbsa in blurred_split) {
-    if (blurred_split.hasOwnProperty(cbsa)) {
-      fs.writeFileSync("./webroot/data/"+cbsa+".bin", pako.deflate(splitDataToCSV(blurred_split[cbsa])));
+  for (var cbsa in split) {
+    if (split.hasOwnProperty(cbsa)) {
+      //var csv_split_data = splitDataToCSV(blurred_split[cbsa]);
+      fs.writeFileSync("./webroot/data/"+cbsa + ".inflated.json", JSON.stringify(split[cbsa], null, " "),"utf-8");
+      /*fs.writeFileSync("./webroot/data/"+cbsa + ".inflated.csv", csv_split_data);*/
+      fs.writeFileSync("./webroot/data/"+cbsa+".bin", pako.deflate(JSON.stringify(split[cbsa])));
     }
   }
   cb();
 
 });
-
-function splitDataToCSV(obj) {
-  var tracts = Object.keys(obj);
-  var headers = Object.keys(obj[tracts[0]]);
-  var csv_headers = ["tract_id"].concat(headers);
-  var csv = [];
-  tracts.forEach((tract_id)=>{
-    var row = [];
-    row.push(tract_id);
-    headers.forEach((header)=>{
-      if (typeof(obj[tract_id][header])==="undefined") {
-        row.push(null);
-      } else {
-        row.push(obj[tract_id][header]);
-      }
-    })
-    csv.push(row);
-  })
-  var writer = createCsvStringifier({
-    header: csv_headers 
-  });
-  var csv_string = "";
-  csv_string += writer.getHeaderString();
-  csv_string += writer.stringifyRecords(csv);
-  return csv_string;
-}
 
 
 gulp.task("filter_geojson", gulp.series("ogr2ogr","split_data", function(cb) {
@@ -878,26 +804,19 @@ gulp.task("minorityconc", gulp.series("split_data", function() {
 }));*/
 
 gulp.task("binCBSA", gulp.series("temp","split_data", function(cb) {
-  var binner = require("./src/binData.js");
+  var file_handler = require("./src/binData.js");
   var names= require("./tmp/names.json");
   var tasks = [];
-  var all_bins_json = JSON.parse(fs.readFileSync("./tmp/tract_data_all.json","utf-8"));
-  var all_bins = [all_bins_json.headers];
-  Object.keys(all_bins_json.data).forEach((tract_id)=>{
-    all_bins.push(all_bins_json.data[tract_id]);
-  })
-  var file_handler = function(data, cbsa) {
-    return binner(data, true, cbsa);
-  }
-  var all_json = file_handler(all_bins, null, 8);
-  fs.writeFileSync("./tmp/bins.json", JSON.stringify(all_json));
+  var all_bins_data = JSON.parse(fs.readFileSync("./tmp/tract_data_all.json","utf-8"));
+  var all_bins = file_handler(all_bins_data, null);
+  fs.writeFileSync("./tmp/bins.json", JSON.stringify(all_bins));
+  return;
   Object.keys(names).forEach((cbsa)=> {
     tasks.push(new Promise((resolve)=>{
-      csv_parse(fs.readFileSync("./webroot/data/"+cbsa+".csv","utf-8"), function(err, data) {
-        var bin_json = file_handler(data, cbsa);
-        fs.writeFileSync("./webroot/data/bin_"+cbsa+".json", JSON.stringify(bin_json));
-        resolve();
-      });
+      var data = JSON.parse(pako.inflate(fs.readFileSync("./webroot/data/" + cbsa + ".bin"),{to:"string"}));
+      var bin_json = file_handler(data, cbsa);
+      fs.writeFileSync("./webroot/data/bin_"+cbsa+".json", JSON.stringify(bin_json));
+      resolve();
     }))
     
   });
