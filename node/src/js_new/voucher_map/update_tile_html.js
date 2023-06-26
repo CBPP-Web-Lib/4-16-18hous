@@ -10,11 +10,11 @@ export function updateTileHtml() {
   var tileLayer = map.getTileLayer()
   var x_images = Math.ceil(width/256) + 1
   var y_images = Math.ceil(height/256) + 1
-  var img_data = [{opacity:1, images: [], scale: 1}];
+  var img_data = [{opacity:1, images: [], scale: 1, z: coords.z}];
   if (coords.z%1 !== 0) {
     img_data = [
-      {opacity: 1 - coords.z%1, images: [], scale: 1+coords.z%1},
-      {opacity: coords.z%1, images: [], scale: (1+coords.z%1)/2}
+      {opacity: 1 - coords.z%1, images: [], scale: 1+coords.z%1, z: Math.floor(coords.z)},
+      {opacity: coords.z%1, images: [], scale: (1+coords.z%1)/2, z: Math.ceil(coords.z)}
     ];
   }
   image_layer(
@@ -44,11 +44,11 @@ export function updateTileHtml() {
     image_layer(coords.x*2, coords.y*2, coords.z+1, img_data[1]);
   }
   var zoomLayers = tileLayer.selectAll("div.zoom-layer")
-    .data(img_data);
+    .data(img_data, d=>d.z);
   zoomLayers
     .enter()
     .append("div")
-    .attr("class","zoom-layer")
+    .attr("class",d=>"zoom-layer zoom-layer-" + d.z)
     .merge(zoomLayers)
     .style("transform",d=>{
       return "scale(" + d.scale + ")"

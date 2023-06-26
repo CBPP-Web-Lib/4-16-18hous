@@ -20,7 +20,6 @@ map.initialize({id, url_base})
 
 map.tileCoordTracker.setTileCoords({
   z: 10,
-  x: 304,
+  x: 303,
   y: 380
 })
-console.log(map.getViewportWidth())

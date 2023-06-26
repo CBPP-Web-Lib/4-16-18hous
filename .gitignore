@@ -22,4 +22,5 @@ tmp
 webroot/water
 webroot/data
 webroot/image_proxy/cache
+node/dev/*
 .env
