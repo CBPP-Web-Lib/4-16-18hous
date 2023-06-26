@@ -2,11 +2,14 @@ var path = require('path');
 
 module.exports = {
   mode: 'development',
-  entry: './src/app.js',
+  entry: {
+    app: './src/app.js',
+    new: './src/app_new.js'
+  },
   watch: true,
   output: {
     path: path.resolve(__dirname, 'dev'),
-    filename: 'app.js'
+    filename: '[name].js'
   },
   devtool: 'inline-source-map',
   resolve: {
