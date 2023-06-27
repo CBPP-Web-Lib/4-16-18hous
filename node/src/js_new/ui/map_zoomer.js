@@ -12,12 +12,14 @@ function MapZoomer(map) {
       this.zoomOut((e.clientX - rect.left), (e.clientY - rect.top));
     }
   });
-
+  this.getLocked = function() {
+    return locked;
+  }
   function transitionCoordsTo(newCoords, duration) {
     return new Promise((resolve)=>{
       var start = Date.now();
-      var startCoords = map.tileCoordTracker.getTileCoords();
-      var p = 0;
+      var startCoords = map.coordTracker.getCoords();
+      var p = 0.001;
       var frame = function() {
         p = (Date.now() - start)/duration;
         var frameCoords;
@@ -28,10 +30,9 @@ function MapZoomer(map) {
             y: newCoords.y,
             z: newCoords.z
           };
-          map.tileCoordTracker.setTileCoords(frameCoords);
+          map.coordTracker.setCoords(frameCoords);
           resolve();
         } else {
-          window.requestAnimationFrame(frame);
           p = easeQuadInOut(p);
           var ease = x=>2/(2-x)-1
           var outCoords = startCoords;
@@ -44,22 +45,29 @@ function MapZoomer(map) {
             ease = x=>(2 - 2/(x + 1))
           }
           var z = (newCoords.z - startCoords.z) * ease(p) + startCoords.z;
+
+          /*There are problems if z takes the initial zoomed in value in the frame
+          interpolation, the way the tile layers are drawn.*/
+          z = Math.min(outCoords.z + 0.9999, z);
+
           frameCoords = {
             x: outCoords.x + (inCoords.x/2 - outCoords.x)*_p,
             y: outCoords.y + (inCoords.y/2 - outCoords.y)*_p,
             z: z,
           }
-          map.tileCoordTracker.setTileCoords(frameCoords)
+          map.coordTracker.setCoords(frameCoords).then(()=>{
+            window.requestAnimationFrame(frame);
+          })
         }
         
       }
-      frame();
+      window.requestAnimationFrame(frame);
     });
   }
 
   this.zoomIn = function(x, y) {
     if (locked) {return;}
-    var start_coords = map.tileCoordTracker.getTileCoords();
+    var start_coords = map.coordTracker.getCoords();
     var old_center = [
       x/256,
       y/256
@@ -81,7 +89,7 @@ function MapZoomer(map) {
 
   this.zoomOut = function(x, y) {
     if (locked) {return;}
-    var start_coords = map.tileCoordTracker.getTileCoords();
+    var start_coords = map.coordTracker.getCoords();
     var old_center = [
       x/256,
       y/256

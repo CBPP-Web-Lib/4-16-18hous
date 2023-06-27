@@ -1,6 +1,10 @@
 import * as svg_create from "./svg_create"
 import * as tile_layer_create from "./tile_layer_create"
-import {tileCoordTracker} from "./tile_coords"
+import { CoordTracker } from "./coord_tracker"
+import { ShapefileManager } from "./shapefile_manager";
+import { updateMapView } from "./update_map"
+import { ProjectionManager } from "./projection_manager"
+
 var id, url_base;
 
 const dom = require("../../dom_new.html").default
@@ -18,8 +22,11 @@ const initialize = function(config) {
   svg_create.makeElement(this)
   this.getSvg = svg_create.getSvg
   this.getTileLayer = tile_layer_create.getTileLayer
-  this.tileCoordTracker = new tileCoordTracker(this)
+  this.coordTracker = new CoordTracker(this)
+  this.shapefileManager = new ShapefileManager(this);
+  this.updateView = updateMapView.bind(this)
+  this.projectionManager = new ProjectionManager(this)
   this.viewportEvents()
 }
 
-export {initialize}
+export { initialize }

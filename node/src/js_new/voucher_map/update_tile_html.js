@@ -2,11 +2,12 @@ import {select} from "d3"
 const d3 = {select}
 
 export function updateTileHtml() {
-  var map = this.getMap()
+  var map = this;
+  var coord_tracker = this.coordTracker
   var url_base = map.getURLBase()
   var width = map.getViewportWidth()
   var height = map.getViewportHeight()
-  var coords = this.getTileCoords()
+  var coords = coord_tracker.getCoords()
   var tileLayer = map.getTileLayer()
   var x_images = Math.ceil(width/256) + 1
   var y_images = Math.ceil(height/256) + 1
@@ -49,6 +50,9 @@ export function updateTileHtml() {
     .enter()
     .append("div")
     .attr("class",d=>"zoom-layer zoom-layer-" + d.z)
+    .each(function(d) {
+      //console.log("creating layer ", d)
+    })
     .merge(zoomLayers)
     .style("transform",d=>{
       return "scale(" + d.scale + ")"
@@ -59,15 +63,28 @@ export function updateTileHtml() {
     })
     .each(function(d) {
       var imgs = d3.select(this).selectAll("img")
-        .data(d.images, d=>d.src);
+        .data(d.images, (d)=>{
+          //console.log(d)
+          return d.src
+        });
+      imgs.each(function(d) {
+        //console.log("already exists: ", d);
+      })
       imgs
         .enter()
         .append("img")
+        .each(function(d) {
+          console.log("downloading image " + d.src)
+        })
         .attr("src", d=>d.src)
         .merge(imgs)
         .style("left",d=>d.left + "px")
         .style("top",d=>d.top + "px");
       imgs.exit().remove();
     });
-  zoomLayers.exit().remove();
+  zoomLayers.exit().each(function(d) {
+    //console.log("removing layer", d)
+  }).
+  remove();
+
 }

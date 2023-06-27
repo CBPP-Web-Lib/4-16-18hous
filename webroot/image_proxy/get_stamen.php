@@ -52,7 +52,7 @@ try {
   if (
    $valid_referer || $is_cgi
   ) {
-    if ((!file_exists($filename) && $allow_dynamic)) {
+    if (((!file_exists($filename) && $allow_dynamic))) {
       if ($r==2) {
         $mh = curl_multi_init();
         $urls = array(
@@ -93,9 +93,11 @@ try {
         $raw=curl_exec($ch);
         curl_close ($ch);
       }
-      $fp = fopen($filename,'x'); 
-      fwrite($fp, $raw);
-      fclose($fp);
+      if (!file_exists($filename)) {
+        $fp = fopen($filename,'x'); 
+        fwrite($fp, $raw);
+        fclose($fp);
+      }
     }
     $origin = "https://www.cbpp.org";
     if (array_key_exists("HTTP_ORIGIN",$_SERVER)) { 
