@@ -810,7 +810,6 @@ gulp.task("binCBSA", gulp.series("temp","split_data", function(cb) {
   var all_bins_data = JSON.parse(fs.readFileSync("./tmp/tract_data_all.json","utf-8"));
   var all_bins = file_handler(all_bins_data, null);
   fs.writeFileSync("./tmp/bins.json", JSON.stringify(all_bins));
-  return;
   Object.keys(names).forEach((cbsa)=> {
     tasks.push(new Promise((resolve)=>{
       var data = JSON.parse(pako.inflate(fs.readFileSync("./webroot/data/" + cbsa + ".bin"),{to:"string"}));

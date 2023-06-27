@@ -11,7 +11,7 @@ function tile_coord_to_lat_long(x, y, z) {
 
 const ProjectionManager = function(map) {
 
-  var projection, pathGen
+  var projection, pathGen, bounding_obj
 
   this.getProjection = function() {
     return projection
@@ -19,6 +19,10 @@ const ProjectionManager = function(map) {
 
   this.getPathGen = function() {
     return pathGen
+  }
+
+  this.getBoundingObj = function() {
+    return bounding_obj
   }
 
   this.updateProjection = function() {
@@ -35,32 +39,52 @@ const ProjectionManager = function(map) {
     }
     var tl = tile_coord_to_lat_long(coords.x, coords.y, z);
     var br = tile_coord_to_lat_long(br_coords.x, br_coords.y, z);
-    projection = geoMercator().fitSize([viewWidth, viewHeight], {
-      type: "Feature",
-      geometry: {
-        type:"Polygon",
-        coordinates: [
-          [
-            [
+    bounding_obj = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: {
+            type:"Point",
+            coordinates: [
               tl.long,
               tl.lat
-            ],
-            [
+            ]
+          }
+        },
+        {
+          type: "Feature",
+          geometry: {
+            type:"Point",
+            coordinates: [
               br.long,
               tl.lat
-            ],
-            [
+            ]
+          }
+        },
+        {
+          type: "Feature",
+          geometry: {
+            type:"Point",
+            coordinates: [
               br.long,
               br.lat
-            ],
-            [
+            ]
+          }
+        },
+        {
+          type: "Feature",
+          geometry: {
+            type:"Point",
+            coordinates: [
               tl.long,
               br.lat
             ]
-          ]
-        ] 
-      }
-    })
+          }
+        },
+      ]
+    };
+    projection = geoMercator().fitSize([viewWidth, viewHeight], bounding_obj)
     pathGen = geoPath(projection)
   }
 }

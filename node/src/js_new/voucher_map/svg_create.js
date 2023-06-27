@@ -1,4 +1,4 @@
-import {select} from "d3"
+import { select } from "d3"
 
 var svg;
 
@@ -11,6 +11,12 @@ function makeElement(map) {
     map.getViewportHeight()
   ].join(" "))
   svg.attr("preserveAspectRatio", "xMinYMin")
+  var defs = svg.append("defs")
+  defs.append("filter")
+    .attr("id","blur")
+    .append("feGaussianBlur")
+    .attr("in","SourceGraphic")
+    .attr("stdDeviation", 3);
 }
 
 function getSvg() {

@@ -20,6 +20,9 @@ function mapDragger(map, mouse_tracker) {
     };
     map.coordTracker.setCoords(coords)
   })
+  mouse_tracker.registerEndCallback("mapDragEnd", ()=>{
+    start_coords = null
+  })
 }
 
 export {mapDragger}

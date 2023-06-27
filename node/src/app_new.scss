@@ -31,4 +31,14 @@
       height:256px;
     }
   }
+  svg path.tract,
+  g.cbsa_group {
+    mix-blend-mode: multiply;
+  }
+  g.cbsa-group {
+    overflow: visible;
+  }
+  svg path.tract {
+    transition: fill 0.2s
+  }
 }

@@ -5,6 +5,7 @@ function MapZoomer(map) {
   var locked = false;
   el.addEventListener("wheel", (e)=> {
     e.preventDefault();
+    map.mouseTracker.mouseUp()
     var rect = el.getBoundingClientRect();
     if (e.deltaY < 0) {
       this.zoomIn((e.clientX - rect.left), (e.clientY - rect.top));
@@ -103,6 +104,7 @@ function MapZoomer(map) {
       y: new_center[1] - y/256,
       z: start_coords.z - 1
     }
+    console.log(end_coords)
     locked = true;
     return transitionCoordsTo(end_coords, 200).then(function() {
       locked = false;

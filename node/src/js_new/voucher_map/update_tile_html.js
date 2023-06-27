@@ -50,9 +50,6 @@ export function updateTileHtml() {
     .enter()
     .append("div")
     .attr("class",d=>"zoom-layer zoom-layer-" + d.z)
-    .each(function(d) {
-      //console.log("creating layer ", d)
-    })
     .merge(zoomLayers)
     .style("transform",d=>{
       return "scale(" + d.scale + ")"
@@ -64,27 +61,17 @@ export function updateTileHtml() {
     .each(function(d) {
       var imgs = d3.select(this).selectAll("img")
         .data(d.images, (d)=>{
-          //console.log(d)
           return d.src
         });
-      imgs.each(function(d) {
-        //console.log("already exists: ", d);
-      })
       imgs
         .enter()
         .append("img")
-        .each(function(d) {
-          console.log("downloading image " + d.src)
-        })
         .attr("src", d=>d.src)
         .merge(imgs)
         .style("left",d=>d.left + "px")
         .style("top",d=>d.top + "px");
       imgs.exit().remove();
     });
-  zoomLayers.exit().each(function(d) {
-    //console.log("removing layer", d)
-  }).
-  remove();
+  zoomLayers.exit().remove();
 
 }

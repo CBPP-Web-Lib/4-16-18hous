@@ -5,7 +5,8 @@ function ViewportMouseTracker(id) {
     dragX,
     dragY,
     moveCallbacks = [],
-    startCallbacks = []
+    startCallbacks = [],
+    endCallbacks = []
 
   this.registerStartCallback = function(name, fn) {
     startCallbacks.push({name, fn})
@@ -13,6 +14,10 @@ function ViewportMouseTracker(id) {
 
   this.registerMoveCallback = function(name, fn) {
     moveCallbacks.push({name, fn})
+  }
+
+  this.registerEndCallback = function(name, fn) {
+    endCallbacks.push({name, fn})
   }
 
   this.mouseDown = (_x, _y) => {
@@ -30,6 +35,11 @@ function ViewportMouseTracker(id) {
     mousedown = false
     x_start = null
     y_start = null
+    endCallbacks.forEach((item)=> {
+      if (typeof(item.fn)==="function") {
+        item.fn(dragX, dragY, viewport)
+      }
+    });
   }
 
   this.mouseMove = (_x, _y) => {
