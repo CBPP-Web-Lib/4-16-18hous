@@ -107,7 +107,7 @@ try {
    // die();
     if (file_exists($filename)) {
       header('Access-Control-Allow-Origin: '.$origin);
-      header('max-age: 86400');
+      header('Cache-Control: max-age=86400');
       header('Vary: Access-Control-Allow-Origin');
       header('Access-Control-Allow-Headers: referer, range, accept-encoding, x-requested-with');
       header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
