@@ -1,24 +1,6 @@
 import { tractFill } from "./tract_fill"
+import { bbox_overlap } from "./bbox_overlap"
 
-function bbox_overlap(box1, box2) {
-  /*box1 left greater than box2 right*/
-  if (box1[0] > box2[2]) {
-    return false
-  }
-  /*box1 bottom above box2 top*/
-  if (box1[1] > box2[3]) {
-    return false
-  }
-  /*box1 right less than box2 left*/
-  if (box1[2] < box2[0]) {
-    return false
-  }
-  /*box1 top below box2 bottom*/
-  if (box1[3] < box2[1]) {
-    return false
-  }
-  return true
-}
 
 export function updateShapesLayer() {
   var map = this
@@ -73,7 +55,7 @@ export function updateShapesLayer() {
     
   }).then(function(pathStrings) {
     return new Promise((resolve)=>{
-      var svg = map.getSvg()
+      var svg = map.getSvg().select("g.shapeLayer")
       var cbsa_group = svg.selectAll("g.cbsa_group")
         .data([1]);
       cbsa_group.enter()
@@ -133,7 +115,7 @@ export function updateShapesLayer() {
         .exit()
         .remove()
       
-      resolve();
+      resolve(features);
     });
   })
 }

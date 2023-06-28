@@ -312,6 +312,13 @@ gulp.task("index_water",  gulp.series("ogr2ogr", function(cb) {
     return e.indexOf("tract")!==-1;
   });
   var r = {};
+  function lpad(n, l) {
+    n = n + "";
+    while (n.length < l) {
+      n = "0" + n;
+    }
+    return n;
+  }
   files.forEach(function(f) {
     var fIndex = {};
     var features = JSON.parse(fs.readFileSync("./filtered/" + f)).features;
@@ -321,7 +328,7 @@ gulp.task("index_water",  gulp.series("ogr2ogr", function(cb) {
     var fArr = [];
     for (var cfips in fIndex) {
       if (fIndex.hasOwnProperty(cfips)) {
-        fArr.push(cfips);
+        fArr.push(lpad(cfips,5));
       }
     }
     r[f] = fArr;
@@ -565,18 +572,16 @@ gulp.task("split_data",  function(cb) {
 });
 
 
-gulp.task("filter_geojson", gulp.series("ogr2ogr","split_data", function(cb) {
+gulp.task("filter_geojson", gulp.series(/*"ogr2ogr","split_data", */function(cb) {
   function existsInData(feature, data) {
     var geoid = feature.properties.GEOID10;
     if (typeof(geoid)==="undefined") {
       geoid = feature.properties.GEOID;
     }
-    geoid*=1;
+    //geoid*=1;
     if (typeof(data[geoid])!=="undefined") {
       var r = {exists: true};
-      if (data[geoid][0]) {
-        r.cbsa = data[geoid][0];
-      }
+      r.cbsa = data[geoid].cbsa
       return r;
     }
     return -1;
@@ -587,7 +592,7 @@ gulp.task("filter_geojson", gulp.series("ogr2ogr","split_data", function(cb) {
   }*/
   var r = {};
   var index = {};
-  var tract_data = JSON.parse(fs.readFileSync("./tmp/data_by_tract.json"));
+  var tract_data = JSON.parse(fs.readFileSync("./tmp/tract_data_all.json"));
   var cbsa_org = JSON.parse(fs.readFileSync("./geojson/tl_2015_us_cbsa.json"));
   var cbsa_names = JSON.parse(fs.readFileSync("./tmp/names.json"));
   var cbsa = {
@@ -596,7 +601,7 @@ gulp.task("filter_geojson", gulp.series("ogr2ogr","split_data", function(cb) {
   };
 
   for (var i = 0, ii = cbsa_org.features.length; i<ii; i++) {
-    if (existsInData(cbsa_org.features[i], cbsa_names)!==-1) {
+    if (existsInData(cbsa_org.features[i], tract_data)!==-1) {
       cbsa.features.push(cbsa_org.features[i]);
     }
   }
@@ -620,7 +625,6 @@ gulp.task("filter_geojson", gulp.series("ogr2ogr","split_data", function(cb) {
     }));
   });
   Promise.all(filterTasks).then(function() {
-    console.log("made it this far");
     var fileIndex = [];
     for (var file in index) {
       if (index.hasOwnProperty(file)) {
@@ -636,7 +640,6 @@ gulp.task("filter_geojson", gulp.series("ogr2ogr","split_data", function(cb) {
         fs.writeFileSync("./filtered/tl_2010_tract_" + cbsa + ".json", JSON.stringify(r[cbsa], null, " "));
       }
     }
-
     cb();
   });
 
@@ -657,7 +660,6 @@ gulp.task("filter_geojson", gulp.series("ogr2ogr","split_data", function(cb) {
         d = JSON.parse(d);
         for (var i = 0, ii = d.features.length; i<ii; i++) {
           var cbsa = existsInData(d.features[i], tract_data).cbsa;
-          //console.log(cbsa);
           if (cbsa!==-1 && cbsa) {
             if (!r[cbsa]) {
               r[cbsa] = {
@@ -682,42 +684,6 @@ gulp.task("filter_geojson", gulp.series("ogr2ogr","split_data", function(cb) {
 
 
 }));
-
-
-gulp.task("filter_redline", function(cb) {
-  var cbsas = JSON.parse(fs.readFileSync("./tmp/cbsa_filtered_unclipped.json", "utf-8"));
-  var redlining = JSON.parse(fs.readFileSync("./tmp/redlining.json","utf-8"));
-  var tasks = [];
-  var results = {};
-  cbsas.features.forEach((cbsa) => {
-    var cbsa_id = cbsa.properties.GEOID;
-    results[cbsa_id] = {
-      "type": "FeatureCollection",
-      "features": []
-    };
-    redlining.features.forEach((redline) => {
-      tasks.push({cbsa, redline, cbsa_id});
-    });
-  });
-
-  chunk_tasks_to_workers(tasks, {
-    response_handler: (intersection)=> {
-      var {cbsa_id, result} = intersection;
-      if (result) {
-        results[cbsa_id].features.push(result);
-      }
-    },
-    num_slots: 16,
-    worker_filename: "./worker_scripts/filter_redline.js",
-    chunk_size: 500
-  }, function() {
-    Object.keys(results).forEach((cbsa_id) => {
-      fs.writeFileSync("./filtered/redlining_"+cbsa_id+".json", JSON.stringify(results[cbsa_id], null, " "));
-    });
-    cb(); 
-  });
-
-});
 
 
 gulp.task("topojson_dir", function(cb) {

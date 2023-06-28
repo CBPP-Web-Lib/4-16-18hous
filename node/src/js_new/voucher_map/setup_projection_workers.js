@@ -26,7 +26,7 @@ var WorkerWrapper = function(url_base) {
 function setupProjectionWorkers(map) {
   var numWorkers = 1
   if (navigator.hardwareConcurrency) {
-    numWorkers = navigator.hardwareConcurrency
+    numWorkers = Math.max(1, navigator.hardwareConcurrency - 1)
   }
   var url_base = map.getURLBase()
   var workers = []

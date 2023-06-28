@@ -39,6 +39,31 @@
     overflow: visible;
   }
   svg path.tract {
-    transition: fill 0.2s
+    transition: fill 0.2s;
+    cursor:pointer;
+  }
+  svg path.tract.hovered {
+    fill: #333;
+  }
+  circle.dot {
+    pointer-events:none;
+  }
+  .tooltip-container {
+    position:absolute;
+    width:0;
+    height:0;
+    overflow:visible;
+    .tract_tooltip {
+      position:relative;
+      width:0;
+      height:0;
+      overflow:visible;
+    }
+    .tooltip-inner {
+      border: 1px solid rgba(0, 0, 0, 0.5);
+      background-color: rgba(255, 255, 255, 0.95);
+      padding:10px;
+      position:absolute;
+    }
   }
 }

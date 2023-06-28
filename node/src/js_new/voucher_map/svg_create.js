@@ -17,6 +17,10 @@ function makeElement(map) {
     .append("feGaussianBlur")
     .attr("in","SourceGraphic")
     .attr("stdDeviation", 3);
+  svg.append("g")
+    .attr("class","shapeLayer");
+  svg.append("g")
+    .attr("class","dotsLayer");
 }
 
 function getSvg() {

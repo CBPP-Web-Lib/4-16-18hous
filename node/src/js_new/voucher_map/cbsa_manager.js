@@ -1,10 +1,12 @@
 import { downloadTractShapefiles } from "../shapefile_downloader"
 import { downloadTractData, downloadTractBins } from "../tract_data_downloader"
 import { processTractShapefiles } from "./tract_shapefile_processor"
+import { downloadWaterFiles, processWaterFiles } from "./handle_water_files"
+import waterIndex from "../../../tmp/waterIndex.json"
 
 const CBSAManager = function(app) {
 
-  var tractShapefiles, tractBins
+  var tractShapefiles, tractBins, waterShapes
 
   this.loadCBSA = function(cbsa) {
     return Promise.all([
@@ -26,7 +28,16 @@ const CBSAManager = function(app) {
           tractBins = d
           resolve()
         })
-      })
+      }),
+      new Promise((resolve)=>{
+        var water_files = waterIndex["tl_2010_tract_" + cbsa + ".json"];
+        downloadWaterFiles(water_files)
+          .then(processWaterFiles)
+          .then((d)=>{
+            waterShapes = d
+            resolve()
+          })
+      }),
     ]).then(function(d) {
       return new Promise((resolve)=>{
         var geoData = d[0]
@@ -44,6 +55,10 @@ const CBSAManager = function(app) {
 
   this.getTractBins = () => {
     return tractBins
+  }
+
+  this.getWaterShapes = () => {
+    return waterShapes
   }
 
   this.getTractShapefiles = ()=> {

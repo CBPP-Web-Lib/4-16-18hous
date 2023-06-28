@@ -7,6 +7,7 @@ function mapDragger(map, mouse_tracker) {
     start_coords = map.coordTracker.getCoords()
   });
   var deferred;
+  var timer;
   mouse_tracker.registerMoveCallback("mapDragMove", (x, y)=> {
     if (map.isZooming()) {
       return false;
@@ -24,7 +25,10 @@ function mapDragger(map, mouse_tracker) {
         deferred = coords
       } else {
         if (deferred) {
-          map.coordTracker.setCoords(deferred)
+          clearTimeout(timer)
+          timer = setTimeout(function() {
+            map.coordTracker.setCoords(deferred)
+          }, 50)
         }
       }
     })
