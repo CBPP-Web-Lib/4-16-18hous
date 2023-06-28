@@ -104,7 +104,6 @@ function MapZoomer(map) {
       y: new_center[1] - y/256,
       z: start_coords.z - 1
     }
-    console.log(end_coords)
     locked = true;
     return transitionCoordsTo(end_coords, 200).then(function() {
       locked = false;

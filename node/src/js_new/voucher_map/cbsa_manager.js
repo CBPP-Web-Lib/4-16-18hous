@@ -1,5 +1,6 @@
 import { downloadTractShapefiles } from "../shapefile_downloader"
 import { downloadTractData, downloadTractBins } from "../tract_data_downloader"
+import { processTractShapefiles } from "./tract_shapefile_processor"
 
 const CBSAManager = function(app) {
 
@@ -8,10 +9,12 @@ const CBSAManager = function(app) {
   this.loadCBSA = function(cbsa) {
     return Promise.all([
       new Promise((resolve)=>{
-        downloadTractShapefiles("topojson/high/tl_2010_tract_" + cbsa + ".bin").then((d)=>{
-          tractShapefiles = d
-          resolve(d)
-        })
+        downloadTractShapefiles("topojson/high/tl_2010_tract_" + cbsa + ".bin")
+          .then(processTractShapefiles)
+          .then((d)=>{
+            tractShapefiles = d
+            resolve(d)
+          })
       }),
       new Promise((resolve)=>{
         downloadTractData("data/" + cbsa + ".bin").then((d)=>{

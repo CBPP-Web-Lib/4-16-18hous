@@ -15,7 +15,7 @@
     "csv-writer": "^1.6.0",
     "d3": "^4.8.0",
     "fs": "0.0.1-security",
-    "geojson-bbox": "0.0.0",
+    "geojson-bbox": "^0.0.0",
     "gulp": "^4.0.2",
     "http-parser-js": "^0.5.0",
     "jquery": "^1.12.4",

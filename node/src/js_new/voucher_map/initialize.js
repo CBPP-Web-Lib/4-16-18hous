@@ -5,6 +5,7 @@ import { CBSAManager } from "./cbsa_manager";
 import { updateMapView } from "./update_map"
 import { ProjectionManager } from "./projection_manager"
 import { DataLayerManager } from "./data_layer_manager"
+import { setupProjectionWorkers } from "./setup_projection_workers"
 
 var id, url_base;
 
@@ -30,6 +31,8 @@ const initialize = function(config) {
   this.dataLayerManager = new DataLayerManager(this)
   this.viewportEvents()
   this.dataLayerManager.setupEvents()
+  this.projectionWorkers = setupProjectionWorkers(this)
+  console.log(this)
 }
 
 export { initialize }

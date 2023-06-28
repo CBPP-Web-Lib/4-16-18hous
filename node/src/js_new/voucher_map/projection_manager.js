@@ -25,6 +25,12 @@ const ProjectionManager = function(map) {
     return bounding_obj
   }
 
+  this.getBounds = function() {
+    return [tl.long, br.lat, br.long, tl.lat]
+  }
+
+  var tl, br
+
   this.updateProjection = function() {
     var coords = map.coordTracker.getCoords()
     var z = Math.floor(coords.z)
@@ -37,8 +43,8 @@ const ProjectionManager = function(map) {
       y: coords.y + viewHeight/tileSize,
       z
     }
-    var tl = tile_coord_to_lat_long(coords.x, coords.y, z);
-    var br = tile_coord_to_lat_long(br_coords.x, br_coords.y, z);
+    tl = tile_coord_to_lat_long(coords.x, coords.y, z);
+    br = tile_coord_to_lat_long(br_coords.x, br_coords.y, z);
     bounding_obj = {
       type: "FeatureCollection",
       features: [
@@ -86,6 +92,22 @@ const ProjectionManager = function(map) {
     };
     projection = geoMercator().fitSize([viewWidth, viewHeight], bounding_obj)
     pathGen = geoPath(projection)
+    var projectionUpdatePromises = [];
+    map.projectionWorkers.forEach((worker)=>{
+      projectionUpdatePromises.push(new Promise((resolve)=>{
+        worker.postMessage({
+          msgType: "newProjection",
+          bounds: {
+            size: [viewWidth, viewHeight], 
+            obj: bounding_obj
+          }
+        })
+        worker.newProjectionCallback = function(e) {
+          resolve()
+        };
+      }))
+    })
+    return Promise.all(projectionUpdatePromises)
   }
 }
 

@@ -6,6 +6,7 @@ function mapDragger(map, mouse_tracker) {
     }
     start_coords = map.coordTracker.getCoords()
   });
+  var deferred;
   mouse_tracker.registerMoveCallback("mapDragMove", (x, y)=> {
     if (map.isZooming()) {
       return false;
@@ -18,7 +19,15 @@ function mapDragger(map, mouse_tracker) {
       y: start_coords.y - y/256,
       z: start_coords.z
     };
-    map.coordTracker.setCoords(coords)
+    map.coordTracker.setCoords(coords).then((result)=> {
+      if (!result) {
+        deferred = coords
+      } else {
+        if (deferred) {
+          map.coordTracker.setCoords(deferred)
+        }
+      }
+    })
   })
   mouse_tracker.registerEndCallback("mapDragEnd", ()=>{
     start_coords = null

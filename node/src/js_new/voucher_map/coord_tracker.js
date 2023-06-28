@@ -1,14 +1,23 @@
 var z, x, y, viewportWidth, viewportHeight;
+var in_progress = false
 
 function setCoords(coords) {
   return new Promise((resolve)=>{
+    if (in_progress) {
+      resolve(false)
+      return
+    }
+    in_progress = true
     z = coords.z
     x = coords.x
     y = coords.y
-    this.getMap().projectionManager.updateProjection()
-    window.requestAnimationFrame(()=>{
-      this.getMap().updateView()
-      resolve()
+    this.getMap().projectionManager.updateProjection().then(() => {
+      window.requestAnimationFrame(()=>{
+        this.getMap().updateView().then(function() {
+          in_progress = false
+          resolve(true);
+        })
+      })
     })
   }) 
 }
