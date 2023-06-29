@@ -92,20 +92,20 @@ function do_box(leftmost, rightmost, northmost, southmost, name) {
         cb();
       }
       active_requests++;
-     // var started_next_immediately = false
-      //console.log(active_requests)
-      /*if (active_requests < 10) {
+      var started_next_immediately = false
+      console.log(active_requests)
+      if (active_requests < 10) {
         started_next_immediately = true
         _cb();
-      }*/
+      }
       axios.get(url).catch(function(err) {
         console.log("error with " + url);
         errors.push(url);
       }).finally(function() {
         active_requests--;
-      //  if (!started_next_immediately) {
+        if (!started_next_immediately) {
           _cb();
-       // }
+        }
       });
       setTimeout(_cb, 5000);
     }
