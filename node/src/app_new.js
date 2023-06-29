@@ -18,7 +18,8 @@ const url_base = getURLBaseFromScript(script_id);
 const map = new VoucherMap()
 map.initialize({id, url_base})
 var cbsa = 25540;
-//cbsa = 35620;
+cbsa = 35620;
+cbsa = 13820;
 map.cbsaManager.loadCBSA(cbsa).then(function() {
   map.coordTracker.setCoords({
     z: 10,

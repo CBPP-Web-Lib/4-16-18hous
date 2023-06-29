@@ -1,5 +1,4 @@
 function hoverTemplate(data) {
-  console.log(data);
   var html = `<h3>${data.properties.NAMELSAD10}</h3>
     <ul>
       <li>Poverty Rate: ${data.properties.housing_data.poverty_pov_pct + "%"}</li>

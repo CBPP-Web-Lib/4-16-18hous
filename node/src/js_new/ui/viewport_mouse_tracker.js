@@ -12,6 +12,10 @@ function ViewportMouseTracker(id) {
     startCallbacks.push({name, fn})
   }
 
+  this.getMouseStatus = function() {
+    return mousedown
+  }
+
   this.registerMoveCallback = function(name, fn) {
     moveCallbacks.push({name, fn})
   }

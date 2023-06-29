@@ -19,6 +19,13 @@ const TractHover = function(map) {
   container.querySelectorAll(".map-viewport")[0].append(tooltip_container);
   tooltip_container.append(tooltip);
   const eventHandler = (e)=>{
+    if (map.mouseTracker.getMouseStatus()) {
+      tooltip.style.display = "none"
+      if (hovered_tract) {
+        hovered_tract.classList.remove("hovered")
+      }
+      return;
+    }
     if (hovered_tract !== e.target && hovered_tract) {
       hovered_tract.classList.remove("hovered")
     }
@@ -47,7 +54,6 @@ const TractHover = function(map) {
         left: (e.clientX - boundingRect.x),
         top:  (e.clientY - boundingRect.y),
       }
-      console.log(boundingRect)
       var box_width = boundingRect.width * 0.3
       tooltip.querySelectorAll(".tooltip-inner")[0].style.width = box_width + "px"
       

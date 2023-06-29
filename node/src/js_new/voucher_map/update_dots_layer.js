@@ -113,7 +113,6 @@ export function updateDotsLayer(visible_features) {
     .merge(dot_layer_sel)
     .each(function(d){
       var config = dotConfig[d.name];
-      console.log(config)
       var dots = d3_select(this)
         .selectAll("circle.dot")
         .data(d.dots);

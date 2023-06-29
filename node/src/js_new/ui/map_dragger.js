@@ -27,7 +27,7 @@ function mapDragger(map, mouse_tracker) {
         if (deferred) {
           clearTimeout(timer)
           timer = setTimeout(function() {
-            map.coordTracker.setCoords(deferred)
+            //map.coordTracker.setCoords(deferred)
           }, 50)
         }
       }
