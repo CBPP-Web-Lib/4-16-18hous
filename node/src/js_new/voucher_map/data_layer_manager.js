@@ -1,35 +1,26 @@
-const DataLayerManager = function(map) {
-  var active_data_layer, active_dots_layers
+import { dataLayerEvents } from "../ui/data_layer_events"
+
+const DataLayerManager = function() {
+  var active_data_layer, active_dots_layer, additional_dots_layers
   this.getActiveLayer = function() {
     return active_data_layer
   }
   this.getActiveDotsLayers = function() {
-    return active_dots_layers
+    if (active_dots_layer==="none") {
+      return additional_dots_layers
+    }
+    return [active_dots_layer].concat(additional_dots_layers)
   }
   this.setActiveLayer = function(data_layer_name) {
     active_data_layer = data_layer_name
   }
-  this.setActiveDotsLayers = function(dots_layers) {
-    active_dots_layers = dots_layers
+  this.setActiveDotsLayer = function(dots_layer) {
+    active_dots_layer = dots_layer
   }
-  this.setupEvents = function() {
-    var data_picker =  document.querySelectorAll("#" + map.getId() + " .pickers select[name='tract-dataset']")[0]
-    data_picker.addEventListener("change", ()=>{
-      this.setActiveLayer(data_picker.value)
-      map.updateView()
-    })
-    this.setActiveLayer(data_picker.value)
-
-    var dots_picker =  document.querySelectorAll("#" + map.getId() + " .pickers select[name='dots-dataset']")[0]
-    dots_picker.addEventListener("change", ()=>{
-      var values = Array.from(dots_picker.querySelectorAll("option:checked"),e=>e.value);
-      this.setActiveDotsLayers(values)
-      console.log(values)
-      map.updateView()
-    })
-    var values = Array.from(dots_picker.querySelectorAll("option:checked"),e=>e.value);
-    this.setActiveDotsLayers(values)
+  this.setAdditionalDotsLayers = function(dots_layers) {
+    additional_dots_layers = dots_layers
   }
+  this.setupEvents = dataLayerEvents.bind(this)
 }
 
 export { DataLayerManager }

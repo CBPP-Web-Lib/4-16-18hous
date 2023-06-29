@@ -1,12 +1,18 @@
 <div class='pickers'>
+  <select name="cbsa">
+  </select>
   <select name="tract-dataset">
     <option value="poverty_pov_pct">Poverty</option>
     <option value="ethnicity_nonwhite_percentage">Non-white percentage</option>
+    <option value="none">None</option>
   </select>
-  <select multiple name="dots-dataset">
+  <select name="dots-dataset">
     <option value="hcv_total" selected>hcv total</option>
     <option value="hcv_children" >hcv children</option>
     <option value="hcv_children_poc">hcv children poc</option>
+    <option value="none">None</option>
+  </select>
+  <select multiple name="additional-dot-layers">
   </select>
 </div>
 <div class="map-viewport-outer">

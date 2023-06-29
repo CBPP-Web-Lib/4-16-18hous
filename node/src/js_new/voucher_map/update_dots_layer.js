@@ -5,21 +5,39 @@ import { dotConfig } from "./dot_config"
 import { bbox_overlap } from "./bbox_overlap"
 const dot_data_layer = {}
 
+function load_dot_config(name) {
+  var config = {};
+  Object.keys(dotConfig.default).forEach((prop)=>{
+    config[prop] = dotConfig.default[prop]
+  })
+  if (dotConfig[name]) {
+    Object.keys(dotConfig[name]).forEach((prop)=>{
+      config[prop] = dotConfig[name][prop]
+    })
+  }
+  return config
+}
+
 export function updateDotsLayer(visible_features) {
   var map = this
-  var z = Math.floor(map.coordTracker.getCoords().z)
+  var z = Math.round(map.coordTracker.getCoords().z)
   var projection = map.projectionManager.getProjection()
   var water = map.cbsaManager.getWaterShapes()
   var active_dots_layer = map.dataLayerManager.getActiveDotsLayers()
   Object.keys(dot_data_layer).forEach((layer_id)=>{
     var name = dot_data_layer[layer_id].name
-    var dot_represents = dotConfig[name].numDots(z)
+    var config = load_dot_config(name)
+    var dot_represents = config.numDots(z)
     if (dot_data_layer[layer_id].dotRepresents !== dot_represents) {
+      delete(dot_data_layer[layer_id])
+    }
+    if (active_dots_layer.indexOf(name)===-1) {
       delete(dot_data_layer[layer_id])
     }
   })
   active_dots_layer.forEach((name)=>{
-    var dot_represents = dotConfig[name].numDots(z)
+    var config = load_dot_config(name)
+    var dot_represents = config.numDots(z)
     var layer_id = name + "_" + dot_represents;
     var layer_data;
     if (!dot_data_layer[layer_id]) {
@@ -49,7 +67,7 @@ export function updateDotsLayer(visible_features) {
         var dots_made = layer_data.tracts[geoid].dots.length
         var attempt = 0
         while (dots_made < num_dots) {
-          var seed = [geoid, dot_represents,dots_made,attempt].join("")
+          var seed = [geoid, name, dot_represents,dots_made,attempt].join("")
           attempt++;
           var rng = new seedrandom(seed)
           var dot = [
@@ -112,13 +130,13 @@ export function updateDotsLayer(visible_features) {
     .attr("class","dotLayer")
     .merge(dot_layer_sel)
     .each(function(d){
-      var config = dotConfig[d.name];
+      var config = load_dot_config(d.name)
       var dots = d3_select(this)
-        .selectAll("circle.dot")
+        .selectAll("circle.active-dot")
         .data(d.dots);
       dots.enter()
         .append("circle")
-        .attr("class","dot")
+        .attr("class","dot active-dot")
         .merge(dots)
         .each(function(d) {
           var point = projection(d)

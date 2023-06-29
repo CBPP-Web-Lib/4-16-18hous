@@ -1,12 +1,20 @@
 import { geoMercator, geoPath } from "d3"
 
-function tile_coord_to_lat_long(x, y, z) {
+function tileCoordToLatLong (x, y, z) {
   var n = Math.pow(2, z)
   var long = x/n*360 - 180
   var lat = Math.atan(Math.sinh(Math.PI * (1 - 2*y/n))) * 180 / Math.PI
   return {
     lat, long
   }
+}
+
+function latLongToTileCoord (lon_deg, lat_deg, z) {
+  var n = Math.pow(2, z)
+  var x = n * ((lon_deg + 180) / 360)
+  var lat_rad = lat_deg/180 * Math.PI
+  var y = n * (1 - (Math.log(Math.tan(lat_rad) + (1/Math.cos(lat_rad))) / Math.PI)) / 2
+  return { x, y, z }
 }
 
 const ProjectionManager = function(map) {
@@ -43,8 +51,8 @@ const ProjectionManager = function(map) {
       y: coords.y + viewHeight/tileSize,
       z
     }
-    tl = tile_coord_to_lat_long(coords.x, coords.y, z);
-    br = tile_coord_to_lat_long(br_coords.x, br_coords.y, z);
+    tl = tileCoordToLatLong(coords.x, coords.y, z);
+    br = tileCoordToLatLong(br_coords.x, br_coords.y, z);
     bounding_obj = {
       type: "FeatureCollection",
       features: [
@@ -111,4 +119,4 @@ const ProjectionManager = function(map) {
   }
 }
 
-export { ProjectionManager }
+export { ProjectionManager, tileCoordToLatLong, latLongToTileCoord }

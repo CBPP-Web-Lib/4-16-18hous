@@ -5,6 +5,7 @@ import axios from 'axios'
 import geojson_bbox from "geojson-bbox"
 
 const downloadWaterFiles = function(files) {
+  console.log(files)
   const url_base = getURLBase()
   var options = {
     responseType: 'arraybuffer'

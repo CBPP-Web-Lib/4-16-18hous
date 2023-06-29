@@ -10,7 +10,7 @@ const updateMapView = function(force) {
     var finish = () => {
       updateTileHtml.call(this)
       var frame_time = Date.now() - start
-      if (frame_time > 100 && !force) {
+      if (frame_time > 300 && !force) {
         this.getSvg().node().style.display="none"
         ignore_shapes = true
         var finishDraw = () => {

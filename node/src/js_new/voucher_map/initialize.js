@@ -30,7 +30,8 @@ const initialize = function(config) {
   this.projectionManager = new ProjectionManager(this)
   this.dataLayerManager = new DataLayerManager(this)
   this.viewportEvents()
-  this.dataLayerManager.setupEvents()
+  this.dataLayerManager.setupEvents(this)
+  this.cbsaManager.setupEvents()
   this.projectionWorkers = setupProjectionWorkers(this)
   console.log(this)
 }

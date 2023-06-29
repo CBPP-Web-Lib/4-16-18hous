@@ -7,7 +7,8 @@ $x = $_GET["x"]*1;
 $y = $_GET["y"]*1;
 $r = $_GET["r"]*1;
 $allow_dynamic = isset($_GET["dynamic"]);
-$allow_dynamic = true;
+//$allow_dynamic = true;
+$allow_save = isset($_GET["allow_save"]);
 $ext = ($r==2) ? ".png?scale=3&metatile=4" : ".png?scale=1.5&metatile=4";
 $size = pow(2, $z);
 $dir = getcwd() . "/cache/";
@@ -16,7 +17,9 @@ if ($r==2) {
 }
 $dir .= $z . "/" . $x . "/";
 if (!file_exists($dir)) {
-  mkdir($dir, 0755, true);
+  if ($allow_save) {
+    mkdir($dir, 0755, true);
+  }
 }
 $filename = $dir . $y . ".png";
 if ($r==2) {
@@ -94,9 +97,12 @@ try {
         curl_close ($ch);
       }
       if (!file_exists($filename)) {
-        $fp = fopen($filename,'x'); 
-        fwrite($fp, $raw);
-        fclose($fp);
+        if ($allow_save) { 
+          echo "here";
+          $fp = fopen($filename,'x');
+          fwrite($fp, $raw);
+          fclose($fp);
+        }
       }
     }
     $origin = "https://www.cbpp.org";
@@ -114,9 +120,24 @@ try {
       header('Content-type: image/png');
       echo file_get_contents($filename);
       //echo $raw;
+    } else if (isset($raw)) {
+      header('Access-Control-Allow-Origin: '.$origin);
+      header('Cache-Control: max-age=86400');
+      header('Vary: Access-Control-Allow-Origin');
+      header('Access-Control-Allow-Headers: referer, range, accept-encoding, x-requested-with');
+      header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+      header('Content-type: image/png');
+      echo $raw;
     } else {
-      http_response_code(404);
-      echo "<!doctype html><html><head><title>Not found</title></head><body>Not found</body></html>";
+      $url = "http://". $_SERVER['HTTP_HOST'] .$_SERVER['PHP_SELF'];
+      $url = explode("/", $url);
+      array_pop($url);
+      array_push($url, "empty.png");
+      $url = implode("/", $url);
+      header("Location: " . $url); 
+      //http_response_code(404);
+      //echo "<!doctype html><html><head><title>Not found</title></head><body>Not found</body></html>";
+      //echo $filename;
       die();
     }
   }

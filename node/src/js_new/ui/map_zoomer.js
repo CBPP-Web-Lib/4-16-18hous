@@ -69,6 +69,8 @@ function MapZoomer(map) {
   this.zoomIn = function(x, y) {
     if (locked) {return;}
     var start_coords = map.coordTracker.getCoords();
+    console.log(start_coords)
+    if (start_coords.z >= 13) {return;} //max zoom
     var old_center = [
       x/256,
       y/256

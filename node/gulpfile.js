@@ -337,18 +337,6 @@ gulp.task("index_water",  gulp.series("ogr2ogr", function(cb) {
   cb();
 }));
 
-gulp.task("redlining_shapefiles", gulp.series("temp", function(cb) {
-  if (!fs.existsSync("./tmp/redlining.json")) {
-    var dest = fs.createWriteStream("./tmp/redlining.json");
-    request("https://digitalscholarshiplab.carto.com/api/v2/sql?q=select%20*%20from%20digitalscholarshiplab.holc_polygons&format=GeoJSON")
-      .pipe(dest);
-    dest.on("finish", cb);
-  } else {
-    if (typeof(cb)==="function") {
-      cb();
-    }
-  }
-}));
 gulp.task("download_shapefiles", function(cb) {
   var files = [
     "https://www2.census.gov/geo/tiger/TIGER2015/CBSA/tl_2015_us_cbsa.zip",
@@ -406,17 +394,16 @@ gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
     try {
       cbsa.features.forEach(function(f, i) {
         //console.log(merged, f.geometry);
-        console.log(merged, f.geometry, f.properties.GEOID);
+        //if (f.properties.GEOID*1 !== 41980) return;
         intersect = turf.intersect(merged, f.geometry);
         intersect.properties = f.properties;
-        console.log(intersect);
-
         r.push(intersect);
 
       });
     } catch (ex) {
       console.log(ex);
     }
+    console.log(r)
     cbsa.features = r;
     return cbsa;
   }
@@ -426,8 +413,10 @@ gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
 //  }
   var cbsa = JSON.parse(fs.readFileSync("./tmp/cbsa_filtered_unclipped.json"));
   var clipped_cbsa = clip_cbsa(cbsa);
+  //console.log(clipped_cbsa)
   fs.writeFileSync("./filtered/tl_2015_us_cbsa.json", JSON.stringify(clipped_cbsa, null, " "));
   clipped_cbsa.features.forEach((feature)=>{
+    console.log(feature.properties.GEOID)
     var cbsa_file = {
       type: "FeatureCollection",
       features: [feature]
@@ -601,7 +590,7 @@ gulp.task("filter_geojson", gulp.series(/*"ogr2ogr","split_data", */function(cb)
   };
 
   for (var i = 0, ii = cbsa_org.features.length; i<ii; i++) {
-    if (existsInData(cbsa_org.features[i], tract_data)!==-1) {
+    if (existsInData(cbsa_org.features[i], cbsa_names)!==-1) {
       cbsa.features.push(cbsa_org.features[i]);
     }
   }

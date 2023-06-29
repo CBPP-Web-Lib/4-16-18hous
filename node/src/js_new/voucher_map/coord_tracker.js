@@ -1,3 +1,6 @@
+import { getBoundingTilesForCBSA } from "./get_bounding_tiles_for_cbsa"
+import { tileCoordToLatLong } from "./projection_manager"
+
 var z, x, y, viewportWidth, viewportHeight;
 var in_progress = false
 
@@ -11,6 +14,10 @@ function setCoords(coords) {
     z = coords.z
     x = coords.x
     y = coords.y
+    viewportWidth = this.getMap().getViewportWidth()
+    viewportHeight = this.getMap().getViewportHeight()
+    console.log(tileCoordToLatLong(x, y, z))
+    console.log(tileCoordToLatLong(x + viewportWidth/256, y + viewportHeight/256, z))
     this.getMap().projectionManager.updateProjection().then(() => {
       window.requestAnimationFrame(()=>{
         this.getMap().updateView().then(function() {
@@ -39,6 +46,7 @@ const CoordTracker = function(map) {
   this.getCoords = getCoords.bind(this)
   this.setCoords = setCoords.bind(this)
   this.signalViewportResize = signalViewportResize.bind(this)
+  this.getBoundingTilesForCBSA = getBoundingTilesForCBSA.bind(this)
 }
 
 export {

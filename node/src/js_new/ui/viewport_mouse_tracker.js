@@ -71,7 +71,9 @@ function ViewportMouseTracker(id) {
     this.mouseDown(e.pageX, e.pageY)
   });
   viewport.addEventListener("touchstart", (e) => {
-    this.mouseDown(e.pageX, e.pageY)
+    if (e.touches.length===1) {
+      this.mouseDown(e.touches[0].pageX, e.touches[0].pageY)
+    }
   });
   viewport.addEventListener("mouseleave", (e) => {
     this.mouseUp()
@@ -100,7 +102,9 @@ function ViewportMouseTracker(id) {
   });
   
   viewport.addEventListener("touchmove", (e)=>{
-    this.mouseMove(e.pageX, e.pageY)
+    if (e.touches.length===1) {
+      this.mouseMove(e.touches[0].pageX, e.touches[0].pageY)
+    }
   });
 }
 

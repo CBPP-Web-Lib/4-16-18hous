@@ -11,6 +11,10 @@ const colorConfig = {
   },
   "ethnicity_nonwhite_percentage" : {
     colors: colorgen("#d7cabd","#a3876a",4).concat(colorgen("#b2b2f8","#6a6aa3",4))
+  },
+  "none": {
+    customBins: [0, 1],
+    colors: ["rgba(0, 0, 0, 0)"]
   }
 }
 
