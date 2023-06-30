@@ -5,12 +5,14 @@ import { downloadWaterFiles, processWaterFiles } from "./handle_water_files"
 import waterIndex from "../../../tmp/waterIndex.json"
 import { cbsaUi } from "../ui/cbsa_ui"
 import { calculateNumberOfDots } from "./calculate_number_of_dots"
+import { updateLegend } from "./update_legend"
 
 const CBSAManager = function(app) {
 
-  var tractShapefiles, tractBins, waterShapes
+  var tractShapefiles, tractBins, waterShapes, _cbsa
 
   this.loadCBSA = function(cbsa) {
+    _cbsa = cbsa
     return Promise.all([
       new Promise((resolve)=>{
         downloadTractShapefiles("topojson/high/tl_2010_tract_" + cbsa + ".bin")
@@ -58,10 +60,13 @@ const CBSAManager = function(app) {
         race/ethnicity data. The cbsa is needed so the random seed
         is different for each cbsa*/
         geoData.geojson.features = calculateNumberOfDots(geoData.geojson.features, cbsa)
-
         resolve(d)
       })
     })
+  }
+
+  this.getLoadedCbsa = () => {
+    return _cbsa
   }
 
   this.getTractBins = () => {

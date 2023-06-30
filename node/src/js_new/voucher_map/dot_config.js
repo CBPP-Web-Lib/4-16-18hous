@@ -33,36 +33,44 @@ const pop_num_dots = function(z) {
   }[z]
 }
 
+const voucher_dot_config = (name)=>{
+  return {
+    //fill: "#39178f",
+    fill: "rgba(102, 0, 0, 0.5)",
+    "fill-opacity":0.5,
+    "stroke-opacity": 0.8,
+    stroke: "#fff",
+    radius: 3,
+    "stroke-width": 1,
+    numDots: voucher_num_dots,
+    name: name,
+    type: "voucher"
+  }
+}
+
 const dotConfig = {
   "default": {
     fill: "#000",
     "fill-opacity":1,
     "stroke-opacity":1,
-    stroke:"#fff",
+    stroke:"rgba(255, 255, 255, 0)",
     "stroke-width":0,
-    radius:1,
+    radius:2,
     numDots: pop_num_dots
   },
   "ethnicity_aian_dots": {fill:"#e32b1e"},
   "ethnicity_asian_dots": {fill:"#419c25"},
   "ethnicity_black_dots": {fill:"#66246b"},
-  "ethnicity_hispanic_dots": {fill:"#998a06"},
+  "ethnicity_hisp_dots": {fill:"#998a06"},
   "ethnicity_multi_dots": {fill:"#a10a9c"},
   "ethnicity_nhpi_dots": {fill:"#128257"},
   "ethnicity_nonwhite_dots": {fill:"#593314"},
   "ethnicity_other_dots": {fill:"#290f59"},
   "ethnicity_tot_pop_dots": {fill:"#222"},
   "ethnicity_white_dots": {fill:"#253a5e"},
-  "hcv_total": {
-    //fill: "#39178f",
-    fill: "#660000",
-    "fill-opacity":0.5,
-    "stroke-opacity": 0.8,
-    stroke: "#fff",
-    radius: 3,
-    "stroke-width": 1,
-    numDots: voucher_num_dots
-  }
+  "hcv_total": voucher_dot_config("Families with voucher"),
+  "hcv_children": voucher_dot_config("Families with children, with voucher"),
+  "hcv_children_poc": voucher_dot_config("Families of color, with children, with voucher")
 }
 
 export { dotConfig }

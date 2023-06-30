@@ -1,5 +1,5 @@
 import {easeQuadInOut} from "d3";
-
+import { updateLegendDotRepresents } from "../voucher_map/update_legend"
 function MapZoomer(map) {
   var el = document.querySelectorAll("#" + map.getId() + " .map-viewport")[0];
   var locked = false;
@@ -32,6 +32,7 @@ function MapZoomer(map) {
             z: newCoords.z
           };
           map.coordTracker.setCoords(frameCoords);
+          updateLegendDotRepresents(map)
           resolve();
         } else {
           p = easeQuadInOut(p);
@@ -69,7 +70,6 @@ function MapZoomer(map) {
   this.zoomIn = function(x, y) {
     if (locked) {return;}
     var start_coords = map.coordTracker.getCoords();
-    console.log(start_coords)
     if (start_coords.z >= 13) {return;} //max zoom
     var old_center = [
       x/256,

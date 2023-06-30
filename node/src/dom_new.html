@@ -1,19 +1,27 @@
 <div class='pickers'>
-  <select name="cbsa">
-  </select>
-  <select name="tract-dataset">
-    <option value="poverty_pov_pct">Poverty</option>
-    <option value="ethnicity_nonwhite_percentage">Non-white percentage</option>
-    <option value="none">None</option>
-  </select>
-  <select name="dots-dataset">
-    <option value="hcv_total" selected>hcv total</option>
-    <option value="hcv_children" >hcv children</option>
-    <option value="hcv_children_poc">hcv children poc</option>
-    <option value="none">None</option>
-  </select>
-  <select multiple name="additional-dot-layers">
-  </select>
+  <div class='picker-wrapper'>
+    <label>Core-based statistical area:</label>
+    <select name="cbsa">
+    </select>
+  </div>
+  <div class='picker-wrapper'>
+    <label>Color tracts by:</label>
+    <select name="tract-dataset">
+      <option value="poverty_pov_pct">Poverty Rate</option>
+      <option value="ethnicity_nonwhite_percentage">Non-white percentage</option>
+      <option value="none">None</option>
+    </select>
+  </div>
+  <div class='picker-wrapper'>
+    <label>Voucher Layer:</label>
+    <select name="dots-dataset">
+    </select>
+  </div>
+  <div class='picker-wrapper'>
+    <label>Race/ethnicity layers:</label>
+    <ul name="additional-dot-layers-checkboxes">
+    </ul>
+  </div>
 </div>
 <div class="map-viewport-outer">
   <div class='map-viewport'>

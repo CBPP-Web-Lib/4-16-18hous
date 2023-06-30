@@ -12,6 +12,7 @@ const updateMapView = function(force) {
       var frame_time = Date.now() - start
       if (frame_time > 300 && !force) {
         this.getSvg().node().style.display="none"
+        this.getCanvas().style.display="none"
         ignore_shapes = true
         var finishDraw = () => {
           clearTimeout(performance_timer)
@@ -25,6 +26,7 @@ const updateMapView = function(force) {
             this.projectionManager.updateProjection()
             this.updateView(true).then(()=>{
               this.getSvg().node().style.display="block"
+              this.getCanvas().style.display="block"
               resolve()
             })
           }, 500)

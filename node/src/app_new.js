@@ -20,10 +20,10 @@ map.initialize({id, url_base})
 var cbsa = 25540;
 //cbsa = 35620;
 //cbsa = 13820;
-map.cbsaManager.loadCBSA(cbsa).then(function() {
+/*map.cbsaManager.loadCBSA(cbsa).then(function() {
   var cbsa_start_coords = map.coordTracker.getBoundingTilesForCBSA(cbsa)
   map.coordTracker.setCoords(cbsa_start_coords)
-});
+});*/
 
 
 

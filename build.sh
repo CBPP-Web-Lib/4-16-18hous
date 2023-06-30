@@ -1,0 +1,1 @@
+docker-compose -f prod-build.yml run node-build

@@ -32,11 +32,15 @@ const TractHover = function(map) {
     var new_tract = false
     if (e.target) {
       if (e.target.classList) {
-        if (e.target.classList.contains("tract")) {
-          if (hovered_tract !== e.target || !hovered_tract) {
-            hovered_tract = e.target
-            new_tract = true
-            hovered_tract.classList.add("hovered")
+        if (container.contains(e.target)) {
+          if (e.target.classList.contains("tract")) {
+            if (hovered_tract !== e.target || !hovered_tract) {
+              hovered_tract = e.target
+              new_tract = true
+              hovered_tract.classList.add("hovered")
+            }
+          } else {
+            hovered_tract = null
           }
         } else {
           hovered_tract = null
@@ -75,8 +79,8 @@ const TractHover = function(map) {
     
   }
 
-  container.addEventListener("mousemove", eventHandler)
-  container.addEventListener("touch", eventHandler)
+  window.addEventListener("mousemove", eventHandler)
+  window.addEventListener("touch", eventHandler)
 }
 
 export { TractHover }

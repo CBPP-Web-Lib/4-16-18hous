@@ -25,7 +25,6 @@ const processTractShapefiles = function(data) {
       [-179, 0]
     ]
     inverted_merged.coordinates[0].unshift(invert_box)
-    console.log(geojson)
     resolve({geojson, merged, inverted_merged})
   })
 }

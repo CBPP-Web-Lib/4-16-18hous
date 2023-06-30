@@ -19,7 +19,6 @@ const get_cbsa_bounds = function(cbsa) {
     if (geo.properties.GEOID*1 === cbsa*1) {
       var obj = feature(cbsa_topo, geo)
       var bbox = geojson_bbox(obj)
-      console.log(obj, bbox)
       r = bbox
     }
   })
@@ -42,11 +41,14 @@ const getBoundingTilesForCBSA = function(cbsa) {
   const viewHeight = this.getMap().getViewportHeight()
   const tiles_across = Math.min(viewWidth/256)
   const tiles_down = Math.min(viewHeight/256)
-  console.log(bbox)
   var coords_for_zoom = {}
   for (var z = 1; z <= 12; z++) {
     var tl = latLongToTileCoord(bbox[0], bbox[1], z)
+    /*to correct for presence of UI pickers*/
+    tl.x -= 1
     var br = latLongToTileCoord(bbox[2], bbox[3], z)
+    /*and legend*/
+    br.y += 1
     coords_for_zoom[z] = [tl, br]
     var across = br.x - tl.x
     var down = tl.y - br.y

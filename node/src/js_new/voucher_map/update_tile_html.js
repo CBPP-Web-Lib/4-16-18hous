@@ -4,7 +4,18 @@ const d3 = {select}
 export function updateTileHtml() {
   var map = this;
   var coord_tracker = this.coordTracker
-  var url_base = map.getURLBase()
+  var urlgen;
+  if (window.location.hostname==="localhost") {
+    urlgen = (coords)=>{
+      var {x, y, z} = coords
+      return map.getURLBase() + "/image_proxy/get_stamen.php?x=" + x + "&y=" + y + "&z=" + Math.floor(z) + "&r=2";
+    }
+  } else {
+    urlgen = (coords)=>{
+      var {x, y, z} = coords
+      return "https://www.cbpp-multimedia.org/4-16-18hous_rev6-30-23_tiles/@2x/" + Math.floor(z) + "/" + x + "/" + y + ".png";
+    }
+  }
   var width = map.getViewportWidth()
   var height = map.getViewportHeight()
   var coords = coord_tracker.getCoords()
@@ -34,7 +45,7 @@ export function updateTileHtml() {
         var _x = x + x_floor
         var _y = y + y_floor
         d.images.push({
-          src: url_base + "/image_proxy/get_stamen.php?x=" + _x + "&y=" + _y + "&z=" + Math.floor(z) + "&r=2",
+          src: urlgen({x: _x, y: _y, z}),
           left: (x - x_offset)*256,
           top: (y - y_offset)*256 
         });

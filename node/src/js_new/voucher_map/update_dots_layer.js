@@ -1,8 +1,8 @@
 import seedrandom from "seedrandom"
-import {select as d3_select} from "d3"
 import { featureContains } from "./feature_contains"
 import { dotConfig } from "./dot_config"
 import { bbox_overlap } from "./bbox_overlap"
+import { shuffle } from "./shuffle_array"
 const dot_data_layer = {}
 
 function load_dot_config(name) {
@@ -18,8 +18,29 @@ function load_dot_config(name) {
   return config
 }
 
+/*for debugging use only; don't need to display this layer ordinarily*/
+function display_water(map, water) {
+  var water_features = []
+  var svg = map.getSvg()
+  water.forEach((file)=>{
+    water_features = water_features.concat(file.features)
+  })
+  var pathGen = map.projectionManager.getPathGen()
+  var debug_water = svg
+    .selectAll("path.water")
+    .data(water_features);
+  debug_water.enter()
+    .append("path")
+    .attr("class","water")
+    .merge(debug_water)
+    .attr("d", pathGen)
+  debug_water.exit().remove()
+  /*end debug*/
+}
+
 export function updateDotsLayer(visible_features) {
   var map = this
+  var cbsa = map.cbsaManager.getLoadedCbsa()
   var z = Math.round(map.coordTracker.getCoords().z)
   var projection = map.projectionManager.getProjection()
   var water = map.cbsaManager.getWaterShapes()
@@ -66,7 +87,9 @@ export function updateDotsLayer(visible_features) {
         layer_data.tracts[geoid].old = false
         var dots_made = layer_data.tracts[geoid].dots.length
         var attempt = 0
-        while (dots_made < num_dots) {
+        var total_attempts = 0
+        while (dots_made < num_dots && total_attempts < num_dots*5) {
+          total_attempts++
           var seed = [geoid, name, dot_represents,dots_made,attempt].join("")
           attempt++;
           var rng = new seedrandom(seed)
@@ -86,11 +109,11 @@ export function updateDotsLayer(visible_features) {
                 in_water = true;
               }
             })
+            if (in_water) {
+              return;
+            }
           })
-          if (in_water) {
-            return;
-          }
-          if (featureContains(dot, feature)) {
+          if (featureContains(dot, feature) && !in_water) {
             layer_data.tracts[geoid].dots = layer_data.tracts[geoid].dots || []
             layer_data.tracts[geoid].dots.push(dot)
             dots_made = layer_data.tracts[geoid].dots.length
@@ -122,36 +145,46 @@ export function updateDotsLayer(visible_features) {
       dots: draw_dot_layer
     })
   })
-  var dot_layer_sel = map.getSvg().select("g.dotsLayer")
-    .selectAll("g.dotLayer")
-    .data(draw_dot_layers, d=>d.id);
-  dot_layer_sel.enter()
-    .append("g")
-    .attr("class","dotLayer")
-    .merge(dot_layer_sel)
-    .each(function(d){
-      var config = load_dot_config(d.name)
-      var dots = d3_select(this)
-        .selectAll("circle.active-dot")
-        .data(d.dots);
-      dots.enter()
-        .append("circle")
-        .attr("class","dot active-dot")
-        .merge(dots)
-        .each(function(d) {
-          var point = projection(d)
-          d3_select(this)
-            .attr("r", config.radius)
-            .attr("cx", point[0])
-            .attr("cy", point[1])
-            .attr("fill", config.fill)
-            .attr("fill-opacity", config["fill-opacity"])
-            .attr("stroke-width", config["stroke-width"])
-            .attr("stroke", config.stroke)
-            .attr("stroke-opacity", config["stroke-opacity"])
-            
-        })
-      dots.exit().remove()
+
+  //display_water(map, water);
+
+  /*draw voucher dots above ethnicity dots and randomize order of ethnicity dots*/
+  var voucher_dots = []
+  var ethnicity_dots = []
+  var configs = {}
+  draw_dot_layers.forEach((layer)=>{
+    configs[layer.name] = load_dot_config(layer.name)
+    var is_ethnicity_layer = false
+    if (layer.name.indexOf("ethnicity")!==-1) {
+      is_ethnicity_layer = true
+    }
+    layer.dots.forEach((dot)=>{
+      if (is_ethnicity_layer) {
+        ethnicity_dots.push([dot, layer.name])
+      } else {
+        voucher_dots.push([dot, layer.name])
+      }
     })
-  dot_layer_sel.exit().remove()
+  })
+
+  var ctx = map.getCanvasContext()
+  var canvas = map.getCanvas()
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  
+  var draw_dot = (dot) => {
+    var coords = projection(dot[0])
+    var config = configs[dot[1]]
+    ctx.beginPath()
+    ctx.strokeStyle = config.stroke
+    ctx.fillStyle = config.fill
+    ctx.lineWidth = config["stroke-width"]
+    ctx.arc(coords[0]*2, coords[1]*2, config.radius*2, 0, 2 * Math.PI)
+    ctx.fill()
+    if (ctx.lineWidth > 0) {
+      ctx.stroke()
+    }
+  }
+  ethnicity_dots = shuffle(ethnicity_dots, [z, cbsa].join("-"))
+  ethnicity_dots.forEach(draw_dot)
+  voucher_dots.forEach(draw_dot)
 }

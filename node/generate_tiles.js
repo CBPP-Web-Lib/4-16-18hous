@@ -3,7 +3,8 @@ var topojson = require("topojson");
 var tl_2015_us_cbsa = require("./topojson/low/tl_2015_us_cbsa.json");
 console.log(tl_2015_us_cbsa.objects.districts.geometries.length)
 var fs = require("fs");
-var geo_tl_2015_us_cbsa = topojson.feature(tl_2015_us_cbsa, tl_2015_us_cbsa.objects.districts);
+//var geo_tl_2015_us_cbsa = topojson.feature(tl_2015_us_cbsa, tl_2015_us_cbsa.objects.districts);
+var geo_tl_2015_us_cbsa = require("./filtered/tl_2015_us_cbsa.json");
 var geojson_bbox = require("geojson-bbox");
 var feature_index = 0;
 var features = geo_tl_2015_us_cbsa.features.filter((a)=>{
@@ -140,6 +141,10 @@ function do_box(leftmost, rightmost, northmost, southmost, name) {
         //shift = get_tile_from_long_lat(rotate, 0, zoom, false)[0] - get_tile_from_long_lat(0, 0, zoom, false)[0];
         tl = get_tile_from_long_lat((leftmost - rotate + 180)%360-180, northmost, zoom, false);
         br = get_tile_from_long_lat((rightmost - rotate + 180)%360-180, southmost, zoom, false);
+        tl[0] -= 2;
+        tl[1] -= 2;
+        br[0] += 2;
+        br[1] += 2;
         console.log("bounds at " + zoom + ": ", tl, br)
         xn = br[0] - tl[0];
         yn = br[1] - tl[1];

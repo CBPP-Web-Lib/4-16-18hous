@@ -3,7 +3,7 @@ import {MapZoomer} from "./map_zoomer"
 import {mapDragger} from "./map_dragger"
 import {MapResizer} from "./map_resizer"
 import {TractHover} from "./tract_hover"
-
+import {openMap} from "../voucher_map/open_map"
 
 function viewportEvents() {
   this.mouseTracker = new ViewportMouseTracker(this.getId())
@@ -14,6 +14,12 @@ function viewportEvents() {
   this.isZooming = function() {
     return zoomer.getLocked()
   }
+  /*
+  document.querySelectorAll("#" + this.getId() + " a[href='#open']")[0]
+    .addEventListener("click", (e)=>{
+      e.preventDefault()
+      openMap(this) 
+    });*/
 }
 
 export {viewportEvents}

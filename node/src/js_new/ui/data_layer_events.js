@@ -1,4 +1,4 @@
-import { makeAdditionalDotsPickerOptions } from "./additional_dot_picker_setup"
+import { makeAdditionalDotsPickerOptions, makeDotPickerOptions } from "./additional_dot_picker_setup"
 
 const dataLayerEvents = function(map) {
   var data_picker =  document.querySelectorAll("#" + map.getId() + " .pickers select[name='tract-dataset']")[0]
@@ -14,15 +14,17 @@ const dataLayerEvents = function(map) {
     this.setActiveDotsLayer(dots_picker.value)
     map.updateView()
   })
-  var addl_dots_picker = document.querySelectorAll("#" + map.getId() + " .pickers select[name='additional-dot-layers']")[0]
+  makeDotPickerOptions(dots_picker)
+  var addl_dots_picker = document.querySelectorAll("#" + map.getId() + " .pickers ul[name='additional-dot-layers-checkboxes']")[0]
   makeAdditionalDotsPickerOptions(addl_dots_picker)
-  addl_dots_picker.addEventListener("change", ()=>{
-    var values = Array.from(addl_dots_picker.querySelectorAll("option:checked"),e=>e.value);
-    this.setAdditionalDotsLayers(values)
-    console.log(values)
-    map.updateView()
-  })
-  var values = Array.from(addl_dots_picker.querySelectorAll("option:checked"),e=>e.value);
+  addl_dots_picker.querySelectorAll("input[type='checkbox']").forEach((el) => {
+    el.addEventListener("change", ()=>{
+      var values = Array.from(addl_dots_picker.querySelectorAll("input:checked"),e=>e.value);
+      this.setAdditionalDotsLayers(values)
+      map.updateView()
+    })
+  });
+  var values = Array.from(addl_dots_picker.querySelectorAll("input:checked"),e=>e.value);
   this.setAdditionalDotsLayers(values)
 }
 

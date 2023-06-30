@@ -1,0 +1,15 @@
+version: '3'
+services:
+    node-build:
+        volumes:
+            - ./node:/opt/project:rw
+            - ./webroot:/opt/project/webroot:rw
+            - ./services/prod-watch/webpack.config.js:/opt/project/webpack.config.js:rw
+            - ${TILE_DIR}:/opt/project/tiles:rw
+        build:
+            context: .
+            dockerfile: services/watch/Dockerfile
+        container_name: 4-16-18hous-prod-watch
+        ports: 
+            #- "3000:3000"
+            - "9229:9229"

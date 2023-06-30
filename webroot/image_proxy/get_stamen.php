@@ -7,7 +7,7 @@ $x = $_GET["x"]*1;
 $y = $_GET["y"]*1;
 $r = $_GET["r"]*1;
 $allow_dynamic = isset($_GET["dynamic"]);
-//$allow_dynamic = true;
+$allow_dynamic = true;
 $allow_save = isset($_GET["allow_save"]);
 $ext = ($r==2) ? ".png?scale=3&metatile=4" : ".png?scale=1.5&metatile=4";
 $size = pow(2, $z);
