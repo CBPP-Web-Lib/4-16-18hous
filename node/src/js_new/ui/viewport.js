@@ -8,7 +8,7 @@ import {openMap} from "../voucher_map/open_map"
 function viewportEvents() {
   this.mouseTracker = new ViewportMouseTracker(this.getId())
   mapDragger(this, this.mouseTracker)
-  var zoomer = new MapZoomer(this);
+  var zoomer = new MapZoomer(this, this.mouseTracker);
   var resizer = new MapResizer(this);
   var tract_hover = new TractHover(this)
   this.isZooming = function() {

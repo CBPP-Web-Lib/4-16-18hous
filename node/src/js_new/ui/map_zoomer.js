@@ -2,7 +2,7 @@ import {easeQuadInOut} from "d3";
 import { updateLegendDotRepresents } from "../voucher_map/update_legend"
 import { updateTileHtml } from "../voucher_map/update_tile_html";
 
-function MapZoomer(map) {
+function MapZoomer(map, mouse_tracker) {
   var el = document.querySelectorAll("#" + map.getId() + " .map-viewport")[0];
   var locked = false;
   el.addEventListener("wheel", (e)=> {
@@ -18,6 +18,27 @@ function MapZoomer(map) {
   this.getLocked = function() {
     return locked;
   }
+  mouse_tracker.registerPinchMoveCallback("pinchMove", (
+    x1, y1, x2, y2, drag_x1, drag_y1, drag_x2, drag_y2, viewport
+  ) => {
+    var threshold = 20
+    var x_zoomin = 
+      (x1 < x2 && drag_x1 < -threshold && drag_x2 > threshold) || 
+      (x1 > x2 && drag_x1 > -threshold && drag_x2 < threshold)
+    var y_zoomin = 
+      (y1 < y2 && drag_y1 < -threshold && drag_y2 > threshold) || 
+      (y1 > y2 && drag_y1 > -threshold && drag_y2 < threshold)
+    var x_zoomout = !x_zoomin
+    var y_zoomout = !y_zoomin
+    if (x_zoomin && y_zoomin) {
+      console.log("zoom in")
+      this.zoomIn(x1/2 + x2/2, y1/2 + y2/2)
+    }
+    if (x_zoomout && y_zoomout) { 
+      console.log("zoom out")
+      this.zoomOut(x1/2 + x2/2, y1/2 + y2/2)
+    }
+  })
   function transitionCoordsTo(newCoords, x, y, duration) {
     return new Promise((resolve)=>{
       var start = Date.now();

@@ -1,8 +1,16 @@
+body {
+  overscroll-behavior: none;
+}
+
 #hous4-16-18 {
   margin-left:auto;
   margin-right:auto;
   margin-top:50px;
   position:relative;
+  overscroll-behavior: none;
+  .picker-race-ethnicity > ul {
+    display:none
+  }
   .pickers {
     max-width:250px;
     font-size:10pt;
@@ -67,6 +75,7 @@
   }
   .map-outer-lightbox {
     position:fixed;
+    overscroll-behavior: none;
     background-color: rgba(0, 0, 0, 0.5);
     width:100%;
     height:100%;
