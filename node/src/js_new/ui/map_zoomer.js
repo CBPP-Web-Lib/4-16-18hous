@@ -1,5 +1,7 @@
 import {easeQuadInOut} from "d3";
 import { updateLegendDotRepresents } from "../voucher_map/update_legend"
+import { updateTileHtml } from "../voucher_map/update_tile_html";
+
 function MapZoomer(map) {
   var el = document.querySelectorAll("#" + map.getId() + " .map-viewport")[0];
   var locked = false;
@@ -16,7 +18,7 @@ function MapZoomer(map) {
   this.getLocked = function() {
     return locked;
   }
-  function transitionCoordsTo(newCoords, duration) {
+  function transitionCoordsTo(newCoords, x, y, duration) {
     return new Promise((resolve)=>{
       var start = Date.now();
       var startCoords = map.coordTracker.getCoords();
@@ -57,6 +59,19 @@ function MapZoomer(map) {
             y: outCoords.y + (inCoords.y/2 - outCoords.y)*_p,
             z: z,
           }
+          updateTileHtml.call(map, frameCoords)
+          var shapeLayer = document.querySelectorAll("#" + map.getId() + " .shapeLayer")[0]
+          var dotsLayer = document.querySelectorAll("#" + map.getId() + " .map-viewport > canvas")[0]
+          var transform_z = 1 + z%1
+          if (startCoords.z > newCoords.z) {
+            transform_z /= 2
+          }
+          shapeLayer.style.transform = "scale(" + transform_z + ")"
+          shapeLayer.style.transformOrigin = x + "px " + y + "px";
+          dotsLayer.style.transform = "scale(" + transform_z + ")"
+          dotsLayer.style.transformOrigin = x + "px " + y + "px";
+          window.requestAnimationFrame(frame);
+          return;
           map.coordTracker.setCoords(frameCoords).then(()=>{
             window.requestAnimationFrame(frame);
           })
@@ -85,7 +100,7 @@ function MapZoomer(map) {
       z: start_coords.z + 1
     }
     locked = true;
-    return transitionCoordsTo(end_coords, 200).then(function() {
+    return transitionCoordsTo(end_coords, x, y, 200).then(function() {
       locked = false;
     });
   }
@@ -107,7 +122,7 @@ function MapZoomer(map) {
       z: start_coords.z - 1
     }
     locked = true;
-    return transitionCoordsTo(end_coords, 200).then(function() {
+    return transitionCoordsTo(end_coords, x, y, 200).then(function() {
       locked = false;
     });
   }

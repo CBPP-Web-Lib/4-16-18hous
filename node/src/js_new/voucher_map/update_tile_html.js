@@ -1,7 +1,8 @@
-import {select} from "d3"
-const d3 = {select}
+import { select as d3_select } from "d3"
 
-export function updateTileHtml() {
+var tile_transform
+
+export function updateTileHtml(custom_cords) {
   var map = this;
   var coord_tracker = this.coordTracker
   var urlgen;
@@ -19,6 +20,9 @@ export function updateTileHtml() {
   var width = map.getViewportWidth()
   var height = map.getViewportHeight()
   var coords = coord_tracker.getCoords()
+  if (custom_cords) {
+    coords = custom_cords
+  }
   var tileLayer = map.getTileLayer()
   var x_images = Math.ceil(width/256) + 1
   var y_images = Math.ceil(height/256) + 1
@@ -70,7 +74,7 @@ export function updateTileHtml() {
       return d.opacity
     })
     .each(function(d) {
-      var imgs = d3.select(this).selectAll("img")
+      var imgs = d3_select(this).selectAll("img")
         .data(d.images, (d)=>{
           return d.src
         });

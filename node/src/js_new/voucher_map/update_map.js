@@ -1,6 +1,7 @@
 import { updateTileHtml } from "./update_tile_html"
 import { updateShapesLayer } from "./update_shapes_layer"
 import { updateDotsLayer } from "./update_dots_layer"
+import { untranslateMap } from "../ui/translate_map"
 
 var performance_timer
 var ignore_shapes = false
@@ -10,7 +11,7 @@ const updateMapView = function(force) {
     var finish = () => {
       updateTileHtml.call(this)
       var frame_time = Date.now() - start
-      if (frame_time > 300 && !force) {
+      if (frame_time > 300 && !force && false) {
         this.getSvg().node().style.display="none"
         this.getCanvas().style.display="none"
         ignore_shapes = true
@@ -42,6 +43,7 @@ const updateMapView = function(force) {
       return
     }
     updateShapesLayer.call(this).then((visible_features) => {
+      untranslateMap.call(this)
       updateDotsLayer.call(this, visible_features)
       finish()
     })

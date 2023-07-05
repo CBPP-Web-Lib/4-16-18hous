@@ -30,13 +30,16 @@ function ViewportMouseTracker(id) {
     y_start = _y
     startCallbacks.forEach((item)=> {
       if (typeof(item.fn)==="function") {
-        item.fn(dragX, dragY, viewport)
+        item.fn(_x, _y, viewport)
       }
     });
   }
 
-  this.mouseUp = () => {
+  this.mouseUp = (_x, _y) => {
     mousedown = false
+    dragX = _x - x_start
+    dragY = _y - y_start
+    console.log(_x, _y)
     x_start = null
     y_start = null
     endCallbacks.forEach((item)=> {
@@ -76,7 +79,7 @@ function ViewportMouseTracker(id) {
     }
   });
   viewport.addEventListener("mouseleave", (e) => {
-    this.mouseUp()
+    this.mouseUp(e.pageX, e.pageY)
   });
   /*if user touches somewhere outside viewport*/
   window.addEventListener("touchstart", (e) => {
@@ -87,15 +90,17 @@ function ViewportMouseTracker(id) {
       element = element.parentNode
     }
     if (elements.indexOf(viewport)===-1) {
-      this.mouseUp()
+      this.mouseUp(e.pageX, e.pageY)
     }
   });
   window.addEventListener("mouseup", (e) => {
-    this.mouseUp()
+    this.mouseUp(e.pageX, e.pageY)
   });
   
   window.addEventListener("touchend", (e) => {
-    this.mouseUp()
+    if (e.touches.length===1) {
+      this.mouseUp(e.touches[0].pageX, e.touches[0].pageY)
+    }
   });
   viewport.addEventListener("mousemove", (e)=>{
     this.mouseMove(e.pageX, e.pageY)

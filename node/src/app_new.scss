@@ -103,6 +103,7 @@
         height:100%;
         top:0;
         left:0;
+        mix-blend-mode: multiply;
       }
       & > canvas {
         position:absolute;
@@ -123,10 +124,10 @@
       height:256px;
     }
   }
-  svg path.tract,
+  /*svg path.tract,
   g.cbsa_group {
     mix-blend-mode: multiply;
-  }
+  }*/
   g.cbsa-group {
     overflow: visible;
   }
