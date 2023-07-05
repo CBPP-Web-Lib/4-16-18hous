@@ -56,6 +56,7 @@ export function updateShapesLayer() {
   }).then(function(pathStrings) {
     return new Promise((resolve)=>{
       var svg = map.getSvg().select("g.shapeLayer")
+      var inverted_svg = map.getInvertedSvg().select("g.shapeLayer")
       var cbsa_group = svg.selectAll("g.cbsa_group")
         .data([1]);
       cbsa_group.enter()
@@ -63,7 +64,7 @@ export function updateShapesLayer() {
         .attr("class","cbsa_group")
         .merge(cbsa_group);
       var cbsa_path_string = pathGen(merged);
-      var cbsa_inverted =svg.selectAll("path.cbsa_inverted")
+      var cbsa_inverted = inverted_svg.selectAll("path.cbsa_inverted")
         .data([inverted_merged]);
       cbsa_inverted
         .enter()

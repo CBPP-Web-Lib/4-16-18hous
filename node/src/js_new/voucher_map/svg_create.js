@@ -1,15 +1,17 @@
 import { select } from "d3"
 
-var svg;
+var svg, inverted_svg;
 
 function makeElement(map) {
   svg = select("#" + map.getId() + " .map-viewport").append("svg")
-  svg.attr("viewBox", [
+    .attr("class","main-svg")
+  var initial_viewport = [
     0,
     0,
     map.getViewportWidth(),
     map.getViewportHeight()
-  ].join(" "))
+  ].join(" ")
+  svg.attr("viewBox", initial_viewport)
   svg.attr("preserveAspectRatio", "xMinYMin")
   var defs = svg.append("defs")
   defs.append("filter")
@@ -19,8 +21,16 @@ function makeElement(map) {
     .attr("stdDeviation", 3);
   svg.append("g")
     .attr("class","shapeLayer");
-  svg.append("g")
-    .attr("class","dotsLayer");
+  inverted_svg = select("#" + map.getId() + " .map-viewport").append("svg")
+    .attr("class","inverted-svg")
+  inverted_svg.attr("viewBox", initial_viewport)
+  inverted_svg.attr("preserveAspectRatio", "xMinYMin")
+  inverted_svg.append("g")
+    .attr("class","shapeLayer");
+}
+
+function getInvertedSvg() {
+  return inverted_svg
 }
 
 function getSvg() {
@@ -29,5 +39,6 @@ function getSvg() {
 
 export {
   makeElement,
-  getSvg
+  getSvg,
+  getInvertedSvg
 }

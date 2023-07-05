@@ -103,7 +103,8 @@
         height:100%;
         top:0;
         left:0;
-        mix-blend-mode: multiply;
+        &.main-svg {mix-blend-mode: multiply;}
+        &.inverted-svg {pointer-events: none;}
       }
       & > canvas {
         position:absolute;

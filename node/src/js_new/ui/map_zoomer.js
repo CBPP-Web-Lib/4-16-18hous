@@ -60,14 +60,16 @@ function MapZoomer(map) {
             z: z,
           }
           updateTileHtml.call(map, frameCoords)
-          var shapeLayer = document.querySelectorAll("#" + map.getId() + " .shapeLayer")[0]
+          var shapeLayers = document.querySelectorAll("#" + map.getId() + " .shapeLayer")
           var dotsLayer = document.querySelectorAll("#" + map.getId() + " .map-viewport > canvas")[0]
           var transform_z = 1 + z%1
           if (startCoords.z > newCoords.z) {
             transform_z /= 2
           }
-          shapeLayer.style.transform = "scale(" + transform_z + ")"
-          shapeLayer.style.transformOrigin = x + "px " + y + "px";
+          shapeLayers.forEach((shapeLayer)=>{
+            shapeLayer.style.transform = "scale(" + transform_z + ")"
+            shapeLayer.style.transformOrigin = x + "px " + y + "px";
+          })
           dotsLayer.style.transform = "scale(" + transform_z + ")"
           dotsLayer.style.transformOrigin = x + "px " + y + "px";
           window.requestAnimationFrame(frame);

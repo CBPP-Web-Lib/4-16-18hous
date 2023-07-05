@@ -10,7 +10,6 @@ const updateLegend = function(map) {
   var active_data_layer = dataLayerManager.getActiveLayer()
   var active_hcv_dot_layer = dataLayerManager.getActiveVoucherDotLayer()
   legend_container.innerHTML = legendTemplate
-  console.log(active_dots_layer, active_data_layer)
   legend_container.querySelectorAll("[name='voucher-layer-name']")[0].innerText = dotConfig[active_hcv_dot_layer].name.toLowerCase()
   updateLegendDotRepresents.call(this, map)
   var tract_config = colorConfig[active_data_layer]
@@ -42,7 +41,6 @@ const updateLegend = function(map) {
       .style("width", 100/bin_data.length + "%")
       .style("left", (d,i)=>100*i/bin_data.length + "%")
       .each(function(d) {
-        console.log(d)
         d3_select(this).append("svg")
           .attr("viewBox", "1 1 8 8")
           .attr("preserveAspectRatio","none")

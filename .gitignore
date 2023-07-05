@@ -24,3 +24,4 @@ webroot/data
 webroot/image_proxy/cache
 node/dev/*
 .env
+node/prod/*

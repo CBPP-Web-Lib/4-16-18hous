@@ -39,7 +39,6 @@ function ViewportMouseTracker(id) {
     mousedown = false
     dragX = _x - x_start
     dragY = _y - y_start
-    console.log(_x, _y)
     x_start = null
     y_start = null
     endCallbacks.forEach((item)=> {
