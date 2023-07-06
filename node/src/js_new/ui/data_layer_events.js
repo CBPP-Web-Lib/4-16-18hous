@@ -16,7 +16,7 @@ const dataLayerEvents = function(map) {
   })
   makeDotPickerOptions(dots_picker)
   var addl_dots_picker = document.querySelectorAll("#" + map.getId() + " .pickers ul[name='additional-dot-layers-checkboxes']")[0]
-  makeAdditionalDotsPickerOptions(addl_dots_picker)
+  makeAdditionalDotsPickerOptions.call(map, addl_dots_picker)
   addl_dots_picker.querySelectorAll("input[type='checkbox']").forEach((el) => {
     el.addEventListener("change", ()=>{
       var values = Array.from(addl_dots_picker.querySelectorAll("input:checked"),e=>e.value);

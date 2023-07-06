@@ -61,7 +61,6 @@ function ViewportMouseTracker(id) {
   }
 
   this.mouseUp = (_x, _y) => {
-    console.log(_x, _y)
     mousedown = false
     dragX = _x - x_start
     dragY = _y - y_start
@@ -196,7 +195,6 @@ function ViewportMouseTracker(id) {
     if (e.touches.length===1) {
       this.mouseMove(e.touches[0].pageX, e.touches[0].pageY)
     }
-    console.log(e.touches);
     if (in_pinch && e.touches.length === 2) {
       this.pinchMove(e.touches[0].pageX, e.touches[0].pageY, e.touches[1].pageX, e.touches[1].pageY)
     }

@@ -8,6 +8,12 @@ function mapDragger(map, mouse_tracker) {
     if (map.isZooming()) {
       return false;
     }
+    if (map.coordTracker.coordChangeInProgress()) {
+      return false;
+    }
+    if (start_coords) {
+      return false;
+    }
     is_dragging = true
     start_coords = map.coordTracker.getCoords()
   });
@@ -50,10 +56,10 @@ function mapDragger(map, mouse_tracker) {
         y: start_coords.y - y/256,
         z: start_coords.z
       };
-      console.log(x, y)
-      map.coordTracker.setCoords(coords)
+      map.coordTracker.setCoords(coords).then(function() {
+        start_coords = null
+      })
     }
-    start_coords = null
   })
 }
 

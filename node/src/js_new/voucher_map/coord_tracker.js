@@ -7,6 +7,7 @@ var in_progress = false
 function setCoords(coords) {
   return new Promise((resolve)=>{
     if (in_progress) {
+      console.log("already in progress")
       resolve(false)
       return
     }
@@ -45,6 +46,9 @@ const CoordTracker = function(map) {
   }
   this.getCoords = getCoords.bind(this)
   this.setCoords = setCoords.bind(this)
+  this.coordChangeInProgress = function() {
+    return in_progress
+  }
   this.signalViewportResize = signalViewportResize.bind(this)
   this.getBoundingTilesForCBSA = getBoundingTilesForCBSA.bind(this)
 }

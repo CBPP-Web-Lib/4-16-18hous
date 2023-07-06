@@ -45,10 +45,10 @@ const getBoundingTilesForCBSA = function(cbsa) {
   for (var z = 1; z <= 12; z++) {
     var tl = latLongToTileCoord(bbox[0], bbox[1], z)
     /*to correct for presence of UI pickers*/
-    tl.x -= 1
+   // tl.x -= 1
     var br = latLongToTileCoord(bbox[2], bbox[3], z)
     /*and legend*/
-    br.y += 1
+  // br.y += 1
     coords_for_zoom[z] = [tl, br]
     var across = br.x - tl.x
     var down = tl.y - br.y

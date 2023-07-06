@@ -18,26 +18,92 @@ function MapZoomer(map, mouse_tracker) {
   this.getLocked = function() {
     return locked;
   }
+  var touchZoomInitialScale, touchZoomInitialCenter, touchZoomStartCoords, touchZoomDestCoords, touchZoomFrameCenter
+  mouse_tracker.registerPinchStartCallback("pinchStart", (x1, y1, x2, y2) => {
+    console.log("pinchStart")
+    if (touchZoomStartCoords) {
+      console.log("not done yet")
+      return;
+    }
+    document.querySelectorAll("#" + map.getId() + " .pickers")[0].style.display="none";
+    document.querySelectorAll("#" + map.getId() + " .legend-container")[0].style.display="none";
+    touchZoomInitialScale = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
+    touchZoomInitialCenter = [(x1 + x2)/2, (y1 + y2)/2]
+    touchZoomStartCoords = map.coordTracker.getCoords()
+  })
+  mouse_tracker.registerPinchEndCallback("pinchEnd", ()=>{
+    document.querySelectorAll("#" + map.getId() + " .pickers")[0].style.display="";
+    document.querySelectorAll("#" + map.getId() + " .legend-container")[0].style.display="";
+    if (!touchZoomDestCoords) return
+    //dotsLayer.style.transformOrigin  = ""
+    map.coordTracker.setCoords(touchZoomDestCoords).then(function() {
+      var shapeLayers = document.querySelectorAll("#" + map.getId() + " .shapeLayer")
+      var dotsLayer = document.querySelectorAll("#" + map.getId() + " .map-viewport > canvas")[0]
+      shapeLayers.forEach((shapeLayer)=>{
+        shapeLayer.style.transform = ""
+        //shapeLayer.style.transformOrigin = ""
+      })
+      var tileLayers = document.querySelectorAll("#" + map.getId() + " .tileLayer .zoom-layer");
+      tileLayers.forEach((tileLayer)=>{
+        tileLayer.style.transform =  ""
+        //tileLayer.style.transformOrigin = ""
+      })
+      dotsLayer.style.transform =  ""
+      touchZoomDestCoords = null
+      touchZoomInitialScale = null
+      touchZoomInitialCenter = null
+      touchZoomStartCoords = null
+    })
+  })
   mouse_tracker.registerPinchMoveCallback("pinchMove", (
     x1, y1, x2, y2, drag_x1, drag_y1, drag_x2, drag_y2, viewport
   ) => {
-    var threshold = 20
-    var x_zoomin = 
-      (x1 < x2 && drag_x1 < -threshold && drag_x2 > threshold) || 
-      (x1 > x2 && drag_x1 > -threshold && drag_x2 < threshold)
-    var y_zoomin = 
-      (y1 < y2 && drag_y1 < -threshold && drag_y2 > threshold) || 
-      (y1 > y2 && drag_y1 > -threshold && drag_y2 < threshold)
-    var x_zoomout = !x_zoomin
-    var y_zoomout = !y_zoomin
-    if (x_zoomin && y_zoomin) {
+    if (!touchZoomStartCoords) return
+    var frameScale = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
+    var scaleFactor = frameScale/touchZoomInitialScale
+    if (map.coordTracker.getCoords().z >= 13) {
+      scaleFactor = Math.min(1, scaleFactor)
+    }
+    var frameCenter = [(x1 + x2)/2, (y1 + y2)/2]
+    var translate = [(frameCenter[0] - touchZoomInitialCenter[0]), (frameCenter[1] - touchZoomInitialCenter[1])]
+    var shapeLayers = document.querySelectorAll("#" + map.getId() + " .shapeLayer")
+    var dotsLayer = document.querySelectorAll("#" + map.getId() + " .map-viewport > canvas")[0]
+    shapeLayers.forEach((shapeLayer)=>{
+      shapeLayer.style.transform = "scale(" + scaleFactor + ") translate(" + translate[0] + "px, " + translate[1] + "px)"
+      shapeLayer.style.transformOrigin = frameCenter[0] + "px " + frameCenter[1] + "px";
+    })
+    var tileLayers = document.querySelectorAll("#" + map.getId() + " .tileLayer .zoom-layer");
+    tileLayers.forEach((tileLayer)=>{
+      tileLayer.style.transform =  "scale(" + scaleFactor + ") translate(" + translate[0] + "px, " + translate[1] + "px)"
+      tileLayer.style.transformOrigin  = frameCenter[0] + "px " + frameCenter[1] + "px";
+    })
+    dotsLayer.style.transform =  "scale(" + scaleFactor + ") translate(" + translate[0] + "px, " + translate[1] + "px)"
+    dotsLayer.style.transformOrigin  = frameCenter[0] + "px " + frameCenter[1] + "px";
+    touchZoomDestCoords = getImpliedCoordsFromBaseCoordsAndTransform({touchZoomStartCoords, scaleFactor, translate, frameCenter, viewport})
+    touchZoomFrameCenter = frameCenter
+    //updateTileHtml.call(map, frameCoords)
+    return;
+    var threshold = 40
+    var total = Math.pow(drag_x1, 2) + Math.pow(drag_x2, 2) + Math.pow(drag_y1, 2) + Math.pow(drag_y2, 2)
+    if (total < threshold) return
+    var x_center = (x1 + x2)/2
+    var y_center = (y1 + y2)/2
+    /*is drag_x1 the same sign as x1 - xcenter?*/
+    var x1_same = drag_x1*(x1 - x_center) > 0
+    /*etc.*/
+    var x2_same = drag_x2*(x2 - x_center) > 0
+    var y1_same = drag_y1*(y1 - y_center) > 0
+    var y2_same = drag_y2*(y2 - y_center) > 0
+    if (x1_same && y1_same && x2_same && y2_same) {
       console.log("zoom in")
-      this.zoomIn(x1/2 + x2/2, y1/2 + y2/2)
+      this.zoomIn(x_center, y_center)
+      map.mouseTracker.pinchStart(x1, y1, x2, y2)
     }
-    if (x_zoomout && y_zoomout) { 
-      console.log("zoom out")
-      this.zoomOut(x1/2 + x2/2, y1/2 + y2/2)
+    if (!x1_same && !y1_same && !x2_same && !y2_same) {
+      this.zoomOut(x_center, y_center)
+      map.mouseTracker.pinchStart(x1, y1, x2, y2)
     }
+    return
   })
   function transitionCoordsTo(newCoords, x, y, duration) {
     return new Promise((resolve)=>{
@@ -103,6 +169,32 @@ function MapZoomer(map, mouse_tracker) {
       }
       window.requestAnimationFrame(frame);
     });
+  }
+
+  function getImpliedCoordsFromBaseCoordsAndTransform(arg) {
+    var { touchZoomStartCoords, scaleFactor, translate, viewport, frameCenter }  = arg
+    var z_change = Math.log2(scaleFactor)
+    z_change = Math.round(z_change)
+    scaleFactor = Math.pow(2, z_change)
+    var tl_change = [(0 - frameCenter[0])/256*(scaleFactor - 1), (0 - frameCenter[1])/256*(scaleFactor -1 )]
+    var x_change = -tl_change[0]/(scaleFactor) - translate[0]/256
+    var y_change = -tl_change[1]/(scaleFactor) - translate[1]/256
+    var coords = {
+      x: touchZoomStartCoords.x + x_change,
+      y: touchZoomStartCoords.y + y_change,
+      z: touchZoomStartCoords.z + z_change
+    };
+    while (z_change >= 1) {
+      z_change -=1
+      coords.x *= 2
+      coords.y *= 2
+    }
+    while (z_change < 0) {
+      z_change += 1
+      coords.x /= 2
+      coords.y /= 2
+    }
+    return coords
   }
 
   this.zoomIn = function(x, y) {

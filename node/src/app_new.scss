@@ -8,8 +8,17 @@ body {
   margin-top:50px;
   position:relative;
   overscroll-behavior: none;
+  .race-ethnicity-click {
+    cursor:pointer;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
   .picker-race-ethnicity > ul {
-    display:none
+    display:none;
+    &.do-not-hide-picker {
+      display:block;
+    }
   }
   .pickers {
     max-width:250px;
