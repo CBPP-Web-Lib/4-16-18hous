@@ -1,5 +1,9 @@
-body {
-  overscroll-behavior: none;
+body, html {
+  overscroll-behavior-y: none;
+  overscroll-behavior-x: none;
+  &.no-scroll {
+    overflow:hidden;
+  }
 }
 
 #hous4-16-18 {

@@ -7,7 +7,6 @@ var in_progress = false
 function setCoords(coords) {
   return new Promise((resolve)=>{
     if (in_progress) {
-      console.log("already in progress")
       resolve(false)
       return
     }
@@ -21,7 +20,7 @@ function setCoords(coords) {
     //console.log(tileCoordToLatLong(x + viewportWidth/256, y + viewportHeight/256, z))
     this.getMap().projectionManager.updateProjection().then(() => {
       window.requestAnimationFrame(()=>{
-        this.getMap().updateView().then(function() {
+        this.getMap().updateView().then(function(result) {
           in_progress = false
           resolve(true);
         })

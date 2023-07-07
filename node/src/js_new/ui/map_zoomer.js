@@ -174,7 +174,14 @@ function MapZoomer(map, mouse_tracker) {
   function getImpliedCoordsFromBaseCoordsAndTransform(arg) {
     var { touchZoomStartCoords, scaleFactor, translate, viewport, frameCenter }  = arg
     var z_change = Math.log2(scaleFactor)
-    z_change = Math.round(z_change)
+    if (z_change > 0) {
+      z_change = Math.ceil(z_change - 0.29)
+    } else {
+      z_change = Math.floor(z_change + 0.29)
+    }
+    var new_z = touchZoomStartCoords.z + z_change
+    new_z = Math.min(13, new_z)
+    z_change = new_z - touchZoomStartCoords.z
     scaleFactor = Math.pow(2, z_change)
     var tl_change = [(0 - frameCenter[0])/256*(scaleFactor - 1), (0 - frameCenter[1])/256*(scaleFactor -1 )]
     var x_change = -tl_change[0]/(scaleFactor) - translate[0]/256
@@ -182,7 +189,7 @@ function MapZoomer(map, mouse_tracker) {
     var coords = {
       x: touchZoomStartCoords.x + x_change,
       y: touchZoomStartCoords.y + y_change,
-      z: touchZoomStartCoords.z + z_change
+      z: new_z
     };
     while (z_change >= 1) {
       z_change -=1

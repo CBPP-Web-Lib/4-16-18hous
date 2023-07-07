@@ -3,6 +3,7 @@ import { featureContains } from "./feature_contains"
 import { dotConfig } from "./dot_config"
 import { bbox_overlap } from "./bbox_overlap"
 import { shuffle } from "./shuffle_array"
+import high_density_cbsa from "../high_density_cbsa";
 const dot_data_layer = {}
 
 function load_dot_config(name) {
@@ -42,6 +43,9 @@ export function updateDotsLayer(visible_features) {
   var map = this
   var cbsa = map.cbsaManager.getLoadedCbsa()
   var z = Math.round(map.coordTracker.getCoords().z)
+  if (high_density_cbsa[cbsa]) {
+    z += high_density_cbsa[cbsa]
+  }
   var projection = map.projectionManager.getProjection()
   var water = map.cbsaManager.getWaterShapes()
   var active_dots_layer = map.dataLayerManager.getActiveDotsLayers()

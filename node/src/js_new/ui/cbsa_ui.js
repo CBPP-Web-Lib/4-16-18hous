@@ -1,5 +1,6 @@
 import names from "../../../tmp/names.json"
 import { openMap } from "../voucher_map/open_map"
+import { updateLegend } from "../voucher_map/update_legend"
 
 const cbsaUi = function(map)  {
   var arr = []
@@ -30,8 +31,9 @@ const cbsaUi = function(map)  {
       } else {
         map.cbsaManager.loadCBSA(cbsa).then(function() {
           var cbsa_start_coords = map.coordTracker.getBoundingTilesForCBSA(cbsa)
-          console.log(cbsa_start_coords)
-          map.coordTracker.setCoords(cbsa_start_coords)
+          map.coordTracker.setCoords(cbsa_start_coords).then(function() {
+            updateLegend(map)
+          })
         });
       }
       pickers.forEach((_picker)=>{

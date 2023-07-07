@@ -9,6 +9,15 @@ const MapResizer = function(map) {
     map.getInvertedSvg().attr("viewBox", [
       0, 0, map.getViewportWidth(), map.getViewportHeight()
     ].join(" "))
+    console.log("resize")
+    if (map.isZooming()) {
+      console.log("is zooming")
+      return false;
+    }
+    if (map.coordTracker.coordChangeInProgress()) {
+      console.log("coord change in progress")
+      return false;
+    }
     map.projectionManager.updateProjection().then(function() {
       map.updateView()
     })

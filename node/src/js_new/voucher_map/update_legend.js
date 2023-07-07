@@ -2,6 +2,7 @@ import legendTemplate from "../../legend_template.html"
 import { dotConfig } from "./dot_config"
 import { colorConfig } from './color_config'
 import { select as d3_select } from 'd3'
+import high_density_cbsa from "../high_density_cbsa";
 
 const updateLegend = function(map) {
   var dataLayerManager = map.dataLayerManager
@@ -62,10 +63,15 @@ const updateLegend = function(map) {
 const updateLegendDotRepresents = function(map) {
   var dataLayerManager = map.dataLayerManager
   var coords = map.coordTracker.getCoords()
+  var cbsa = map.cbsaManager.getLoadedCbsa()
   var legend_container = document.querySelectorAll("#" + map.getId() + " .legend-container")[0]
   var active_hcv_dot_layer = dataLayerManager.getActiveVoucherDotLayer()
   if (active_hcv_dot_layer!=="none") {
-    var dotRepresents = dotConfig[active_hcv_dot_layer].numDots(coords.z)
+    var {z} = coords
+    if (high_density_cbsa[cbsa]) {
+      z += high_density_cbsa[cbsa]
+    }
+    var dotRepresents = dotConfig[active_hcv_dot_layer].numDots(z)
     legend_container.querySelectorAll("[name='voucher-dot-represents']")[0].innerText = dotRepresents
   }
 }
