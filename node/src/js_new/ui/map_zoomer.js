@@ -37,6 +37,7 @@ function MapZoomer(map, mouse_tracker) {
     if (!touchZoomDestCoords) return
     //dotsLayer.style.transformOrigin  = ""
     map.coordTracker.setCoords(touchZoomDestCoords).then(function() {
+      updateLegendDotRepresents(map)
       var shapeLayers = document.querySelectorAll("#" + map.getId() + " .shapeLayer")
       var dotsLayer = document.querySelectorAll("#" + map.getId() + " .map-viewport > canvas")[0]
       shapeLayers.forEach((shapeLayer)=>{
