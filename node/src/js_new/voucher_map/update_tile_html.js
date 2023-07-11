@@ -6,7 +6,7 @@ export function updateTileHtml(custom_cords) {
   var map = this;
   var coord_tracker = this.coordTracker
   var urlgen;
-  if (window.location.hostname!=="apps.cbpp.org" && window.location.hostname !== "www.cbpp.org" && window.location.hostname !== "cbpp.org") {
+  if (false && window.location.hostname!=="apps.cbpp.org" && window.location.hostname !== "www.cbpp.org" && window.location.hostname !== "cbpp.org") {
     urlgen = (coords)=>{
       var {x, y, z} = coords
       return map.getURLBase() + "/image_proxy/get_stamen.php?x=" + x + "&y=" + y + "&z=" + Math.floor(z) + "&r=2";

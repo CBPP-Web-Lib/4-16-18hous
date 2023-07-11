@@ -519,6 +519,7 @@ gulp.task("merge_csv", function(cb) {
   
   fs.writeFileSync("./tmp/tract_data_all.json", JSON.stringify(r, null, " "), "utf-8");
   fs.writeFileSync("./tmp/names.json", JSON.stringify(name_lookup, null, " "), "utf-8");
+  cb();
 
 });
 
@@ -724,7 +725,7 @@ gulp.task("topojson", gulp.series(/*"topojson_dir","filter_geojson","buildDirect
 }));
 
 
-gulp.task("minorityconc", gulp.series("split_data", function() {
+gulp.task("minorityconc", gulp.series("split_data", function(cb) {
   var data = require("./tmp/minority_threshold.json");
   var names = invert(require('./tmp/names.json'));
   function invert(o) {

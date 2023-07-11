@@ -1,0 +1,17 @@
+./gulp.sh temp
+./gulp.sh geojson_dir
+./gulp.sh download_shapefiles
+./gulp.sh unzip_shapefiles
+./gulp.sh ogr2ogr
+./gulp.sh simplify_water
+./gulp.sh tract_csv_parse
+./gulp.sh merge_csv
+./gulp.sh split_data
+./gulp.sh filter_geojson
+./gulp.sh index_water
+./gulp.sh clip_cbsa
+./gulp.sh minority_threshold_parse
+./gulp.sh topojson_dir
+./gulp.sh topojson
+./gulp.sh minorityconc
+./gulp.sh binCBSA
