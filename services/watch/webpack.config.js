@@ -4,7 +4,6 @@ module.exports = {
   mode: 'development',
   entry: {
     app: './src/app.js',
-    new: './src/app_new.js',
     worker_project: './src/worker_project.js'
   },
   watch: true,
