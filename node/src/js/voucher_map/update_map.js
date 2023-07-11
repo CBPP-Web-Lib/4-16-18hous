@@ -9,6 +9,7 @@ const updateMapView = function(force) {
   return new Promise((resolve)=>{
 
     var finish = () => {
+      console.log("finish")
       updateTileHtml.call(this)
       var frame_time = Date.now() - start
       if (frame_time > 300 && !force && false) {
@@ -44,8 +45,7 @@ const updateMapView = function(force) {
     }
     updateShapesLayer.call(this).then((visible_features) => {
       untranslateMap.call(this)
-      updateDotsLayer.call(this, visible_features)
-      finish()
+      updateDotsLayer.call(this, visible_features).then(finish)
     })
 
     

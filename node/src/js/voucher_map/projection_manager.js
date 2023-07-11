@@ -101,8 +101,8 @@ const ProjectionManager = function(map) {
     projection = geoMercator().fitSize([viewWidth, viewHeight], bounding_obj)
     pathGen = geoPath(projection)
     var projectionUpdatePromises = [];
-    map.projectionWorkers.forEach((worker)=>{
-      projectionUpdatePromises.push(new Promise((resolve)=>{
+    function workerPromiseGen(worker) {
+      return new Promise((resolve)=>{
         worker.postMessage({
           msgType: "newProjection",
           bounds: {
@@ -113,7 +113,13 @@ const ProjectionManager = function(map) {
         worker.newProjectionCallback = function(e) {
           resolve()
         };
-      }))
+      })
+    }
+    map.projectionWorkers.forEach((worker)=>{
+      projectionUpdatePromises.push(workerPromiseGen(worker))
+    })
+    map.dotWorkers.forEach((worker)=>{
+      projectionUpdatePromises.push(workerPromiseGen(worker))
     })
     return Promise.all(projectionUpdatePromises)
   }

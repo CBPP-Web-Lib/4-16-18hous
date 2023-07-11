@@ -8,6 +8,7 @@ import { updateMapView } from "./update_map"
 import { ProjectionManager } from "./projection_manager"
 import { DataLayerManager } from "./data_layer_manager"
 import { setupProjectionWorkers } from "./setup_projection_workers"
+import { setupDotWorkers } from "./setup_dot_workers"
 import { setupLightbox } from "../ui/setup_lightbox"
 import dom from "../../dom.html"
 
@@ -40,6 +41,7 @@ const initialize = function(config) {
   this.dataLayerManager.setupEvents(this)
   this.cbsaManager.setupEvents()
   this.projectionWorkers = setupProjectionWorkers(this)
+  this.dotWorkers = setupDotWorkers(this)
   this.dataLayerManager.setActiveDotsLayer("hcv_total")
 }
 

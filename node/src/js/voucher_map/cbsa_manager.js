@@ -54,13 +54,18 @@ const CBSAManager = function(app) {
           }
         })
 
+        
+
         /*This step has already been done for the voucher numbers, since
         it requires HUD approval and the raw data is subject to privacy 
         restrictions; repeat the technique for the publicly available
         race/ethnicity data. The cbsa is needed so the random seed
         is different for each cbsa*/
         geoData.geojson.features = calculateNumberOfDots(geoData.geojson.features, cbsa)
-        resolve(d)
+        resolve(d);
+        /*Promise.all(worker_setup_tasks).then(()=>{
+          resolve(d)
+        })*/
       })
     })
   }

@@ -4,7 +4,8 @@ module.exports = {
   mode: 'development',
   entry: {
     app: './src/app.js',
-    worker_project: './src/worker_project.js'
+    worker_project: './src/worker_project.js',
+    worker_dot: './src/worker_dot.js'
   },
   watch: true,
   output: {
