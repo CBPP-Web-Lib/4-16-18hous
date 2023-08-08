@@ -1,5 +1,3 @@
-import seedrandom from "seedrandom"
-import { featureContains } from "./feature_contains"
 import { dotConfig } from "./dot_config"
 import { bbox_overlap } from "./bbox_overlap"
 import { shuffle } from "./shuffle_array"
@@ -37,51 +35,6 @@ function display_water(map, water) {
     .attr("d", pathGen)
   debug_water.exit().remove()
   /*end debug*/
-}
-
-function handle_feature(args) {
-  var { feature, name, dot_represents, these_dots, water } = args
-  var geoid = feature.properties.GEOID10
-  var bbox = feature.bbox
-  var width = bbox[2] - bbox[0]
-  var height = bbox[3] - bbox[1]
-  var num_dots = feature.properties.housing_data[name][dot_represents]
-  var dots_made = these_dots.length
-  var attempt = 0
-  var total_attempts = 0
-  while (dots_made < num_dots && total_attempts < num_dots*5) {
-    total_attempts++
-    var seed = [geoid, name, dot_represents, dots_made, attempt].join("")
-    attempt++;
-    var rng = new seedrandom(seed)
-    var dot = [
-      rng()*width + bbox[0],
-      rng()*height + bbox[1]
-    ]
-    var in_water = false;
-    water.forEach((collection)=>{
-      if (in_water) return;
-      collection.features.forEach((water_feature)=>{
-        if (in_water) return;
-        if (!bbox_overlap(feature.bbox, water_feature.bbox)) {
-          return;
-        }
-        if (featureContains(dot, water_feature)) {
-          in_water = true;
-        }
-      })
-      if (in_water) {
-        return;
-      }
-    })
-    if (featureContains(dot, feature) && !in_water) {
-      these_dots.push(dot)
-      dots_made = these_dots.length
-      attempt = 0
-    }
-  }
-  these_dots = these_dots.slice(0, num_dots)
-  return these_dots
 }
 
 export function updateDotsLayer(visible_features) {
@@ -255,12 +208,10 @@ export function updateDotsLayer(visible_features) {
           ctx.stroke()
         }
       }
+      /*to do - adapt this to use seeded rng so the dots don't change order when moving the map*/
       ethnicity_dots = shuffle(ethnicity_dots, [z, cbsa].join("-"))
       ethnicity_dots.forEach(draw_dot)
       voucher_dots.forEach(draw_dot)
-      
-      console.log("drew dots");
-      console.log(Date.now() - start_time)
       resolve()
 
     })
