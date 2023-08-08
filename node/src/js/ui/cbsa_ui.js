@@ -7,8 +7,8 @@ const cbsaUi = function(map)  {
   Object.keys(names).forEach((geoid)=>{
     arr.push([geoid, names[geoid]])
   })
-  arr.sort((a,b)=>{
-    return b[1] > a[1]
+  arr.sort((a, b)=>{
+    return b[1] - a[1]
   })
   var pickers = document.querySelectorAll("#" + map.getId() + " select[name='cbsa']")
   pickers.forEach((picker)=>{

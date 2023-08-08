@@ -19,7 +19,7 @@ const makeDotPickerOptions = function(picker) {
 
 const makeAdditionalDotsPickerOptions = function(picker) {
   Object.keys(data_keys).sort((a, b)=>{
-    return data_keys[b] > data_keys[a]
+    return data_keys[b] - data_keys[a]
   }).forEach((key)=>{
     var wrap = document.createElement("li")
     var label = document.createElement("label")
