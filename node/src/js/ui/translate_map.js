@@ -15,7 +15,7 @@ var untranslateMap = function() {
   shapeLayers.forEach((shapeLayer)=>{
     shapeLayer.style.transform = "";
   })
-  dotsLayer.style.transform = "";
+ // dotsLayer.style.transform = "";
 }
 
 export { translateMap, untranslateMap }

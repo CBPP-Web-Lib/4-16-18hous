@@ -87,7 +87,6 @@ function handle_feature(args) {
 export function updateDotsLayer(visible_features) {
   var map = this
   return new Promise((resolve)=> {
-
     var start_time = Date.now()
     var cbsa = map.cbsaManager.getLoadedCbsa()
     var z = Math.round(map.coordTracker.getCoords().z)
@@ -98,10 +97,8 @@ export function updateDotsLayer(visible_features) {
     var water = map.cbsaManager.getWaterShapes()
     var bounds = map.projectionManager.getBounds()
     var water_features = [];
-    //var all_water_features = [];
     water.forEach((water_group)=>{
       water_group.features.forEach((feature)=>{
-        //all_water_features.push(feature)
         if (bbox_overlap(feature.bbox, bounds)) {
           water_features.push(feature)
         } 
@@ -161,15 +158,18 @@ export function updateDotsLayer(visible_features) {
             }
             layer_data.tracts[geoid].old = false
             feature_piles[worker_slot] = feature_piles[worker_slot] || []
-            feature_piles[worker_slot].push({
-              feature, 
-              name, 
-              dot_represents, 
-              these_dots: layer_data.tracts[geoid].dots 
-            })
-            worker_slot++
-            if (worker_slot >= map.dotWorkers.length) {
-              worker_slot = 0
+            var num_dots = feature.properties.housing_data[name][dot_represents]
+            if (layer_data.tracts[geoid].dots.length !== num_dots) {
+              feature_piles[worker_slot].push({
+                feature,
+                name, 
+                dot_represents, 
+                these_dots: layer_data.tracts[geoid].dots 
+              })
+              worker_slot++
+              if (worker_slot >= map.dotWorkers.length) {
+                worker_slot = 0
+              }
             }
           }
         })
@@ -182,12 +182,11 @@ export function updateDotsLayer(visible_features) {
       var dot_tasks = []
       feature_piles.forEach((pile, i)=>{
         dot_tasks.push(new Promise((resolve)=>{
-          console.log(pile)
           map.dotWorkers[i].postMessage({
             msgType: "requestDotLocations",
-            features: JSON.stringify(pile)
+            features: pile
           })
-          //pile.length = 0
+          pile = null
           map.dotWorkers[i].dotLocationCallback = (data)=>{
             Object.keys(data).forEach((geoid)=>{
               var layer_id = [data[geoid].name, data[geoid].dot_represents].join("_")
@@ -198,10 +197,15 @@ export function updateDotsLayer(visible_features) {
           }
         }))
       })
+      feature_piles = null
       return Promise.all(dot_tasks)
     }).then(()=>{
-      console.log("calculated positions");
-      console.log(Date.now() - start_time)
+      
+      var ctx = map.getCanvasContext()
+      var canvas = map.getCanvas()
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      var dotsLayer = document.querySelectorAll("#" + map.getId() + " .map-viewport > canvas")[0];
+      dotsLayer.style.transform = "";
       var draw_dot_layers = [];
       Object.keys(dot_data_layer).forEach((layer_id)=>{
         var dot_layer = dot_data_layer[layer_id]
@@ -237,10 +241,6 @@ export function updateDotsLayer(visible_features) {
           }
         })
       })
-    
-      var ctx = map.getCanvasContext()
-      var canvas = map.getCanvas()
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
       
       var draw_dot = (dot) => {
         var coords = projection(dot[0])

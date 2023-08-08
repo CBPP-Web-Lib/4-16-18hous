@@ -50,24 +50,27 @@ onmessage = (e) => {
   if (e.data.msgType === "newProjection") {
     projection = geoMercator().fitSize(e.data.bounds.size, e.data.bounds.obj)
     postMessage({msgType: "newProjection", result:"OK"})
+    e.data.bounds = null
   }
   if (e.data.msgType === "requestDotLocations") {
-    var features = JSON.parse(e.data.features)
-    var results = {}
+    let features = e.data.features
+    let results = {}
     features.forEach((feature, i)=>{
-      var dots = handle_feature(feature)
+      let dots = handle_feature(feature)
       results[feature.feature.properties.GEOID10] = { 
         dots: dots, 
         name: feature.name, 
         dot_represents: feature.dot_represents 
       }
-      feature.feature.geometry = null
-      features[i] = null
+      //feature.feature.geometry = null
+      //features[i] = null
     })
     postMessage({msgType: "requestDotLocations", dotLocations: results})
+    e.data.features = null
   }
   if (e.data.msgType === "newWater") {
     water = e.data.water
     postMessage({msgType: "newWater", result: "OK"})
+    e.data.water = null
   }
 }

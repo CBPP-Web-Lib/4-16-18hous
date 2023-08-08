@@ -9,10 +9,12 @@ onmessage = (e) => {
     postMessage({msgType: "newProjection", result:"OK"})
   }
   if (e.data.msgType === "requestPathString") {
-    var pathStrings = {}
+    let pathStrings = {}
     e.data.features.forEach((feature)=>{
       pathStrings[feature.properties.GEOID10] = pathGenerator(feature)
     })
     postMessage({msgType: "requestPathString", pathStrings})
+    e.data.features = null
+    pathStrings = null
   }
 }
