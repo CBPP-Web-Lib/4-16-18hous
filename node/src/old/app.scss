@@ -377,7 +377,7 @@ html {
     position:absolute;
     top:0;
     left:0;
-    g.tl_2015_us_cbsa path {
+    g.tl_2020_us_cbsa path {
       cursor:pointer;
     }
     text.label {
@@ -387,7 +387,7 @@ html {
       -ms-user-select: none; /* IE10+/Edge */
       user-select: none; /* Standard */
     }
-    circle.household, g.layer.cb_2015_us_state_500k {
+    circle.household, g.layer.cb_2020_us_state_500k {
       pointer-events:none;
     }
   }
@@ -400,7 +400,7 @@ html {
     pointer-events:none;
     z-index:15;
   }
-  g.size.high .layer.tl_2015_us_cbsa {
+  g.size.high .layer.tl_2020_us_cbsa {
     pointer-events:none;
   }
   path[data-nomouse="true"] {

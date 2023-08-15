@@ -1,6 +1,6 @@
 import geojson_bbox from "geojson-bbox"
 import { feature } from "topojson"
-import cbsa_topo from "../../../topojson/low/tl_2015_us_cbsa.json"
+import cbsa_topo from "../../../topojson/low/tl_2020_us_cbsa.json"
 import { latLongToTileCoord } from "./projection_manager"
 
 const get_cbsa_bounds = function(cbsa) {

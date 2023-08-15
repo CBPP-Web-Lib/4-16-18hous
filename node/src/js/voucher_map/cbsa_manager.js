@@ -46,7 +46,6 @@ const CBSAManager = function(app) {
       return new Promise((resolve)=>{
         var geoData = d[0]
         var housingData = d[1]
-        
         geoData.geojson.features.forEach((tract)=>{
           var tract_id = tract.properties.GEOID10
           if (typeof(housingData[tract_id])) {

@@ -13,7 +13,7 @@
     "simplify":0.000001,
     "dest":"./webroot/topojson/high/",
     "exclude": [
-      "cb_2015"
+      "cb_2020"
     ]
   }
 }

@@ -107,10 +107,10 @@ module.exports = function(
         });
       }),
       new Promise((resolve)=> {
-        g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2015_us_cbsa_" + geoid + ".bin", function(err, d) {
+        g.getJSONAndSaveInMemory(g.URL_BASE + "/topojson/high/tl_2020_us_cbsa_" + geoid + ".bin", function(err, d) {
           var geo = topojson.feature(d, d.objects.districts);
-          geo_data["tl_2015_us_cbsa"].high = geo_data["tl_2015_us_cbsa"].high || {type:"FeatureCollection", features:[]};
-          var already_loaded_features = geo_data["tl_2015_us_cbsa"].high.features;
+          geo_data["tl_2020_us_cbsa"].high = geo_data["tl_2020_us_cbsa"].high || {type:"FeatureCollection", features:[]};
+          var already_loaded_features = geo_data["tl_2020_us_cbsa"].high.features;
           var feature_loaded = false;
           already_loaded_features.forEach((feature)=>{
             if (feature.properties.GEOID === geo.features[0].properties.GEOID) {
@@ -118,7 +118,7 @@ module.exports = function(
             }
           });
           if (!feature_loaded) {
-            geo_data["tl_2015_us_cbsa"].high.features.push(geo.features[0]);
+            geo_data["tl_2020_us_cbsa"].high.features.push(geo.features[0]);
           }
           resolve();
         });
@@ -155,7 +155,7 @@ module.exports = function(
             var topo, merged;
             if (size==="low") {
               if (!r[size].national) {
-                topo = topojson.topology({districts:geo_data.cb_2015_us_state_500k[size]}, 50000);
+                topo = topojson.topology({districts:geo_data.cb_2020_us_state_500k[size]}, 50000);
                 merged = topojson.merge(topo, topo.objects.districts.geometries);
                 merged.properties = {GEOID:"us_national_outline"};
                 r[size].national = [merged];
@@ -274,7 +274,7 @@ module.exports = function(
               if (d.properties.invert) {
                 return;
               }
-              if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa") {
+              if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2020_us_cbsa") {
                 cbsa_click(d);
               }
             })
@@ -446,7 +446,7 @@ module.exports = function(
               return 0.5*scaling[size];
             })
             .attr("visibility", function(d) {
-              /*if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2015_us_cbsa" && m.active_cbsa) {
+              /*if (d3.select(this.parentNode).attr("class").split(" ")[1] === "tl_2020_us_cbsa" && m.active_cbsa) {
                 return "hidden";
               }*/
               if (whichLayer==="cbsa") {
@@ -597,7 +597,7 @@ module.exports = function(
                       viewbox[1]*1 + viewbox[3]*1 > bbox[1] &&
                       viewbox[0]*1 < bbox[2] &&
                       viewbox[1]*1 < bbox[3]) {
-                    if (layer==="tl_2015_us_cbsa" && size==="high") {
+                    if (layer==="tl_2020_us_cbsa" && size==="high") {
                       var clone = {};
                       $.extend(true, clone, geo_data[layer][size].features[i]);
                       clone.properties.invert = true;
@@ -630,7 +630,7 @@ module.exports = function(
               data.properties = {};
             }
             var geoid = data.properties.GEOID | data.properties.GEOID10;
-            /*if (layer==="tl_2015_us_cbsa" && size==="high") {
+            /*if (layer==="tl_2020_us_cbsa" && size==="high") {
               console.log(el);
               console.log(geoid);
               if (svg_path_data[size][geoid]) {
@@ -717,7 +717,7 @@ module.exports = function(
         .duration(0)
         .attr("viewBox", m.fullUSViewbox);
       m.removeTractsFromGeoData();
-      svg.selectAll("g.size.low g.cb_2015_us_state_500k")
+      svg.selectAll("g.size.low g.cb_2020_us_state_500k")
         .attr("opacity",0)
         .style("visibility","visible")
         .transition()
@@ -731,7 +731,7 @@ module.exports = function(
   };
 
   m.resetCBSALowRes = function() {
-    m.svg.selectAll("g.layer.tl_2015_us_cbsa path, g.layer.cb_2015_us_state_500k path")
+    m.svg.selectAll("g.layer.tl_2020_us_cbsa path, g.layer.cb_2020_us_state_500k path")
       .style("visibility","visible")
       .transition()
       .duration(100)
@@ -811,16 +811,16 @@ module.exports = function(
     m.updateDrawData();
     require("./zoom.js")(sel + " .mapwrap", m, $, d3);
     require("./drag.js")(sel + " .mapwrap", m, $, d3);
-    $(svg.node()).on("mouseover", "g.tl_2015_us_cbsa > path", function() {
+    $(svg.node()).on("mouseover", "g.tl_2020_us_cbsa > path", function() {
       hoverOver(this);
     });
-    $(svg.node()).on("mouseover", "g.tl_2015_us_cbsa > text.label", function() {
+    $(svg.node()).on("mouseover", "g.tl_2020_us_cbsa > text.label", function() {
       var geoid = $(this).attr("data-geoid");
-      var path = $(svg.node()).find("g.tl_2015_us_cbsa > path[data-geoid='" + geoid + "']");
+      var path = $(svg.node()).find("g.tl_2020_us_cbsa > path[data-geoid='" + geoid + "']");
       hoverOver(path[0]);
     });
-    $(svg.node()).on("mouseout", "g.tl_2015_us_cbsa > *", function() {
-      svg.selectAll("g.tl_2015_us_cbsa > path").each(function() {
+    $(svg.node()).on("mouseout", "g.tl_2020_us_cbsa > *", function() {
+      svg.selectAll("g.tl_2020_us_cbsa > path").each(function() {
         var path = d3.select(this);
         if (path.attr("data-orgfill")) {
           path.attr("fill", path.attr("data-orgfill"));
@@ -842,7 +842,7 @@ module.exports = function(
   };
 
   m.makeCBSADropdown = function() {
-    var data = geo_data.tl_2015_us_cbsa.low.features;
+    var data = geo_data.tl_2020_us_cbsa.low.features;
     data.sort(function(a, b) {
       return a.properties.NAME > b.properties.NAME ? 1 : -1;
     });

@@ -339,13 +339,13 @@ gulp.task("index_water",  gulp.series("ogr2ogr", function(cb) {
 
 gulp.task("download_shapefiles", function(cb) {
   var files = [
-    "https://www2.census.gov/geo/tiger/TIGER2015/CBSA/tl_2015_us_cbsa.zip",
-    "https://www2.census.gov/geo/tiger/TIGER2015/CNECTA/tl_2015_us_cnecta.zip",
-    "https://www2.census.gov/geo/tiger/TIGER2015/CSA/tl_2015_us_csa.zip",
-    "https://www2.census.gov/geo/tiger/TIGER2015/METDIV/tl_2015_us_metdiv.zip",
-    "https://www2.census.gov/geo/tiger/TIGER2015/NECTA/tl_2015_us_necta.zip",
-    "https://www2.census.gov/geo/tiger/TIGER2015/NECTADIV/tl_2015_us_nectadiv.zip",
-    "http://www2.census.gov/geo/tiger/GENZ2015/shp/cb_2015_us_state_500k.zip"
+    "https://www2.census.gov/geo/tiger/TIGER2020/CBSA/tl_2020_us_cbsa.zip",
+    "https://www2.census.gov/geo/tiger/TIGER2020/CNECTA/tl_2020_us_cnecta.zip",
+    "https://www2.census.gov/geo/tiger/TIGER2020/CSA/tl_2020_us_csa.zip",
+    "https://www2.census.gov/geo/tiger/TIGER2020/METDIV/tl_2020_us_metdiv.zip",
+    "https://www2.census.gov/geo/tiger/TIGER2020/NECTA/tl_2020_us_necta.zip",
+    "https://www2.census.gov/geo/tiger/TIGER2020/NECTADIV/tl_2020_us_nectadiv.zip",
+    "http://www2.census.gov/geo/tiger/GENZ2020/shp/cb_2020_us_state_500k.zip"
   ];
   for (var state in fips) {
     if (fips.hasOwnProperty(state)) {
@@ -382,7 +382,7 @@ gulp.task("download_shapefiles", function(cb) {
 });
 gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
   function clip_cbsa(cbsa) {
-    var states = JSON.parse(fs.readFileSync("./geojson/cb_2015_us_state_500k.json"));
+    var states = JSON.parse(fs.readFileSync("./geojson/cb_2020_us_state_500k.json"));
     var topostate = topojson.topology({districts:states});
     topostate = topojson.quantize(topostate, {
       scale:[0.00001,0.00001],
@@ -407,21 +407,21 @@ gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
     cbsa.features = r;
     return cbsa;
   }
-//  if (fs.existsSync("./filtered/tl_2015_us_cbsa.json")) {
+//  if (fs.existsSync("./filtered/tl_2020_us_cbsa.json")) {
 //    cb();
 //    return;
 //  }
   var cbsa = JSON.parse(fs.readFileSync("./tmp/cbsa_filtered_unclipped.json"));
   var clipped_cbsa = clip_cbsa(cbsa);
   //console.log(clipped_cbsa)
-  fs.writeFileSync("./filtered/tl_2015_us_cbsa.json", JSON.stringify(clipped_cbsa, null, " "));
+  fs.writeFileSync("./filtered/tl_2020_us_cbsa.json", JSON.stringify(clipped_cbsa, null, " "));
   clipped_cbsa.features.forEach((feature)=>{
     console.log(feature.properties.GEOID)
     var cbsa_file = {
       type: "FeatureCollection",
       features: [feature]
     };
-    fs.writeFileSync("./filtered/tl_2015_us_cbsa_" + feature.properties.GEOID + ".json", JSON.stringify(cbsa_file, null, " "));
+    fs.writeFileSync("./filtered/tl_2020_us_cbsa_" + feature.properties.GEOID + ".json", JSON.stringify(cbsa_file, null, " "));
   });
   cb();
 });
@@ -583,7 +583,7 @@ gulp.task("filter_geojson", gulp.series(/*"ogr2ogr","split_data", */function(cb)
   var r = {};
   var index = {};
   var tract_data = JSON.parse(fs.readFileSync("./tmp/tract_data_all.json"));
-  var cbsa_org = JSON.parse(fs.readFileSync("./geojson/tl_2015_us_cbsa.json"));
+  var cbsa_org = JSON.parse(fs.readFileSync("./geojson/tl_2020_us_cbsa.json"));
   var cbsa_names = JSON.parse(fs.readFileSync("./tmp/names.json"));
   var cbsa = {
     "type": "FeatureCollection",
@@ -598,12 +598,12 @@ gulp.task("filter_geojson", gulp.series(/*"ogr2ogr","split_data", */function(cb)
   fs.writeFileSync("./tmp/cbsa_filtered_unclipped.json", JSON.stringify(cbsa, null, " "));
 
   makeDirectory("./filtered");
-  /*if (fs.existsSync("./filtered/tl_2015_us_cbsa.json")) {
+  /*if (fs.existsSync("./filtered/tl_2020_us_cbsa.json")) {
     cb();
     return;
   }
   cbsa = clip_cbsa(cbsa);
-  fs.writeFileSync("./filtered/tl_2015_us_cbsa.json", JSON.stringify(cbsa, null, " "));*/
+  fs.writeFileSync("./filtered/tl_2020_us_cbsa.json", JSON.stringify(cbsa, null, " "));*/
   var files = fs.readdirSync("./geojson");
   files = files.filter(function(f) {
     return f.indexOf("areawater")===-1;
@@ -640,7 +640,7 @@ gulp.task("filter_geojson", gulp.series(/*"ogr2ogr","split_data", */function(cb)
       cb();
       return;
     }
-    if (f==="tl_2015_us_cbsa.json") {
+    if (f==="tl_2020_us_cbsa.json") {
       index[f.replace(".json","")] = true;
       cb();
       return;

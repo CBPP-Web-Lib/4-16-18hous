@@ -46,8 +46,8 @@ var build_resize = require("./js/resize.js");
 var build_fullscreen = require("./js/fullscreen.js");
 var build_locking = require("./js/locking.js");
 
-var cb_2015_us_state_500k = require("../topojson/low/cb_2015_us_state_500k.json");
-var tl_2015_us_cbsa = require("../topojson/low/tl_2015_us_cbsa.json");
+var cb_2020_us_state_500k = require("../topojson/low/cb_2020_us_state_500k.json");
+var tl_2020_us_cbsa = require("../topojson/low/tl_2020_us_cbsa.json");
 require("./app.scss");
 
 /*global storage/cache object for requested JSON data*/
@@ -65,8 +65,8 @@ var URL_BASE;
 var Figure = require("cbpp_figures")($);
 
 /*convert initial state and low-res cbsa shapes to geojson features and add to geo_data*/
-geo_data.cb_2015_us_state_500k = {low: topojson.feature(cb_2015_us_state_500k, cb_2015_us_state_500k.objects.districts)};
-geo_data.tl_2015_us_cbsa = {low: topojson.feature(tl_2015_us_cbsa, tl_2015_us_cbsa.objects.districts)};
+geo_data.cb_2020_us_state_500k = {low: topojson.feature(cb_2020_us_state_500k, cb_2020_us_state_500k.objects.districts)};
+geo_data.tl_2020_us_cbsa = {low: topojson.feature(tl_2020_us_cbsa, tl_2020_us_cbsa.objects.districts)};
 geo_data.water = {high: water_data};
 
 g.getFileAndSaveInMemory = function(f, handler, cb) {

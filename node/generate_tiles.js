@@ -1,13 +1,13 @@
 var axios = require("axios").default;
 var topojson = require("topojson");
-var tl_2015_us_cbsa = require("./topojson/low/tl_2015_us_cbsa.json");
-console.log(tl_2015_us_cbsa.objects.districts.geometries.length)
+var tl_2020_us_cbsa = require("./topojson/low/tl_2020_us_cbsa.json");
+console.log(tl_2020_us_cbsa.objects.districts.geometries.length)
 var fs = require("fs");
-//var geo_tl_2015_us_cbsa = topojson.feature(tl_2015_us_cbsa, tl_2015_us_cbsa.objects.districts);
-var geo_tl_2015_us_cbsa = require("./filtered/tl_2015_us_cbsa.json");
+//var geo_tl_2020_us_cbsa = topojson.feature(tl_2020_us_cbsa, tl_2020_us_cbsa.objects.districts);
+var geo_tl_2020_us_cbsa = require("./filtered/tl_2020_us_cbsa.json");
 var geojson_bbox = require("geojson-bbox");
 var feature_index = 0;
-var features = geo_tl_2015_us_cbsa.features.filter((a)=>{
+var features = geo_tl_2020_us_cbsa.features.filter((a)=>{
   //console.log(a.properties)
   return true;
   return a.properties.GEOID === '46520'
