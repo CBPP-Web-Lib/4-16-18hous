@@ -204,6 +204,7 @@ export function updateDotsLayer(visible_features) {
         var config = configs[dot[1]]
         ctx.beginPath()
         var dot_sf = Math.exp(0.07*z) - 1
+       // dot_sf = 1
         ctx.strokeStyle = config.stroke
         ctx.fillStyle = config.fill
         ctx.lineWidth = config["stroke-width"]

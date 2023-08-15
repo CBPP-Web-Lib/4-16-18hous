@@ -34,7 +34,7 @@ body, html {
         display:block;
         font-weight:bold;
       }
-      label, select {
+      label, select, .autocomplete_wrap {
         margin-left:5pt;
         margin-right:5pt;
       }
@@ -141,6 +141,8 @@ body, html {
   .tileLayer {
     position:relative;
     user-select:none;
+    pointer-events: none;
+    mix-blend-mode: multiply;
     img {
       position:absolute;
       width:256px;
@@ -279,4 +281,48 @@ body, html {
       overflow:visible;
     }
   }
+
+  .autocomplete_wrap {
+    display:inline-block;
+    position:relative;
+    width:90%;
+    max-width:300px;
+    input {
+      width:100%;
+      padding-right:15px;
+    }
+    .down-arrow-autocomplete {
+      position:absolute;
+      right:5px;
+      top:2px;
+    }
+  }
+
+  .autocomplete_options {
+    list-style-type:none;
+    margin:0;
+    padding:0px;
+    font-size:11pt;
+    max-height:70vh;
+    border:1px solid #aaa;
+    overflow-y:auto;
+    li {
+      list-style-type:none;
+      margin-left:0;
+      padding:5px;
+      padding-left:10px;
+      margin:0;
+      line-height:1;
+      text-indent:-5px;
+      cursor:pointer;
+      background-color: #fff;
+      &.selected-autocomplete {
+        background-color: #eee;
+      }
+      &:hover {
+        background-color: #eee;
+      }
+    }
+  }
+
 }

@@ -1,6 +1,7 @@
 import names from "../../../tmp/names.json"
 import { openMap } from "../voucher_map/open_map"
 import { updateLegend } from "../voucher_map/update_legend"
+import { make_autocomplete } from "./make_autocomplete"
 
 const cbsaUi = function(map)  {
   var arr = []
@@ -39,9 +40,13 @@ const cbsaUi = function(map)  {
       pickers.forEach((_picker)=>{
         if (picker !== _picker) {
           _picker.value = picker.value
+          if (_picker.hous41618_associated_autocomplete_textinput) {
+            _picker.hous41618_associated_autocomplete_textinput.value = _picker.options[_picker.selectedIndex].text
+          }
         }
       })
     })
+    make_autocomplete(picker)
   })
 }
 

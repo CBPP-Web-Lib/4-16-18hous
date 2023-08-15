@@ -1,19 +1,33 @@
 import { polygonContains } from "d3"
 
+function polygonContainsWithHoles(geometry, point) {
+  var result = false;
+  /*main polygon*/
+  if (polygonContains(geometry[0], point)) {
+    result = true;
+  }
+  /*holes*/
+  for (var i = 1, ii = geometry.length; i<ii;i++) {
+    if (polygonContains(geometry[i], point)) {
+      result = false;
+      break;
+    }
+  }
+  return result;
+}
+
 const featureContains = function(point, feature) {
   var result = false;
   if (feature.geometry) {
-    for (var i = 0, ii = feature.geometry.coordinates.length;i<ii;i++) {
-      if (feature.geometry.type==="MultiPolygon") {
-        for (var k = 0, kk = feature.geometry.coordinates[i].length;k<kk;k++) {
-          if (polygonContains(feature.geometry.coordinates[i][k], point)) {
-            result = true;
-          }
-        }
-      } else {
-        if (polygonContains(feature.geometry.coordinates[i], point)) {
+    if (feature.geometry.type==="MultiPolygon") {
+      for (var k = 0, kk = feature.geometry.coordinates.length;k<kk;k++) {
+        if (polygonContainsWithHoles(feature.geometry.coordinates[k], point)) {
           result = true;
         }
+      }
+    } else {
+      if (polygonContainsWithHoles(feature.geometry.coordinates, point)) {
+        result = true;
       }
     }
   }

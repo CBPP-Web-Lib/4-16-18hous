@@ -55,7 +55,7 @@ const dotConfig = {
     "stroke-opacity":1,
     stroke:"rgba(255, 255, 255, 0)",
     "stroke-width":0,
-    radius:2,
+    radius:1.3,
     numDots: pop_num_dots
   },
   "ethnicity_aian_dots": {fill:"#e32b1e88"},

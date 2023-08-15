@@ -24,9 +24,9 @@ const initialize = function(config) {
     return url_base
   }
   setupLightbox.call(this, dom)
-  tile_layer_create.makeElement(this)
   svg_create.makeElement(this)
   dot_canvas_create.makeElement(this)
+  tile_layer_create.makeElement(this)
   this.getSvg = svg_create.getSvg
   this.getInvertedSvg = svg_create.getInvertedSvg
   this.getCanvasContext = dot_canvas_create.getCanvasContext

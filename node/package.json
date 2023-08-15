@@ -38,7 +38,7 @@
   "devDependencies": {
     "axios": "^0.27.2",
     "css-loader": "^6.7.1",
-    "deepcopy": "^1.0.0",
+    "deepcopy": "^1.0.1",
     "gulp-decompress": "^2.0.2",
     "martinez-polygon-clipping": "^0.4.3",
     "node-phpcgi": "^0.3.7",

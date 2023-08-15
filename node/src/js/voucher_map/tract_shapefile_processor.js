@@ -1,5 +1,7 @@
 import { feature, merge } from "topojson"
+import { removeHoles } from "./remove_holes"
 import geojson_bbox from "geojson-bbox"
+import * as deepcopy from 'deepcopy/index.js' 
 
 const processTractShapefiles = function(data) {
   return new Promise((resolve)=>{
@@ -10,7 +12,8 @@ const processTractShapefiles = function(data) {
     })
 
     var merged = merge(data, data.objects.districts.geometries)
-    var inverted_merged = JSON.parse(JSON.stringify(merged));
+    merged = removeHoles(merged)
+    var inverted_merged = deepcopy(merged)
     inverted_merged.coordinates[0].forEach((ring, i)=>{
       inverted_merged.coordinates[0][i].reverse()
     })

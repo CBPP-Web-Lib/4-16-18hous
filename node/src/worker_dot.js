@@ -39,6 +39,7 @@ function handle_feature(args) {
         in_water = true;
       }
     })
+    //in_water = false
     if (featureContains(dot, feature) && !in_water) {
       these_dots.push(dot)
       dots_made = these_dots.length
