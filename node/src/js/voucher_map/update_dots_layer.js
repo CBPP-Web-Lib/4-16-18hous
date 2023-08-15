@@ -1,7 +1,9 @@
 import { dotConfig } from "./dot_config"
 import { bbox_overlap } from "./bbox_overlap"
 import { shuffle } from "./shuffle_array"
-import high_density_cbsa from "../high_density_cbsa";
+import seedrandom from "seedrandom"
+import high_density_cbsa from "../high_density_cbsa"
+import hexRgb from 'hex-rgb'
 const dot_data_layer = {}
 
 function load_dot_config(name) {
@@ -116,7 +118,8 @@ export function updateDotsLayer(visible_features) {
               feature_piles[worker_slot].push({
                 feature,
                 name, 
-                dot_represents, 
+                dot_represents,
+                layer_id,
                 these_dots: layer_data.tracts[geoid].dots 
               })
               worker_slot++
@@ -141,10 +144,11 @@ export function updateDotsLayer(visible_features) {
           })
           pile = null
           map.dotWorkers[i].dotLocationCallback = (data)=>{
-            Object.keys(data).forEach((geoid)=>{
-              var layer_id = [data[geoid].name, data[geoid].dot_represents].join("_")
-              var layer_data = dot_data_layer[layer_id]
-              layer_data.tracts[geoid].dots = data[geoid].dots
+            Object.keys(data).forEach((layer_id)=>{
+              Object.keys(data[layer_id]).forEach((geoid)=>{
+                var layer_data = dot_data_layer[layer_id]
+                layer_data.tracts[geoid].dots = data[layer_id][geoid].dots
+              })
             })
             resolve()
           }
@@ -195,23 +199,35 @@ export function updateDotsLayer(visible_features) {
         })
       })
       
-      var draw_dot = (dot) => {
+      var draw_dot = (dot, z) => {
         var coords = projection(dot[0])
         var config = configs[dot[1]]
         ctx.beginPath()
+        var dot_sf = Math.exp(0.07*z) - 1
         ctx.strokeStyle = config.stroke
         ctx.fillStyle = config.fill
         ctx.lineWidth = config["stroke-width"]
-        ctx.arc(coords[0]*2, coords[1]*2, config.radius*2, 0, 2 * Math.PI)
+        ctx.arc(coords[0]*2, coords[1]*2, config.radius*2*dot_sf, 0, 2 * Math.PI)
         ctx.fill()
         if (ctx.lineWidth > 0) {
           ctx.stroke()
         }
       }
+
+      /*want the order to be more or less random but also not change, so seed a
+      weight based on dot position*/
+      ethnicity_dots.forEach((dot)=>{
+        var rng = new seedrandom(dot[0] + dot[1])
+        dot.weight = rng()
+      });
+      ethnicity_dots.sort((a, b)=>{
+        return a.weigth - b.weight
+      })
+
       /*to do - adapt this to use seeded rng so the dots don't change order when moving the map*/
-      ethnicity_dots = shuffle(ethnicity_dots, [z, cbsa].join("-"))
-      ethnicity_dots.forEach(draw_dot)
-      voucher_dots.forEach(draw_dot)
+      //ethnicity_dots = shuffle(ethnicity_dots, [z, cbsa].join("-"))
+      ethnicity_dots.forEach((dot)=>{draw_dot(dot, z)})
+      voucher_dots.forEach((dot)=>{draw_dot(dot, z)})
       resolve()
 
     })

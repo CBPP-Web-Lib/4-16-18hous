@@ -6,7 +6,7 @@ import { bbox_overlap } from "./js/voucher_map/bbox_overlap"
 var projection, water
 
 function handle_feature(args) {
-  var { feature, name, dot_represents, these_dots } = args
+  var { feature, name, dot_represents, layer_id, these_dots } = args
   var geoid = feature.properties.GEOID10
   var bbox = feature.bbox
   var width = bbox[2] - bbox[0]
@@ -15,8 +15,11 @@ function handle_feature(args) {
   var dots_made = these_dots.length
   var attempt = 0
   var total_attempts = 0
-  while (dots_made < num_dots && total_attempts < num_dots*5) {
+  while (dots_made < num_dots && total_attempts < num_dots*20) {
     total_attempts++
+    if (total_attempts >= num_dots*20) {
+      console.log("Warning: aborted dot draw after too many failed attempts")
+    }
     var seed = [geoid, name, dot_represents, dots_made, attempt].join("")
     attempt++;
     var rng = new seedrandom(seed)
@@ -42,7 +45,7 @@ function handle_feature(args) {
       attempt = 0
     }
   }
-  these_dots = these_dots.slice(0, num_dots)
+  //these_dots = these_dots.slice(0, num_dots)
   return these_dots
 }
 
@@ -57,9 +60,12 @@ onmessage = (e) => {
     let results = {}
     features.forEach((feature, i)=>{
       let dots = handle_feature(feature)
-      results[feature.feature.properties.GEOID10] = { 
+      var { layer_id } = feature
+      results[layer_id] = results[layer_id] || {}
+      results[layer_id][feature.feature.properties.GEOID10] = { 
         dots: dots, 
-        name: feature.name, 
+        name: feature.name,
+        layer_id: feature.layer_id,
         dot_represents: feature.dot_represents 
       }
       //feature.feature.geometry = null
