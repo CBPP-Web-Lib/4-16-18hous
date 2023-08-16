@@ -345,11 +345,13 @@ gulp.task("download_shapefiles", function(cb) {
     "https://www2.census.gov/geo/tiger/TIGER2020/METDIV/tl_2020_us_metdiv.zip",
     "https://www2.census.gov/geo/tiger/TIGER2020/NECTA/tl_2020_us_necta.zip",
     "https://www2.census.gov/geo/tiger/TIGER2020/NECTADIV/tl_2020_us_nectadiv.zip",
-    "http://www2.census.gov/geo/tiger/GENZ2020/shp/cb_2020_us_state_500k.zip"
+    "http://www2.census.gov/geo/tiger/GENZ2020/shp/cb_2020_us_state_500k.zip",
+    "https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_populated_places.zip"
   ];
   for (var state in fips) {
     if (fips.hasOwnProperty(state)) {
       files.push("https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/tl_2010_" + zeroPad(state) + "_tract10.zip");
+      files.push("https://www2.census.gov/geo/tiger/TIGER2020/PLACE/tl_2020_" + zeroPad(state) + "_place.zip");
     }
   }
   var waterfiles = fs.readFileSync("./src/water_files.csv","utf-8");
@@ -426,6 +428,20 @@ gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
   cb();
 });
 
+gulp.task("consolidate_place_names", function(cb) {
+  var files = fs.readdirSync("./geojson/").filter(function(a) {
+    return a.indexOf("_place.json")!==-1;
+  })
+  var combined = [];
+  files.forEach((file)=>{
+    var places = JSON.parse(fs.readFileSync("./geojson/" + file, "utf-8"));
+    places.features.forEach((place)=>{
+      combined.push(place.properties);
+    })
+  })
+  fs.writeFileSync("./tmp/places.json", JSON.stringify(combined));
+})
+
 gulp.task("tract_csv_parse", function(cb) {
   var files = fs.readdirSync("./src/csv");
   var csvs = [];
@@ -457,12 +473,20 @@ gulp.task("merge_csv", function(cb) {
     return f.indexOf("_2023.json") !== -1;
   });
 
-  var other_data_layers = ["tract_ethnicity","tract_poverty"];
+  var other_data_layers = ["tract_ethnicity","tract_poverty", "tract_safmr"];
 
   var postprocess = {
     "tract_ethnicity" : function(row) {
       row.data.ethnicity_nonwhite = row.data.ethnicity_tot_pop - row.data.ethnicity_white;
       row.data.ethnicity_nonwhite_percentage = row.data.ethnicity_nonwhite / row.data.ethnicity_tot_pop;
+      return row;
+    },
+    "tract_safmr" : function(row) {
+      var hcv_total = 0;
+      if (row.data.hcv_total) {
+        hcv_total = row.data.hcv_total[12]*12
+      }
+      row.data.safmr_unused = Math.max(0, row.data.safmr_tot_safmr_vau - hcv_total)
       return row;
     }
   }

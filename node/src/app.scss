@@ -18,8 +18,10 @@ body, html {
       text-decoration: underline;
     }
   }
-  .picker-race-ethnicity > ul {
+  .picker-race-ethnicity {
     display:none;
+  }
+  .picker-race-ethnicity > ul {
     &.do-not-hide-picker {
       display:block;
     }
@@ -42,6 +44,16 @@ body, html {
         max-width:150px;
         & > option {
           max-width:100px;
+        }
+      }
+      .safmr_config {
+        label, input[type='checkbox'] {
+          display:inline-block;
+        }
+        input[type='checkbox'] {
+          margin-left:0;
+          position:relative;
+          top:2px;
         }
       }
       ul[name='additional-dot-layers-checkboxes'] {
@@ -236,7 +248,7 @@ body, html {
       width:12px;
       height:12px;
       display:inline-block;
-      background-color: rgba(102, 0, 0, 0.5);
+      background-color: rgba(111, 66, 245, 0.8);
       border-radius:50%;
       border: 2px solid rgba(255, 255, 255, 0.8);
     }

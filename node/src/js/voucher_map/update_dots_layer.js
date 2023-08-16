@@ -207,7 +207,7 @@ export function updateDotsLayer(visible_features) {
        // dot_sf = 1
         ctx.strokeStyle = config.stroke
         ctx.fillStyle = config.fill
-        ctx.lineWidth = config["stroke-width"]
+        ctx.lineWidth = config["stroke-width"]*dot_sf
         ctx.arc(coords[0]*2, coords[1]*2, config.radius*2*dot_sf, 0, 2 * Math.PI)
         ctx.fill()
         if (ctx.lineWidth > 0) {
@@ -218,11 +218,22 @@ export function updateDotsLayer(visible_features) {
       /*want the order to be more or less random but also not change, so seed a
       weight based on dot position*/
       ethnicity_dots.forEach((dot)=>{
-        var rng = new seedrandom(dot[0] + dot[1])
-        dot.weight = rng()
+        var rng = new seedrandom(dot[0][0] + dot[0][1])
+        dot[2] = rng()
       });
       ethnicity_dots.sort((a, b)=>{
-        return a.weigth - b.weight
+        return a[2] - b[2]
+      })
+      voucher_dots.forEach((dot)=>{
+        var rng = new seedrandom(dot[0][0] + dot[0][1])
+        dot[2] = rng()
+        if (dot[1].indexOf("safmr")!==-1) {
+          dot[2] -= 10
+        }
+      })
+      
+      voucher_dots.sort((a, b)=>{
+        return a[2] - b[2]
       })
 
       /*to do - adapt this to use seeded rng so the dots don't change order when moving the map*/

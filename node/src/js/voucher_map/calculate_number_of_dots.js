@@ -1,5 +1,9 @@
 import { shuffle } from "./shuffle_array"
 import { data_keys} from "./ethnicity_data_keys"
+const extra_keys = [
+  "safmr_tot_safmr_vau",
+  "safmr_unused"
+]
 
 const dot_sizes = [
   10000,
@@ -15,7 +19,9 @@ const dot_sizes = [
 ];
 
 const calculateNumberOfDots = function(features, cbsa) {
-  Object.keys(data_keys).forEach((key)=>{
+  var the_keys = Object.keys(data_keys).concat(extra_keys)
+  the_keys.forEach((key)=>{
+    console.log(key)
     dot_sizes.forEach((dot_size)=>{
       var _features = Array.from(features);
       get_dots_for_data_key_and_size(_features, key, dot_size, cbsa)

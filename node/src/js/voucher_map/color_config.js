@@ -5,19 +5,29 @@ const colorConfig = {
     customBins: [0,5,10,15,20,25,30,35,40,100.01],
     f: d=>d+"%",
     colors: (function() {
-      var secRange = colorgen("#9dbed4","#edaf42", 5);
+      var secRange = colorgen("#b1e3cf","#009632", 5);
       secRange.shift();
-      return colorgen("#f9fbff", "#9dbed4", 5).concat(secRange);
+      //return colorgen("#e6f5f0", "#b1e3cf", 5).concat(secRange);
+      return colorgen("#e6f5f5", "#4a8270", 9)
     })()
   },
   "ethnicity_nonwhite_percentage" : {
     f: d=>Math.round(d*100)+"%",
-    colors: colorgen("#d7cabd","#a3876a",4).concat(colorgen("#b2b2f8","#6a6aa3",4))
+    colors: (()=>{
+      var r1 = colorgen("#d7cabd","#a3876a",4)
+      var r2 = colorgen("#a3876a","#f2c0fc",5)
+      r2.shift()
+      return r1.concat(r2)
+    })()
   },
   "none": {
     customBins: [0, 1],
     colors: ["rgba(0, 0, 0, 0)"]
   }
 }
+
+
+console.log(colorgen("#d7cabd","#a3876a",4))
+console.log(colorgen("#a3876a","#58a1e8",5).shift())
 
 export { colorConfig }

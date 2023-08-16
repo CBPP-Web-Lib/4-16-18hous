@@ -9,18 +9,24 @@
     <select name="tract-dataset">
       <option value="poverty_pov_pct">Poverty Rate</option>
       <option value="ethnicity_nonwhite_percentage">Percentage People of Color</option>
-      <option value="none">None</option>
+      <option value="none">Racial density</option>
     </select>
+  </div>
+  <div class='picker-wrapper picker-race-ethnicity'>
+    <label>Race/ethnicity layers:</label>
+    <ul name="additional-dot-layers-checkboxes">
+    </ul>
   </div>
   <div class='picker-wrapper'>
     <label>Voucher Layer:</label>
     <select name="dots-dataset">
     </select>
   </div>
-  <div class='picker-wrapper picker-race-ethnicity'>
-    <label class='race-ethnicity-click'>Race/ethnicity layers:</label>
-    <ul name="additional-dot-layers-checkboxes">
-    </ul>
+  <div class='picker-wrapper'>
+    <div class="safmr_config">
+      <label>Show voucher-affordable units</label>
+      <input type="checkbox" name="safmr" />
+    </div>
   </div>
 </div>
 <div class="map-viewport-outer">

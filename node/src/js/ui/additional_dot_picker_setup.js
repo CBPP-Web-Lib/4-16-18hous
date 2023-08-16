@@ -38,9 +38,9 @@ const makeAdditionalDotsPickerOptions = function(picker) {
     wrap.append(label)
     picker.appendChild(wrap)
   })
-  document.querySelectorAll("#" + this.getId() + " .race-ethnicity-click")[0].addEventListener("click", function() {
+  /*document.querySelectorAll("#" + this.getId() + " .race-ethnicity-click")[0].addEventListener("click", function() {
     picker.classList.toggle("do-not-hide-picker")
-  })
+  })*/
 }
 
 export { makeAdditionalDotsPickerOptions, makeDotPickerOptions }
