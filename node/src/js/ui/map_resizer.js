@@ -10,6 +10,9 @@ const mapResizer = function() {
     map.getInvertedSvg().attr("viewBox", [
       0, 0, map.getViewportWidth(), map.getViewportHeight()
     ].join(" "))
+    map.getTextSvg().attr("viewBox", [
+      0, 0, map.getViewportWidth(), map.getViewportHeight()
+    ].join(" "))
     console.log("resize")
     if (map.isZooming()) {
       console.log("is zooming")

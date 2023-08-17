@@ -7,7 +7,7 @@ $x = $_GET["x"]*1;
 $y = $_GET["y"]*1;
 $r = $_GET["r"]*1;
 $allow_dynamic = isset($_GET["dynamic"]);
-$allow_dynamic = true;
+//$allow_dynamic = true;
 $allow_save = isset($_GET["allow_save"]);
 $ext = ($r==2) ? ".png?scale=3&metatile=4" : ".png?scale=1.5&metatile=4";
 $size = pow(2, $z);
@@ -55,7 +55,7 @@ try {
   if (
    $valid_referer || $is_cgi
   ) {
-    if (((!file_exists($filename) && $allow_dynamic || true))) {
+    if (((!file_exists($filename) && $allow_dynamic))) {
       if ($r==2) {
         $mh = curl_multi_init();
         $urls = array(
@@ -111,7 +111,7 @@ try {
     }
     //echo $raw;
    // die();
-    if (file_exists($filename) && false) {
+    if (file_exists($filename)) {
       header('Access-Control-Allow-Origin: '.$origin);
       header('Cache-Control: max-age=86400');
       header('Vary: Access-Control-Allow-Origin');
