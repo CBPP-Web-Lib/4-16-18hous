@@ -10,7 +10,7 @@ import { updateLegend } from "./update_legend"
 
 const CBSAManager = function(app) {
 
-  var tractShapefiles, tractBins, waterShapes, _cbsa
+  var tractShapefiles, tractBins, waterShapes, _cbsa, places
 
   this.loadCBSA = function(cbsa) {
     _cbsa = cbsa
@@ -46,6 +46,7 @@ const CBSAManager = function(app) {
       }),
       new Promise((resolve)=>{
         downloadPlaceNames("data/place_names/places_" + cbsa + ".json").then((d)=>{
+          places = d
           resolve(d)
         })
       })
@@ -74,6 +75,10 @@ const CBSAManager = function(app) {
         })*/
       })
     })
+  }
+
+  this.getPlaces = () => {
+    return places;
   }
 
   this.getLoadedCbsa = () => {

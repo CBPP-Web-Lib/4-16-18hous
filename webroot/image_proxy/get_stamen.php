@@ -55,7 +55,7 @@ try {
   if (
    $valid_referer || $is_cgi
   ) {
-    if (((!file_exists($filename) && $allow_dynamic))) {
+    if (((!file_exists($filename) && $allow_dynamic || true))) {
       if ($r==2) {
         $mh = curl_multi_init();
         $urls = array(
@@ -111,7 +111,7 @@ try {
     }
     //echo $raw;
    // die();
-    if (file_exists($filename)) {
+    if (file_exists($filename) && false) {
       header('Access-Control-Allow-Origin: '.$origin);
       header('Cache-Control: max-age=86400');
       header('Vary: Access-Control-Allow-Origin');

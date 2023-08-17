@@ -138,7 +138,7 @@ body, html {
         top:0;
         left:0;
         &.main-svg {mix-blend-mode: multiply;}
-        &.inverted-svg {pointer-events: none;}
+        &.inverted-svg, &.text-svg {pointer-events: none;}
       }
       & > canvas {
         position:absolute;
@@ -149,6 +149,56 @@ body, html {
         pointer-events:none;
       }
     } 
+  }
+  svg.text-svg {
+    font-family:"proxima-nova-condensed",sans-serif;
+    .text-stroke{ 
+      stroke:rgba(255, 255, 255, 0.8);
+      stroke-width:5px;
+    }
+    .text-fill { fill:#000;}
+    text {
+      text-anchor:middle;
+      dominant-baseline:middle;
+    }
+    g.hide-place {
+      display:none;
+    }
+    g.place.country {
+
+    }
+    g.place.state {
+      text-transform: uppercase;
+      font-style:italic;
+      font-size:14pt;
+    }
+    g.place.city {
+      font-size:14pt;
+    }
+    g.place.town {
+      font-size:12pt;
+    }
+    g.place.village {
+      font-size:10pt;
+    }
+    g.place.hamlet {
+      font-size:9pt;
+    }
+    g.place.suburb {
+      font-size:12pt;
+      fill:#555;
+      text-transform: uppercase;
+    }
+    g.place.neighbourhood {
+      font-size:10pt;
+      fill:#555;
+      text-transform: uppercase;
+    }
+    g.place.locality {
+      font-size:8pt;
+      fill:#555;
+      text-transform: uppercase;
+    }
   }
   .tileLayer {
     position:relative;

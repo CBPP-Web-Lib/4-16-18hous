@@ -1,6 +1,6 @@
 import { select } from "d3"
 
-var svg, inverted_svg;
+var svg, inverted_svg, text_svg;
 
 function makeElement(map) {
   svg = select("#" + map.getId() + " .map-viewport").append("svg")
@@ -27,6 +27,16 @@ function makeElement(map) {
   inverted_svg.attr("preserveAspectRatio", "xMinYMin")
   inverted_svg.append("g")
     .attr("class","shapeLayer");
+  text_svg = select("#" + map.getId() + " .map-viewport").append("svg")
+    .attr("class","text-svg")
+  text_svg.attr("viewBox", initial_viewport)
+  text_svg.attr("preserveAspectRatio", "xMinYMin");
+  text_svg.append("g")
+    .attr("class","shapeLayer");
+}
+
+function getTextSvg() {
+  return text_svg
 }
 
 function getInvertedSvg() {
@@ -40,5 +50,6 @@ function getSvg() {
 export {
   makeElement,
   getSvg,
-  getInvertedSvg
+  getInvertedSvg,
+  getTextSvg
 }

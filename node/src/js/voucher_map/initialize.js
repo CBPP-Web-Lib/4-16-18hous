@@ -28,8 +28,10 @@ const initialize = function(config) {
   dot_canvas_create.makeElement(this)
   tile_layer_create.makeElement(this)
   svg_create.getInvertedSvg().raise()
+  svg_create.getTextSvg().raise()
   this.getSvg = svg_create.getSvg
   this.getInvertedSvg = svg_create.getInvertedSvg
+  this.getTextSvg = svg_create.getTextSvg
   this.getCanvasContext = dot_canvas_create.getCanvasContext
   this.getCanvas = dot_canvas_create.getCanvas
   this.getTileLayer = tile_layer_create.getTileLayer
