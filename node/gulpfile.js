@@ -158,6 +158,7 @@ var makeDirectory = function(dir) {
 
 /*newer turf seems to have problems with intersects and multipolygons so need old as well*/
 var turf = require("turf");
+const inside = require("point-in-polygon");
 //var truncate = require("@turf/truncate").default;
 //var clip_poly = polygon_clip_lib.martinez;
 function zeroPad(fips) {
@@ -428,19 +429,60 @@ gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
   cb();
 });
 
-gulp.task("consolidate_place_names", function(cb) {
-  var files = fs.readdirSync("./geojson/").filter(function(a) {
-    return a.indexOf("_place.json")!==-1;
-  })
-  var combined = [];
-  files.forEach((file)=>{
-    var places = JSON.parse(fs.readFileSync("./geojson/" + file, "utf-8"));
-    places.features.forEach((place)=>{
-      combined.push(place.properties);
+gulp.task("process_places", function(cb) {
+  var src = fs.readFileSync("./src/place_names.csv", "utf-8");
+  csv_parse(src, function(err, d) {
+    d.shift();
+    var r = [];
+    d.forEach((row)=>{
+      var coords = row[0];
+      coords = coords.replace("POINT(","");
+      coords = coords.replace(")","");
+      coords = coords.split(" ");
+      var x = coords[0];
+      var y = coords[1];
+      var new_row = [];
+      new_row = row;
+      new_row[0] = esg3857_to_lat_long(x, y);
+      new_row.splice(3, 1);
+      if (isNaN(r[3]*1)) {
+        r[3] = r[3]*1;
+      }
+      r.push(new_row);
+    });
+    r = r.filter((a)=>{
+      if (isNaN(a[3]*1)) {
+        return false;
+      }
+      return true;
+    });
+    r.sort((b, a)=>{
+      pop_a = a[3]*1;
+      pop_b = b[3]*1;
+      return pop_a - pop_b;
     })
-  })
-  fs.writeFileSync("./tmp/places.json", JSON.stringify(combined));
-})
+    fs.writeFileSync("./tmp/place_names.json", JSON.stringify(r, null, " "));
+    cb();
+  });
+
+  function esg3857_to_lat_long(long3857, lat3857) {
+    const X = 20037508.34;
+       
+    //converting the longitute from epsg 3857 to 4326
+    const long4326 = (long3857*180)/X;
+    
+    //converting the latitude from epsg 3857 to 4326 split in multiple lines for readability        
+    let lat4326 = lat3857/(X / 180);
+    const exponent = (Math.PI / 180) * lat4326;
+    
+    lat4326 = Math.atan(Math.pow(Math.E, exponent));
+    lat4326 = lat4326 / (Math.PI / 360); // Here is the fixed line
+    lat4326 = lat4326 - 90;
+
+    return [long4326, lat4326]
+  }
+
+});
 
 gulp.task("tract_csv_parse", function(cb) {
   var files = fs.readdirSync("./src/csv");
@@ -748,6 +790,28 @@ gulp.task("topojson", gulp.series(/*"topojson_dir","filter_geojson","buildDirect
   }
 }));
 
+gulp.task("split_place_names_cbsa", function(cb) {
+  makeDirectory("./webroot/data/place_names/");
+  var topo = fs.readdirSync("./webroot/topojson/high");
+  var places = JSON.parse(fs.readFileSync("./tmp/place_names.json", "utf-8"));
+  topo.forEach((file)=>{
+    if (file.indexOf("tl_2010_tract_","")===-1) {return;}
+    var data = JSON.parse(pako.inflate(fs.readFileSync("./webroot/topojson/high/" + file),{to:"string"}));
+    var bbox = data.bbox;
+    var these_places = places.filter((a)=>{
+      var inside_box = true;
+      if (a[0][0] < bbox[0]) {inside_box = false;}
+      if (a[0][0] > bbox[2]) {inside_box = false;}
+      if (a[0][1] < bbox[1]) {inside_box = false;}
+      if (a[0][1] > bbox[3]) {inside_box = false;}
+      return inside_box;
+    });
+    var dest_name = file.replace("tl_2010_tract_","");
+    dest_name = dest_name.replace(".bin",".json");
+    fs.writeFileSync("./webroot/data/place_names/places_" + dest_name, JSON.stringify(these_places), "utf-8");
+  });
+  cb();
+})
 
 gulp.task("minorityconc", gulp.series("split_data", function(cb) {
   var data = require("./tmp/minority_threshold.json");

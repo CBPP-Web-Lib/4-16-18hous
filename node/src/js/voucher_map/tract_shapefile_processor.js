@@ -5,6 +5,7 @@ import * as deepcopy from 'deepcopy/index.js'
 
 const processTractShapefiles = function(data) {
   return new Promise((resolve)=>{
+    console.log(data);
     var geojson = feature(data, data.objects.districts)
 
     geojson.features.forEach((tract)=>{

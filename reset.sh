@@ -1,0 +1,12 @@
+rm -rf webroot/data
+rm -rf webroot/topojson
+rm -rf webroot/water
+rm -rf node/dev/*
+rm -rf node/prod/*
+rm -rf node/filtered
+rm -rf node/geojson
+rm -rf node/shp
+rm -rf node/tmp
+rm -rf node/topojson
+rm -rf node/water_simple
+rm -rf node/download

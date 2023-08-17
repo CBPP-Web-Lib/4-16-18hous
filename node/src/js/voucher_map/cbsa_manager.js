@@ -2,6 +2,7 @@ import { downloadTractShapefiles } from "../shapefile_downloader"
 import { downloadTractData, downloadTractBins } from "../tract_data_downloader"
 import { processTractShapefiles } from "./tract_shapefile_processor"
 import { downloadWaterFiles, processWaterFiles } from "./handle_water_files"
+import { downloadPlaceNames } from "../download_place_names"
 import waterIndex from "../../../tmp/waterIndex.json"
 import { cbsaUi } from "../ui/cbsa_ui"
 import { calculateNumberOfDots } from "./calculate_number_of_dots"
@@ -18,6 +19,7 @@ const CBSAManager = function(app) {
         downloadTractShapefiles("topojson/high/tl_2010_tract_" + cbsa + ".bin")
           .then(processTractShapefiles)
           .then((d)=>{
+            console.log(d);
             tractShapefiles = d
             resolve(d)
           })
@@ -42,6 +44,11 @@ const CBSAManager = function(app) {
             resolve()
           })
       }),
+      new Promise((resolve)=>{
+        downloadPlaceNames("data/place_names/places_" + cbsa + ".json").then((d)=>{
+          resolve(d)
+        })
+      })
     ]).then(function(d) {
       return new Promise((resolve)=>{
         var geoData = d[0]
