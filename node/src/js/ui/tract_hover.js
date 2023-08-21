@@ -65,6 +65,7 @@ const tractHover = function() {
         top:  (e.clientY - boundingRect.y),
       }
       var box_width = boundingRect.width * 0.3
+      box_width = Math.min(box_width, 300)
       tooltip.querySelectorAll(".tooltip-inner")[0].style.width = box_width + "px"
       
       var percent_right = el_pos.left / boundingRect.width
