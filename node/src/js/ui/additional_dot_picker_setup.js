@@ -26,7 +26,7 @@ const makeAdditionalDotsPickerOptions = function(picker) {
     var config = dotConfig[key + "_dots"]
     var legend_box = document.createElement("div")
     legend_box.className = "ethnicity-legend-box"
-    legend_box.style.backgroundColor = config.fill
+    legend_box.style.backgroundColor = nontransparent(config.fill)
     label.textContent = data_keys[key]
     var option = document.createElement("input");
     option.type="checkbox"
@@ -41,6 +41,10 @@ const makeAdditionalDotsPickerOptions = function(picker) {
   /*document.querySelectorAll("#" + this.getId() + " .race-ethnicity-click")[0].addEventListener("click", function() {
     picker.classList.toggle("do-not-hide-picker")
   })*/
+}
+
+function nontransparent(color) {
+  return color.substr(0, 7)
 }
 
 export { makeAdditionalDotsPickerOptions, makeDotPickerOptions }

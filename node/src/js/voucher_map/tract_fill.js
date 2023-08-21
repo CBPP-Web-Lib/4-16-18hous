@@ -19,7 +19,7 @@ const tractFill = function(data) {
     }
   })
   if (typeof(fill)==="undefined") {
-    return "none"
+    return "transparent"
   }
   return fill
 }

@@ -11,6 +11,8 @@ var turf_area = require("@turf/area").default;
 var csv_parse = require("csv-parse");
 const createCsvStringifier = require('csv-writer').createArrayCsvStringifier;
 var seedrandom = require("seedrandom");
+var d3 = require("d3")
+
 const {
   Worker,
   isMainThread,
@@ -794,9 +796,28 @@ gulp.task("split_place_names_cbsa", function(cb) {
   makeDirectory("./webroot/data/place_names/");
   var topo = fs.readdirSync("./webroot/topojson/high");
   var places = JSON.parse(fs.readFileSync("./tmp/place_names.json", "utf-8"));
+  const featureContains = function(point, feature) {
+    var result = false;
+    if (feature.geometry) {
+      if (feature.geometry.type==="MultiPolygon") {
+        for (var k = 0, kk = feature.geometry.coordinates.length;k<kk;k++) {
+          if (d3.polygonContains(feature.geometry.coordinates[k][0], point)) {
+            result = true;
+          }
+        }
+      } else {
+        if (d3.polygonContains(feature.geometry.coordinates[0], point)) {
+          result = true;
+        }
+      }
+    }
+    return result
+  }
+  
   topo.forEach((file)=>{
     if (file.indexOf("tl_2010_tract_","")===-1) {return;}
     var data = JSON.parse(pako.inflate(fs.readFileSync("./webroot/topojson/high/" + file),{to:"string"}));
+    var merged = {type:"feature", geometry: topojson.merge(data, data.objects.districts.geometries)}
     var bbox = data.bbox;
     var these_places = places.filter((a)=>{
       var inside_box = true;
@@ -804,7 +825,14 @@ gulp.task("split_place_names_cbsa", function(cb) {
       if (a[0][0] > bbox[2]) {inside_box = false;}
       if (a[0][1] < bbox[1]) {inside_box = false;}
       if (a[0][1] > bbox[3]) {inside_box = false;}
-      return inside_box;
+
+      if (inside_box) {
+        if (featureContains(a[0], merged)) {
+          return true
+        }
+      }
+
+      return false
     });
     var dest_name = file.replace("tl_2010_tract_","");
     dest_name = dest_name.replace(".bin",".json");

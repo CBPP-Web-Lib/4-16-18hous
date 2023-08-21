@@ -19,7 +19,6 @@ const CBSAManager = function(app) {
         downloadTractShapefiles("topojson/high/tl_2010_tract_" + cbsa + ".bin")
           .then(processTractShapefiles)
           .then((d)=>{
-            console.log(d);
             tractShapefiles = d
             resolve(d)
           })

@@ -26,7 +26,6 @@ const cbsaUi = function(map)  {
     })
     picker.addEventListener("change", ()=>{
       var cbsa = picker.value
-      console.log(cbsa)
       if (picker.classList.contains("opener")) {
         openMap(map, picker.value)
       } else {

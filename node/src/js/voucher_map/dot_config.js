@@ -35,7 +35,29 @@ const pop_num_dots = function(z) {
   }[z]
 }
 
-const voucher_dot_config = (name)=>{
+function get_name(code) {
+  code = code.split("_")
+  var program = code[0]
+  code.shift()
+  var household = code.join("_")
+  return (
+    {
+      "total": "families using ",
+      "children": "families with children using ",
+      "children_poc": "families of color with children using ",
+      "disability": "families with a member with a disability using ",
+    }[household] + {
+      "hcv": "housing vouchers",
+      "pbra": "project-based rental assistance",
+      "ph": "public housing"
+    }[program]
+  )
+}
+
+const voucher_dot_config = (code)=>{
+
+  var name = get_name(code)
+
   return {
     //fill: "#39178f",
     fill: "rgba(111, 66, 245, 0.8)",
@@ -78,9 +100,6 @@ const dotConfig = {
   "ethnicity_other_dots": {fill:"#3f3f3f88"},
   "ethnicity_tot_pop_dots": {fill:"#2228"},
   "ethnicity_white_dots": {fill:"#99b9d688"},
-  "hcv_total": voucher_dot_config("Families with voucher"),
-  "hcv_children": voucher_dot_config("Families with children, with voucher"),
-  "hcv_children_poc": voucher_dot_config("Families of color, with children, with voucher"),
   "safmr_tot_safmr_vau_dots": {
     fill: "rgba(111, 66, 245, 0.2)",
     "stroke-opacity": 0.8,
@@ -92,5 +111,14 @@ const dotConfig = {
     type: "safmr_dots"
   }
 }
+
+var programs = ["hcv", "ph", "pbra"];
+var household_types = ["total", "children", "children_poc", "disability"];
+programs.forEach((program) => {
+  household_types.forEach((household_type) => {
+    var layer_name = [program, household_type].join("_")
+    dotConfig[layer_name] = voucher_dot_config(layer_name)
+  })
+})
 
 export { dotConfig }

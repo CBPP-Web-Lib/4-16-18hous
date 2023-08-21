@@ -26,8 +26,4 @@ const colorConfig = {
   }
 }
 
-
-console.log(colorgen("#d7cabd","#a3876a",4))
-console.log(colorgen("#a3876a","#58a1e8",5).shift())
-
 export { colorConfig }

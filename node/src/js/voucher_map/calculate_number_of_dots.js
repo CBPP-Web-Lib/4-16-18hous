@@ -21,7 +21,6 @@ const dot_sizes = [
 const calculateNumberOfDots = function(features, cbsa) {
   var the_keys = Object.keys(data_keys).concat(extra_keys)
   the_keys.forEach((key)=>{
-    console.log(key)
     dot_sizes.forEach((dot_size)=>{
       var _features = Array.from(features);
       get_dots_for_data_key_and_size(_features, key, dot_size, cbsa)

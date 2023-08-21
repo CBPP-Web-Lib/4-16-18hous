@@ -38,7 +38,6 @@ var updatePlacesLayer = function() {
   to_draw.sort((a, b)=>{
     return b.weight - a.weight
   })
-  console.log(to_draw)
   //to_draw = filter_collision(to_draw, 50)
   //console.log(to_draw);
   var place_sel = layer.selectAll("g.place")

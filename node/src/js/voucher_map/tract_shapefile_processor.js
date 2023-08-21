@@ -4,10 +4,8 @@ import geojson_bbox from "geojson-bbox"
 import * as deepcopy from 'deepcopy/index.js' 
 
 const processTractShapefiles = function(data) {
-  return new Promise((resolve)=>{
-    console.log(data);
+  return new Promise((resolve) => {
     var geojson = feature(data, data.objects.districts)
-
     geojson.features.forEach((tract)=>{
       tract.bbox =  geojson_bbox(tract)
     })

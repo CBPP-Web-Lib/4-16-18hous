@@ -10,7 +10,6 @@ const updateMapView = function(force) {
   return new Promise((resolve)=>{
 
     var finish = () => {
-      console.log("finish")
       updateTileHtml.call(this)
       var frame_time = Date.now() - start
       if (frame_time > 300 && !force && false) {

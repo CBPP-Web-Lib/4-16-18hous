@@ -30,6 +30,7 @@ body, html {
     max-width:250px;
     font-size:10pt;
     line-height:14pt;
+    font-family:"proxima-nova",sans-serif;
     .picker-wrapper {
       margin-bottom:0.5em;
       label {
@@ -153,8 +154,8 @@ body, html {
   svg.text-svg {
     font-family:"proxima-nova-condensed",sans-serif;
     .text-stroke{ 
-      stroke:rgba(255, 255, 255, 0.8);
-      stroke-width:5px;
+      stroke:rgba(255, 255, 255, 0.7);
+      stroke-width:4px;
     }
     .text-fill { fill:#000;}
     text {
@@ -186,17 +187,18 @@ body, html {
     }
     g.place.suburb {
       font-size:12pt;
-      fill:#555;
+      text { fill:#555; }
       text-transform: uppercase;
     }
     g.place.neighbourhood {
+
       font-size:10pt;
-      fill:#555;
+      text { fill:#555; }
       text-transform: uppercase;
     }
     g.place.locality {
       font-size:8pt;
-      fill:#555;
+      text { fill:#555; }
       text-transform: uppercase;
     }
   }
@@ -257,6 +259,7 @@ body, html {
     right:10px;
     bottom:10px;
     z-index:10;
+    font-family:"proxima-nova",sans-serif;
     background-color: rgba(250, 242, 240, 0.95);
     min-height:50px;
     border:1px solid #ddd;
@@ -306,6 +309,7 @@ body, html {
   .tract_tooltip {
     font-size:12pt;
     line-height:14pt;
+    font-family:"proxima-nova",sans-serif;
     h3 {
       color:inherit;
       font-size:14pt;
@@ -316,6 +320,16 @@ body, html {
       margin:0;
       padding:0;
       list-style-type:none;
+    }
+    table {
+      font-size:10pt;
+      line-height:1;
+      border-collapse:collapse;
+      width:100%;
+      td {padding: 0; border: 0; margin:0};
+      td:last-child {
+        text-align:right;
+      }
     }
   }
 

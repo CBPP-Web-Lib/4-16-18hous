@@ -1,5 +1,12 @@
 import { makeAdditionalDotsPickerOptions, makeDotPickerOptions } from "./additional_dot_picker_setup"
 
+const get_dots_layer = function(pickers) {
+  var dots_program_picker =  pickers.querySelector("select[name='dots-program']")
+  var dots_household_picker = pickers.querySelector("select[name='dots-household']")
+  var active_dots_layer = dots_program_picker.value + "_" + dots_household_picker.value
+  return active_dots_layer
+}
+
 const dataLayerEvents = function(map) {
   var pickers = document.querySelector("#" + map.getId() + " .pickers");
   var data_picker =  pickers.querySelector("select[name='tract-dataset']")
@@ -20,14 +27,16 @@ const dataLayerEvents = function(map) {
     map.updateView()
   })
   this.setActiveLayer(data_picker.value)
-
-  var dots_picker =  pickers.querySelector("select[name='dots-dataset']")
-  this.setActiveDotsLayer(dots_picker.value)
-  dots_picker.addEventListener("change", ()=>{
-    this.setActiveDotsLayer(dots_picker.value)
-    map.updateView()
+  this.setActiveDotsLayer(get_dots_layer(pickers))
+  var dots_program_picker =  pickers.querySelector("select[name='dots-program']")
+  var dots_household_picker = pickers.querySelector("select[name='dots-household']")
+  var dots_pickers = [dots_program_picker, dots_household_picker]
+  dots_pickers.forEach((picker)=> {
+    picker.addEventListener("change", ()=>{
+      this.setActiveDotsLayer(get_dots_layer(pickers))
+      map.updateView()
+    })
   })
-  makeDotPickerOptions(dots_picker)
   var addl_dots_picker = pickers.querySelector("ul[name='additional-dot-layers-checkboxes']")
   makeAdditionalDotsPickerOptions.call(map, addl_dots_picker)
   addl_dots_picker.querySelectorAll("input[type='checkbox']").forEach((el) => {
