@@ -3,6 +3,7 @@ import colorgen from "cbpp_colorgen"
 const colorConfig = {
   "poverty_pov_pct": {
     customBins: [0,5,10,15,20,25,30,35,40,100.01],
+    name: "Poverty Rate",
     f: d=>d+"%",
     colors: (function() {
       var secRange = colorgen("#b1e3cf","#009632", 5);
@@ -13,6 +14,7 @@ const colorConfig = {
   },
   "ethnicity_nonwhite_percentage" : {
     f: d=>Math.round(d*100)+"%",
+    name: "Percent People of Color",
     colors: (()=>{
       var r1 = colorgen("#d7cabd","#a3876a",4)
       var r2 = colorgen("#a3876a","#f2c0fc",5)

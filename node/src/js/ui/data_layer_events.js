@@ -33,8 +33,14 @@ const dataLayerEvents = function(map) {
   var dots_pickers = [dots_program_picker, dots_household_picker]
   dots_pickers.forEach((picker)=> {
     picker.addEventListener("change", ()=>{
+      if (dots_program_picker.value === "hcv") {
+        pickers.querySelector(".safmr_config").style.display="block";
+      } else {
+        pickers.querySelector(".safmr_config").style.display="none";
+        pickers.querySelector(".safmr_config input[name='safmr']").checked = false;
+      }
       this.setActiveDotsLayer(get_dots_layer(pickers))
-      map.updateView()
+      determineAddtlDots.call(this)
     })
   })
   var addl_dots_picker = pickers.querySelector("ul[name='additional-dot-layers-checkboxes']")

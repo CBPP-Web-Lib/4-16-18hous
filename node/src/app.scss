@@ -268,6 +268,13 @@ body, html {
       position:relative;
       z-index:20;
     }
+    .legend-bins-wrapper {
+      label {
+        display:block;
+        text-align:center;
+        margin-top:-0.5em;
+      }
+    }
     .legend-bins {
       width:100%;
     }
@@ -294,16 +301,51 @@ body, html {
         position:absolute;
       } 
     }
-    .voucher-indicator {
+    .voucher-indicator, .safmr-indicator {
       margin-bottom:0.3em;
+      display:inline-block;
+    }
+    .safmr-indicator {
+      margin-left:20px;
+    }
+    .voucher-circle, .safmr-circle {
+      display:inline-block;
+      background-color: rgba(111, 66, 245, 0.8);
+      border-radius:50%;
     }
     .voucher-circle {
       width:12px;
       height:12px;
-      display:inline-block;
       background-color: rgba(111, 66, 245, 0.8);
-      border-radius:50%;
       border: 2px solid rgba(255, 255, 255, 0.8);
+    }
+    .safmr-circle {
+      width:10px;
+      height:10px;
+      margin:2px;
+      background-color: rgba(111, 66, 245, 0.4);
+      border:0px;
+    }
+    .ethnicity-label {
+      margin-right:10px;
+      vertical-align: middle;
+    }
+    .eth-legend-inner {
+      display:inline-block;
+    }
+    .eth-legend-item {
+      display:inline-block;
+      margin-right:15px;
+      vertical-align: middle;
+      & > * {
+        vertical-align: middle;
+
+      }
+      svg {
+        width:14px;
+        height:14px;
+        margin-right:2px;
+      }
     }
   }
   .tract_tooltip {

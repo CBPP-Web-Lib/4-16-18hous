@@ -3,6 +3,7 @@ import { hoverTemplate } from "../voucher_map/hover_template"
 
 const tractHover = function() {
   var map = this
+  var id = map.getId()
   var container = document.getElementById(map.getId())
 
   var hovered_tract
@@ -25,6 +26,7 @@ const tractHover = function() {
       if (hovered_tract) {
         hovered_tract.classList.remove("hovered")
       }
+      hovered_tract = null
       return;
     }
     if (hovered_tract !== e.target && hovered_tract) {
@@ -47,6 +49,9 @@ const tractHover = function() {
           hovered_tract = null
         }
       }
+    }
+    if (e.type === "mouseleave") {
+      hovered_tract = null
     }
     if (hovered_tract && new_tract) {
       var html = hoverTemplate(d3_select(hovered_tract).datum())
@@ -79,7 +84,9 @@ const tractHover = function() {
     }
     
   }
-
+  var viewport = document.querySelectorAll("#" + id + " .map-viewport")[0]
+  viewport.addEventListener("mouseleave", eventHandler)
+  document.addEventListener("mouseleave", eventHandler)
   window.addEventListener("mousemove", eventHandler)
   window.addEventListener("touch", eventHandler)
 }
