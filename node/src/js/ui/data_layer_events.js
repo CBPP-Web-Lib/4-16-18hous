@@ -9,7 +9,16 @@ const get_dots_layer = function(pickers) {
 
 const dataLayerEvents = function(map) {
   var pickers = document.querySelector("#" + map.getId() + " .pickers");
+  var self = this;
   var data_picker =  pickers.querySelector("select[name='tract-dataset']")
+  pickers.querySelector(".picker-close-self").addEventListener("click", ()=>{
+    pickers.style.display="none"
+  })
+  document.querySelector("#" + map.getId() + " .pickers-and-map-viewport .picker-open-self").addEventListener("click", ()=>{
+    console.log("click")
+    pickers.style.display="block"
+  })
+  var self = this;
   data_picker.addEventListener("change", ()=>{
     this.setActiveLayer(data_picker.value)
     if (data_picker.value==="none") {
@@ -62,6 +71,21 @@ const dataLayerEvents = function(map) {
 
   var values = Array.from(addl_dots_picker.querySelectorAll("input:checked"),e=>e.value);
   this.setAdditionalDotsLayers(values)
+  pickers.querySelectorAll(".select-all-none a").forEach((item)=>{
+    item.addEventListener("click", function(e) {
+      e.preventDefault()
+      if (this.attributes.href.value==="#select-all-race") {
+        pickers.querySelectorAll("ul[name='additional-dot-layers-checkboxes'] input[type='checkbox']").forEach((checkbox)=>{
+          checkbox.checked = true;
+        })
+      } else {
+        pickers.querySelectorAll("ul[name='additional-dot-layers-checkboxes'] input[type='checkbox']").forEach((checkbox)=>{
+          checkbox.checked = false;
+        })
+      }
+      determineAddtlDots.call(self)
+    })
+  })
 }
 
 export { dataLayerEvents }

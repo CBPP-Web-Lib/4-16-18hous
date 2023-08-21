@@ -26,11 +26,32 @@ body, html {
       display:block;
     }
   }
+  .picker-open-self {
+    position:absolute;
+    top:10px;
+    left:10px;
+    z-index:499;
+    cursor:pointer;
+    font-size:11pt;
+    padding:3px;
+    background-color:#eee;
+    border:1px solid #aaa;
+    &:hover {
+      background-color:#ccc;
+    }
+  }
   .pickers {
     max-width:250px;
     font-size:10pt;
     line-height:14pt;
+    z-index:500;
     font-family:"proxima-nova",sans-serif;
+    .picker-close-self {
+      position:absolute;
+      right:10px;
+      top:5px;
+      cursor:pointer;
+    }
     .picker-wrapper {
       margin-bottom:0.5em;
       label {
@@ -55,6 +76,12 @@ body, html {
           margin-left:0;
           position:relative;
           top:2px;
+        }
+      }
+      .select-all-none {
+        margin-left:10px;
+        a:hover {
+          text-decoration: underline;
         }
       }
       ul[name='additional-dot-layers-checkboxes'] {
@@ -94,7 +121,6 @@ body, html {
       font-size:inherit;
     }
     position:relative;
-    z-index:10;
     background-color: rgba(250, 242, 240, 0.95);
     border:1px solid #ddd;
     padding:10px;
@@ -111,13 +137,13 @@ body, html {
   }
   .map-inner-lightbox {
     position:absolute;
-    top:1%;
-    left:1%;
-    right:1%;
-    bottom:1%;
+    top:2px;
+    left:2px;
+    right:2px;
+    bottom:2px;
     background-color:#fff;
-    border-radius: 1%;
-    padding:1%;
+    border-radius: 2px;
+    padding:2px;
   }
   .map-viewport-outer {
     position:absolute;
@@ -259,8 +285,8 @@ body, html {
     right:10px;
     bottom:10px;
     z-index:10;
-    font-family:"proxima-nova",sans-serif;
-    background-color: rgba(250, 242, 240, 0.95);
+    font-family:"proxima-nova-condensed",sans-serif;
+    background-color: rgba(255, 255, 255, 0.85);
     min-height:50px;
     border:1px solid #ddd;
     padding:10px;
@@ -326,12 +352,17 @@ body, html {
       background-color: rgba(111, 66, 245, 0.4);
       border:0px;
     }
+    .ethnicity-legend {
+      line-height:1.2;
+    }
     .ethnicity-label {
       margin-right:10px;
       vertical-align: middle;
+      margin-bottom:0;
     }
     .eth-legend-inner {
       display:inline-block;
+      margin-top:0;
     }
     .eth-legend-item {
       display:inline-block;
@@ -419,9 +450,13 @@ body, html {
   .autocomplete_options {
     list-style-type:none;
     margin:0;
+    position:absolute;
+    width:100%;
+    top:30px;
     padding:0px;
     font-size:11pt;
     max-height:70vh;
+    z-index:999;
     border:1px solid #aaa;
     overflow-y:auto;
     li {

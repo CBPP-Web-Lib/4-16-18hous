@@ -1,51 +1,56 @@
-<div class='pickers'>
-  <div class='picker-wrapper'>
-    <label>Core-based statistical area:</label>
-    <select name="cbsa">
-    </select>
-  </div>
-  <div class='picker-wrapper'>
-    <label>Color tracts by:</label>
-    <select name="tract-dataset">
-      <option value="poverty_pov_pct">Poverty Rate</option>
-      <option value="ethnicity_nonwhite_percentage">Percentage People of Color</option>
-      <option value="none">Racial density</option>
-    </select>
-  </div>
-  <div class='picker-wrapper picker-race-ethnicity'>
-    <label>Race/ethnicity layers:</label>
-    <ul name="additional-dot-layers-checkboxes">
-    </ul>
-  </div>
-  <div class='picker-wrapper'>
-    <label>Housing Program:</label>
-    <select name="dots-program">
-      <option value="hcv">Housing vouchers</option>
-      <option value="pbra">Project-based rental assistance</option>
-      <option value="ph">Public housing</option>
-    </select>
-  </div>
-  <div class="picker-wrapper">
-    <label>Household Type:</label>
-    <select name='dots-household'>
-      <option value='total'>All families using program</option>
-      <option value="children">Families with children</option>
-      <option value="children_poc">Families of color with children</option>
-      <option value="disability">Families with a member with a disability</option>
-    </select>
-  </div>
-  <div class='picker-wrapper'>
-    <div class="safmr_config">
-      <label>Show voucher-affordable units</label>
-      <input type="checkbox" name="safmr" />
+<div class='pickers-and-map-viewport'>
+  <div class='picker-open-self'>Configuration</div>
+  <div class='pickers'>
+    <div class='picker-close-self'>&#10006;</div>
+    <div class='picker-wrapper'>
+      <label>Core-based statistical area:</label>
+      <select name="cbsa">
+      </select>
+    </div>
+    <div class='picker-wrapper'>
+      <label>Color tracts by:</label>
+      <select name="tract-dataset">
+        <option value="poverty_pov_pct">Poverty Rate</option>
+        <option value="ethnicity_nonwhite_percentage">Percentage People of Color</option>
+        <option value="none">Racial density</option>
+      </select>
+    </div>
+    <div class='picker-wrapper picker-race-ethnicity'>
+      <label>Race/ethnicity layers:</label>
+      <div class='select-all-none'><a href='#select-all-race'>Select All</a> | <a href='#select-none-race'>Select None</a></div>
+      <ul name="additional-dot-layers-checkboxes">
+      </ul>
+    </div>
+    <div class='picker-wrapper'>
+      <label>Housing Program:</label>
+      <select name="dots-program">
+        <option value="hcv">Housing vouchers</option>
+        <option value="pbra">Project-based rental assistance</option>
+        <option value="ph">Public housing</option>
+      </select>
+    </div>
+    <div class="picker-wrapper">
+      <label>Household Type:</label>
+      <select name='dots-household'>
+        <option value='total'>All families using program</option>
+        <option value="children">Families with children</option>
+        <option value="children_poc">Families of color with children</option>
+        <option value="disability">Families with a member with a disability</option>
+      </select>
+    </div>
+    <div class='picker-wrapper'>
+      <div class="safmr_config">
+        <label>Show voucher-affordable units</label>
+        <input type="checkbox" name="safmr" />
+      </div>
     </div>
   </div>
-</div>
-<div class="map-viewport-outer">
-  <div class='map-viewport'>
+  <div class="map-viewport-outer">
+    <div class='map-viewport'>
+
+    </div>
+  </div>
+  <div class='legend-container'>
 
   </div>
-</div>
-<div class='legend-container'>
-
 </div>
