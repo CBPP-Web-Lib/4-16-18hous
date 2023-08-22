@@ -82,7 +82,7 @@ function do_box(leftmost, rightmost, northmost, southmost, name) {
         cb();
         return;
       }
-      var url = "http://host.docker.internal:8888/image_proxy/get_stamen.php?z=" + z + "&x=" + x + "&y=" + y + "&r=2&dynamic=true&allow_save=true";
+      var url = "http://host.docker.internal:8888/image_proxy/get_image_local.php?z=" + z + "&x=" + x + "&y=" + y + "&r=2&dynamic=true&allow_save=true";
       console.log(url, name);
       var moved_on = false;
       function _cb() {

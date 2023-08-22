@@ -9,7 +9,7 @@ export function updateTileHtml(custom_cords) {
   if (window.location.hostname!=="apps.cbpp.org" && window.location.hostname !== "www.cbpp.org" && window.location.hostname !== "cbpp.org") {
     urlgen = (coords)=>{
       var {x, y, z} = coords
-      return map.getURLBase() + "/image_proxy/get_stamen.php?x=" + x + "&y=" + y + "&z=" + Math.floor(z) + "&r=2";
+      return map.getURLBase() + "/image_proxy/get_image_local.php?x=" + x + "&y=" + y + "&z=" + Math.floor(z) + "&r=2";
     }
   } else {
     urlgen = (coords)=>{
