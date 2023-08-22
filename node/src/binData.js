@@ -84,6 +84,7 @@ module.exports = function(data, cbsa) {
       }
     }
     bins[col_name].push(col[col.length-1]+0.001);
+    bins[col_name][0] -= 0.001;
   });
   return bins;
 };

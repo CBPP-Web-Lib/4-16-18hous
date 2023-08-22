@@ -23,7 +23,15 @@ const updateLegend = function(map) {
   var bin_container = document.createElement("div");
   bin_container.className = "legend-bins-inner";
   legend_container.querySelector(".legend-bins").appendChild(bin_container)
-  legend_container.querySelector(".legend-bins-wrapper").querySelector("label").innerText = tract_config.name
+  var legend_label = legend_container.querySelector(".legend-bins-wrapper").querySelector("label")
+  legend_label.innerText = tract_config.name
+  if (tract_config.name ==="Percent People of Color") {
+    legend_label.className = "label-offset"
+    legend_container.querySelector(".hud-poc-note").style.display="block"
+  } else {
+    legend_label.className = ""
+    legend_container.querySelector(".hud-poc-note").style.display="none"
+  }
   if (tract_bins) {
     var { colors } = tract_config;
     var bin_data = []
