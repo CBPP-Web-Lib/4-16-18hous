@@ -46,6 +46,9 @@ body, html {
     line-height:14pt;
     z-index:500;
     font-family:"proxima-nova",sans-serif;
+    &.hide-while-zoom {
+      display:none;
+    }
     .picker-close-self {
       position:absolute;
       right:10px;
@@ -292,6 +295,9 @@ body, html {
     min-height:50px;
     border:1px solid #ddd;
     padding:10px;
+    &.hide-while-zoom {
+      display:none;
+    }
     & > * {
       position:relative;
       z-index:20;

@@ -34,15 +34,15 @@ function MapZoomer(map) {
       console.log("not done yet")
       return;
     }
-    document.querySelectorAll("#" + map.getId() + " .pickers")[0].style.display="none";
-    document.querySelectorAll("#" + map.getId() + " .legend-container")[0].style.display="none";
+    document.querySelectorAll("#" + map.getId() + " .pickers")[0].classList.add("hide-while-zoom")
+    document.querySelectorAll("#" + map.getId() + " .legend-container")[0].classList.add("hide-while-zoom")
     touchZoomInitialScale = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
     touchZoomInitialCenter = [(x1 + x2)/2, (y1 + y2)/2]
     touchZoomStartCoords = map.coordTracker.getCoords()
   })
   mouse_tracker.registerPinchEndCallback("pinchEnd", ()=>{
-    document.querySelectorAll("#" + map.getId() + " .pickers")[0].style.display="";
-    document.querySelectorAll("#" + map.getId() + " .legend-container")[0].style.display="";
+    document.querySelectorAll("#" + map.getId() + " .pickers")[0].classList.remove("hide-while-zoom")
+    document.querySelectorAll("#" + map.getId() + " .legend-container")[0].classList.remove("hide-while-zoom")
     if (!touchZoomDestCoords) return
     //dotsLayer.style.transformOrigin  = ""
     map.coordTracker.setCoords(touchZoomDestCoords).then(function() {
