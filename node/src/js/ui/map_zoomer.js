@@ -6,13 +6,21 @@ function MapZoomer(map) {
   var el = document.querySelectorAll("#" + map.getId() + " .map-viewport")[0]
   var mouse_tracker = map.mouseTracker
   var locked = false;
+  var out_lock = false;
+  var in_lock = false;
+
+  var acc_scroll = 0;
+
   el.addEventListener("wheel", (e)=> {
     e.preventDefault();
     map.mouseTracker.mouseUp()
     var rect = el.getBoundingClientRect();
-    if (e.deltaY < 0) {
+    acc_scroll += e.deltaY;
+    if (acc_scroll < -20) {
+      acc_scroll = 0
       this.zoomIn((e.clientX - rect.left), (e.clientY - rect.top));
-    } else {
+    } else if (acc_scroll > 20) {
+      acc_scroll = 0
       this.zoomOut((e.clientX - rect.left), (e.clientY - rect.top));
     }
   });
@@ -182,11 +190,13 @@ function MapZoomer(map) {
   }
 
   this.zoomIn = function(x, y) {
-    if (locked) {return;}
+    if (locked || in_lock) {return;}
     locked = true;
+    out_lock = true;
     var start_coords = map.coordTracker.getCoords();
     if (start_coords.z >= 13) {
-      unlock()
+      locked = false;
+      unlock_out()
       return;
     } //max zoom
     var old_center = [
@@ -202,21 +212,32 @@ function MapZoomer(map) {
       y: new_center[1] - y/256,
       z: start_coords.z + 1
     }
-    return transitionCoordsTo(end_coords, x, y, 200).then(unlock);
+    return transitionCoordsTo(end_coords, x, y, 200).then(()=>{
+      locked = false;
+      unlock_out()
+    });
   }
 
-  function unlock() {
+  function unlock_out() {
     setTimeout(()=>{
-      locked = false;
+      out_lock = false;
+    }, 500)
+  }
+
+  function unlock_in() {
+    setTimeout(()=>{
+      in_lock = false;
     }, 500)
   }
 
   this.zoomOut = function(x, y) {
-    if (locked) {return;}
+    if (locked || out_lock) {return;}
     locked = true;
+    in_lock = true;
     var start_coords = map.coordTracker.getCoords();
     if (start_coords.z <= 7) {
-      unlock()
+      locked = false
+      unlock_in()
       return;
     }
     var old_center = [
@@ -233,9 +254,8 @@ function MapZoomer(map) {
       z: start_coords.z - 1
     }
     return transitionCoordsTo(end_coords, x, y, 200).then(function() {
-      setTimeout(()=>{
-        locked = false;
-      }, 500)
+      locked = false
+      unlock_in()
     });
   }
 
