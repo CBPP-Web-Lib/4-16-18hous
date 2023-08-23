@@ -142,7 +142,6 @@ function ViewportMouseTracker(map) {
 
   var viewport = document.querySelectorAll("#" + id + " .map-viewport")[0]
   viewport.addEventListener("mousedown", (e) => {
-    console.log(e)
     this.mouseDown(e.pageX, e.pageY)
   });
   viewport.addEventListener("touchstart", (e) => {
@@ -165,6 +164,7 @@ function ViewportMouseTracker(map) {
   });
   /*if user touches somewhere outside viewport*/
   window.addEventListener("touchstart", (e) => {
+    console.log(e)
     var elements = [e.target]
     var element = e.target
     if (e.target.tagName==="path" && e.target.attributes.className==="tract") {
