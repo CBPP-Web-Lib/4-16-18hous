@@ -12,7 +12,12 @@ const updateLegend = function(map) {
   var active_data_layer = dataLayerManager.getActiveLayer()
   var active_hcv_dot_layer = dataLayerManager.getActiveVoucherDotLayer()
   legend_container.innerHTML = legendTemplate
-  legend_container.querySelectorAll("[name='voucher-layer-name']")[0].innerText = dotConfig[active_hcv_dot_layer].name.toLowerCase()
+  if (active_hcv_dot_layer.split("_")[0]==="none") {
+    legend_container.querySelector(".voucher-indicator").style.display = "none"
+  } else {
+    legend_container.querySelector(".voucher-indicator").style.display = "block"
+    legend_container.querySelectorAll("[name='voucher-layer-name']")[0].innerText = dotConfig[active_hcv_dot_layer].name.toLowerCase()
+  }
   if (active_dots_layer.indexOf("safmr_tot_safmr_vau_dots")!==-1) {
     legend_container.querySelector(".safmr-indicator").style.display = "inline-block"
   } else {
@@ -23,7 +28,15 @@ const updateLegend = function(map) {
   var bin_container = document.createElement("div");
   bin_container.className = "legend-bins-inner";
   legend_container.querySelector(".legend-bins").appendChild(bin_container)
-  legend_container.querySelector(".legend-bins-wrapper").querySelector("label").innerText = tract_config.name
+  var legend_label = legend_container.querySelector(".legend-bins-wrapper").querySelector("label")
+  legend_label.innerText = tract_config.name
+  if (tract_config.name ==="Percent People of Color") {
+    legend_label.className = "label-offset"
+    legend_container.querySelector(".hud-poc-note").style.display="block"
+  } else {
+    legend_label.className = ""
+    legend_container.querySelector(".hud-poc-note").style.display="none"
+  }
   if (tract_bins) {
     var { colors } = tract_config;
     var bin_data = []
@@ -109,20 +122,20 @@ const updateLegendDotRepresents = function(map) {
   var cbsa = map.cbsaManager.getLoadedCbsa()
   var legend_container = document.querySelectorAll("#" + map.getId() + " .legend-container")[0]
   var active_hcv_dot_layer = dataLayerManager.getActiveVoucherDotLayer()
-  if (active_hcv_dot_layer!=="none") {
-    var {z} = coords
+  var {z} = coords
+  if (active_hcv_dot_layer.split("_")[0] !=="none") {
     if (high_density_cbsa[cbsa]) {
       z += high_density_cbsa[cbsa]
     }
     var dotRepresents = dotConfig[active_hcv_dot_layer].numDots(z)
-    var ethDotRepresents = dotConfig.default.numDots(z)
     legend_container.querySelectorAll("[name='voucher-dot-represents'], [name='safmr-dot-represents']").forEach((item)=>{
       item.innerText = dotRepresents
-    })
-    var ethnicity_dot_represents_span = legend_container.querySelectorAll("[name='num-ethnicity-dot-represents']")
-    if (ethnicity_dot_represents_span.length > 0) {
-      ethnicity_dot_represents_span[0].innerText = ethDotRepresents
-    }
+    })  
+  }
+  var ethDotRepresents = dotConfig.default.numDots(z)
+  var ethnicity_dot_represents_span = legend_container.querySelectorAll("[name='num-ethnicity-dot-represents']")
+  if (ethnicity_dot_represents_span.length > 0) {
+    ethnicity_dot_represents_span[0].innerText = ethDotRepresents
   }
 }
 

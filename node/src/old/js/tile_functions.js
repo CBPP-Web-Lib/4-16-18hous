@@ -149,7 +149,7 @@ module.exports = function($, d3, m, sel, g) {
           r = "2";
         }
         r="2";
-        var url = g.URL_BASE + "/image_proxy/get_stamen.php?z="+z+"&x="+x+"&y="+y+"&r="+r;
+        var url = g.URL_BASE + "/image_proxy/get_image_local.php?z="+z+"&x="+x+"&y="+y+"&r="+r;
         if (existingTiles[url]) {
           img = $(existingTiles[url]).detach();
           //img = $(img[0]);

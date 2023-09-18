@@ -6,13 +6,21 @@ function MapZoomer(map) {
   var el = document.querySelectorAll("#" + map.getId() + " .map-viewport")[0]
   var mouse_tracker = map.mouseTracker
   var locked = false;
+  var out_lock = false;
+  var in_lock = false;
+
+  var acc_scroll = 0;
+
   el.addEventListener("wheel", (e)=> {
     e.preventDefault();
     map.mouseTracker.mouseUp()
     var rect = el.getBoundingClientRect();
-    if (e.deltaY < 0) {
+    acc_scroll += e.deltaY;
+    if (acc_scroll < -20) {
+      acc_scroll = 0
       this.zoomIn((e.clientX - rect.left), (e.clientY - rect.top));
-    } else {
+    } else if (acc_scroll > 20) {
+      acc_scroll = 0
       this.zoomOut((e.clientX - rect.left), (e.clientY - rect.top));
     }
   });
@@ -26,15 +34,15 @@ function MapZoomer(map) {
       console.log("not done yet")
       return;
     }
-    document.querySelectorAll("#" + map.getId() + " .pickers")[0].style.display="none";
-    document.querySelectorAll("#" + map.getId() + " .legend-container")[0].style.display="none";
+    document.querySelectorAll("#" + map.getId() + " .pickers")[0].classList.add("hide-while-zoom")
+    document.querySelectorAll("#" + map.getId() + " .legend-container")[0].classList.add("hide-while-zoom")
     touchZoomInitialScale = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
     touchZoomInitialCenter = [(x1 + x2)/2, (y1 + y2)/2]
     touchZoomStartCoords = map.coordTracker.getCoords()
   })
   mouse_tracker.registerPinchEndCallback("pinchEnd", ()=>{
-    document.querySelectorAll("#" + map.getId() + " .pickers")[0].style.display="";
-    document.querySelectorAll("#" + map.getId() + " .legend-container")[0].style.display="";
+    document.querySelectorAll("#" + map.getId() + " .pickers")[0].classList.remove("hide-while-zoom")
+    document.querySelectorAll("#" + map.getId() + " .legend-container")[0].classList.remove("hide-while-zoom")
     if (!touchZoomDestCoords) return
     //dotsLayer.style.transformOrigin  = ""
     map.coordTracker.setCoords(touchZoomDestCoords).then(function() {
@@ -182,9 +190,15 @@ function MapZoomer(map) {
   }
 
   this.zoomIn = function(x, y) {
-    if (locked) {return;}
+    if (locked || in_lock) {return;}
+    locked = true;
+    out_lock = true;
     var start_coords = map.coordTracker.getCoords();
-    if (start_coords.z >= 13) {return;} //max zoom
+    if (start_coords.z >= 13) {
+      locked = false;
+      unlock_out()
+      return;
+    } //max zoom
     var old_center = [
       x/256,
       y/256
@@ -198,15 +212,34 @@ function MapZoomer(map) {
       y: new_center[1] - y/256,
       z: start_coords.z + 1
     }
-    locked = true;
-    return transitionCoordsTo(end_coords, x, y, 200).then(function() {
+    return transitionCoordsTo(end_coords, x, y, 200).then(()=>{
       locked = false;
+      unlock_out()
     });
   }
 
+  function unlock_out() {
+    setTimeout(()=>{
+      out_lock = false;
+    }, 500)
+  }
+
+  function unlock_in() {
+    setTimeout(()=>{
+      in_lock = false;
+    }, 500)
+  }
+
   this.zoomOut = function(x, y) {
-    if (locked) {return;}
+    if (locked || out_lock) {return;}
+    locked = true;
+    in_lock = true;
     var start_coords = map.coordTracker.getCoords();
+    if (start_coords.z <= 7) {
+      locked = false
+      unlock_in()
+      return;
+    }
     var old_center = [
       x/256,
       y/256
@@ -220,9 +253,9 @@ function MapZoomer(map) {
       y: new_center[1] - y/256,
       z: start_coords.z - 1
     }
-    locked = true;
     return transitionCoordsTo(end_coords, x, y, 200).then(function() {
-      locked = false;
+      locked = false
+      unlock_in()
     });
   }
 

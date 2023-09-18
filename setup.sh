@@ -15,3 +15,5 @@
 ./gulp.sh topojson
 ./gulp.sh minorityconc
 ./gulp.sh binCBSA
+./gulp.sh process_places
+./gulp.sh split_place_names_cbsa
