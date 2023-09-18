@@ -46,6 +46,8 @@ const initialize = function(config) {
   this.projectionWorkers = setupProjectionWorkers(this)
   this.dotWorkers = setupDotWorkers(this)
   this.dataLayerManager.setActiveDotsLayer("hcv_total")
+  this.building_img = document.createElement("img");
+  this.building_img.setAttribute("src", url_base + "/assets/building-icon.png");
 }
 
 export { initialize }

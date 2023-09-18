@@ -199,19 +199,41 @@ export function updateDotsLayer(visible_features) {
         })
       })
       
+      console.log(map)
+
+      
+      var building_fill_style = ctx.createPattern(map.building_img, "no-repeat");
+      console.log(building_fill_style);
+
       var draw_dot = (dot, z) => {
+        var layer_type = dot[1].split("_")[0]
+        console.log(layer_type)
+        var use_building = false;
+        if (layer_type === "pbra" || layer_type === "ph") {
+          use_building = true;
+        }
         var coords = projection(dot[0])
         var config = configs[dot[1]]
         ctx.beginPath()
         var dot_sf = Math.exp(0.07*z) - 1
        // dot_sf = 1
-        ctx.strokeStyle = config.stroke
-        ctx.fillStyle = config.fill
-        ctx.lineWidth = config["stroke-width"]*dot_sf
-        ctx.arc(coords[0]*2, coords[1]*2, config.radius*2*dot_sf, 0, 2 * Math.PI)
-        ctx.fill()
-        if (ctx.lineWidth > 0) {
-          ctx.stroke()
+       console.log(layer_type, use_building);
+        if (use_building) {
+          //ctx.fillStyle = building_fill_style;
+          console.log(building_fill_style)
+          ctx.lineWidth = 0
+          console.log(map.building_img)
+          console.log(map.building_img.naturalWidth)
+          ctx.drawImage(map.building_img, coords[0]*2 - 16, coords[1]*2 - 16, 32, 32);
+        } else {
+          ctx.strokeStyle = config.stroke
+          ctx.fillStyle = config.fill
+          ctx.lineWidth = config["stroke-width"]*dot_sf
+          ctx.arc(coords[0]*2, coords[1]*2, config.radius*2*dot_sf, 0, 2 * Math.PI)
+          ctx.fill()
+          if (ctx.lineWidth > 0) {
+            ctx.stroke()
+          }
         }
       }
 
