@@ -256,7 +256,8 @@ body, html {
     cursor:pointer;
   }
   svg path.tract.hovered {
-    fill: #333;
+    stroke:#a00;
+    stroke-width:2px;
   }
   circle.dot {
     pointer-events:none;
@@ -266,6 +267,7 @@ body, html {
     width:0;
     height:0;
     overflow:visible;
+    z-index:999;
     .tract_tooltip {
       position:relative;
       width:0;
@@ -277,8 +279,48 @@ body, html {
       background-color: rgba(255, 255, 255, 0.95);
       padding:10px;
       position:absolute;
-      li, p, ul {
+      p, ul {
         margin-bottom:0;
+      }
+      h3 {
+        text-align:center;
+        margin-bottom:5px;
+      }
+      div.hover-data-item {
+        display:flex;
+        line-height:1;
+        &:not(.no-border) {
+          border-bottom:1px solid #aaa;
+          padding-bottom:0.2em;
+          margin-bottom:0.2em;
+        }
+      }
+      span.hover-data-value {
+        text-align:right;
+        flex-grow:1;
+        padding-right:4px;
+      }
+      .hover-data-label {
+        text-align:left;
+        font-weight:bold;
+        flex-basis:300px;
+        text-indent:-10px;
+        padding-left:10px;
+      }
+      tr:nth-child(2n) {
+        td {
+          background-color: #eee;
+        }
+      }
+      td {
+        padding-top:2px;
+        padding-bottom:2px;
+      }
+      td:first-child {
+        padding-left:10px;
+      }
+      td:last-child {
+        padding-right:4px;
       }
     }
   }
@@ -343,6 +385,24 @@ body, html {
     .voucher-indicator, .safmr-indicator {
       margin-bottom:0.3em;
       display:inline-block;
+    }
+    .voucher-square {
+      background-color: rgba(111, 66, 245, 0.8);
+      border: 2px solid rgba(255, 255, 255, 0.8);
+    }
+    .voucher-indicator > div {
+      width:12px;
+      height:12px;
+      position:relative;
+      overflow:visible;
+      display:none;
+      svg {
+        width:150%;
+        height:150%;
+        position:absolute;
+        top:-37.5%;
+        left:-25%;
+      }
     }
     .safmr-indicator {
       margin-left:20px;

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Voucher/Metro Areas Project",
   "dependencies": {
+    "@mapbox/geojson-area": "^0.2.2",
     "@turf/area": "^6.0.1",
     "@turf/flatten": "^5.1.5",
     "@turf/intersect": "^6.1.2",

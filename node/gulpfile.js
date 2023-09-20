@@ -12,6 +12,7 @@ var csv_parse = require("csv-parse");
 const createCsvStringifier = require('csv-writer').createArrayCsvStringifier;
 var seedrandom = require("seedrandom");
 var d3 = require("d3")
+var geojsonArea = require('@mapbox/geojson-area');
 
 const {
   Worker,
@@ -430,6 +431,37 @@ gulp.task("clip_cbsa", /*["filter_geojson"],*/ function(cb) {
   });
   cb();
 });
+
+gulp.task("calculate_dot_densities", function(cb) {
+  var tractData = fs.readdirSync("./filtered").filter((a)=>{
+    return a.indexOf("tl_2010_tract_")!==-1
+  });
+  var cbsa_densities = {}
+  tractData.forEach((cbsa_file)=>{
+    var geodata = JSON.parse(fs.readFileSync("./filtered/" + cbsa_file, "utf-8"))
+    var cbsa = cbsa_file.replace("tl_2010_tract_","");
+    cbsa = cbsa.replace(".json","");
+    var housdata = JSON.parse(fs.readFileSync("./webroot/data/" + cbsa + ".inflated.json"));
+    var densities = []
+    geodata.features.forEach((cbsa_feature)=>{
+      var tract_id = cbsa_feature.properties.GEOID10
+      var population = housdata[tract_id].ethnicity_tot_pop
+      var area = geojsonArea.geometry(cbsa_feature.geometry);
+      var density = population/area
+      densities.push(density)
+    })
+    densities.sort().reverse()
+    /*the key number i'm going to use to get a sense of how much to reduce dot density by is
+    median of top 100 tracts*/
+    if (densities.length > 100) {
+      densities.length = 100
+    }
+    cbsa_densities[cbsa] = densities[Math.floor(densities.length/2)]
+  })
+  fs.writeFileSync("./tmp/cbsa_densities.json", JSON.stringify(cbsa_densities), "utf-8");
+  cb();
+
+})
 
 gulp.task("process_places", function(cb) {
   var src = fs.readFileSync("./src/place_names.csv", "utf-8");

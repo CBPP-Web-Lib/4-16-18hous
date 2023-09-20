@@ -6,12 +6,12 @@ import { bbox_overlap } from "./js/voucher_map/bbox_overlap"
 var projection, water
 
 function handle_feature(args) {
-  var { feature, name, dot_represents, layer_id, these_dots } = args
+  var { feature, name, dot_represents, layer_id, these_dots, dot_deflator } = args
   var geoid = feature.properties.GEOID10
   var bbox = feature.bbox
   var width = bbox[2] - bbox[0]
   var height = bbox[3] - bbox[1]
-  var num_dots = feature.properties.housing_data[name][dot_represents]
+  var num_dots = Math.round(feature.properties.housing_data[name][dot_represents] * dot_deflator)
   var dots_made = these_dots.length
   var attempt = 0
   var total_attempts = 0

@@ -2,7 +2,8 @@ import { dotConfig } from "./dot_config"
 import { bbox_overlap } from "./bbox_overlap"
 import { shuffle } from "./shuffle_array"
 import seedrandom from "seedrandom"
-import high_density_cbsa from "../high_density_cbsa"
+import { get_deflator } from "./dot_deflator"
+//import high_density_cbsa from "../high_density_cbsa"
 import hexRgb from 'hex-rgb'
 const dot_data_layer = {}
 
@@ -45,9 +46,9 @@ export function updateDotsLayer(visible_features) {
     var start_time = Date.now()
     var cbsa = map.cbsaManager.getLoadedCbsa()
     var z = Math.round(map.coordTracker.getCoords().z)
-    if (high_density_cbsa[cbsa]) {
+    /*if (high_density_cbsa[cbsa]) {
       z += high_density_cbsa[cbsa]
-    }
+    }*/
     var projection = map.projectionManager.getProjection()
     var water = map.cbsaManager.getWaterShapes()
     var bounds = map.projectionManager.getBounds()
@@ -74,6 +75,7 @@ export function updateDotsLayer(visible_features) {
     });
     Promise.all(worker_setup_tasks).then(function() {
       var active_dots_layer = map.dataLayerManager.getActiveDotsLayers()
+      var dot_deflator = get_deflator(map.cbsaManager.getDotDensity())
       Object.keys(dot_data_layer).forEach((layer_id)=>{
         var name = dot_data_layer[layer_id].name
         var config = load_dot_config(name)
@@ -113,14 +115,15 @@ export function updateDotsLayer(visible_features) {
             }
             layer_data.tracts[geoid].old = false
             feature_piles[worker_slot] = feature_piles[worker_slot] || []
-            var num_dots = feature.properties.housing_data[name][dot_represents]
+            var num_dots = Math.round(feature.properties.housing_data[name][dot_represents] * dot_deflator)
             if (layer_data.tracts[geoid].dots.length !== num_dots) {
               feature_piles[worker_slot].push({
                 feature,
                 name, 
                 dot_represents,
                 layer_id,
-                these_dots: layer_data.tracts[geoid].dots 
+                these_dots: layer_data.tracts[geoid].dots,
+                dot_deflator
               })
               worker_slot++
               if (worker_slot >= map.dotWorkers.length) {
@@ -198,38 +201,40 @@ export function updateDotsLayer(visible_features) {
           }
         })
       })
-      
-      console.log(map)
-
-      
-      var building_fill_style = ctx.createPattern(map.building_img, "no-repeat");
-      console.log(building_fill_style);
 
       var draw_dot = (dot, z) => {
         var layer_type = dot[1].split("_")[0]
-        console.log(layer_type)
-        var use_building = false;
-        if (layer_type === "pbra" || layer_type === "ph") {
-          use_building = true;
-        }
         var coords = projection(dot[0])
         var config = configs[dot[1]]
         ctx.beginPath()
         var dot_sf = Math.exp(0.07*z) - 1
-       // dot_sf = 1
-       console.log(layer_type, use_building);
-        if (use_building) {
-          //ctx.fillStyle = building_fill_style;
-          console.log(building_fill_style)
-          ctx.lineWidth = 0
-          console.log(map.building_img)
-          console.log(map.building_img.naturalWidth)
-          ctx.drawImage(map.building_img, coords[0]*2 - 16, coords[1]*2 - 16, 32, 32);
+        ctx.strokeStyle = config.stroke
+        ctx.fillStyle = config.fill
+        ctx.lineWidth = config["stroke-width"]*dot_sf 
+        var x = coords[0]*2;
+        var y = coords[1]*2;
+        var r = config.radius*2*dot_sf;
+        if (layer_type === "ph") {
+          /*draw square*/
+          ctx.fillRect(x - r, y - r, r*2, r*2)
+          if (ctx.lineWidth > 0) {
+            ctx.strokeRect(x - r, y - r, r*2, r*2)
+          }
+        } else if (layer_type === "pbra") {
+          /*draw triangle*/
+          ctx.beginPath()
+          var _r = r*1.3
+          ctx.moveTo(x - _r, y + _r)
+          ctx.lineTo(x, y - _r)
+          ctx.lineTo(x + _r, y + _r)
+          ctx.lineTo(x - _r, y + _r)
+          ctx.fill()
+          if (ctx.lineWidth > 0) {
+            ctx.stroke()
+          }
         } else {
-          ctx.strokeStyle = config.stroke
-          ctx.fillStyle = config.fill
-          ctx.lineWidth = config["stroke-width"]*dot_sf
-          ctx.arc(coords[0]*2, coords[1]*2, config.radius*2*dot_sf, 0, 2 * Math.PI)
+          /*draw dot*/
+          ctx.arc(x, y, r, 0, 2 * Math.PI)
           ctx.fill()
           if (ctx.lineWidth > 0) {
             ctx.stroke()

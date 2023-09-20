@@ -2,8 +2,9 @@ import legendTemplate from "../../legend_template.html"
 import { dotConfig } from "./dot_config"
 import { colorConfig } from './color_config'
 import { select as d3_select, select } from 'd3'
-import high_density_cbsa from "../high_density_cbsa"
+//import high_density_cbsa from "../high_density_cbsa"
 import { data_keys } from "./ethnicity_data_keys"
+import { get_deflator } from "./dot_deflator"
 
 const updateLegend = function(map) {
   var dataLayerManager = map.dataLayerManager
@@ -122,20 +123,30 @@ const updateLegendDotRepresents = function(map) {
   var cbsa = map.cbsaManager.getLoadedCbsa()
   var legend_container = document.querySelectorAll("#" + map.getId() + " .legend-container")[0]
   var active_hcv_dot_layer = dataLayerManager.getActiveVoucherDotLayer()
+  var dot_deflator = get_deflator(map.cbsaManager.getDotDensity(cbsa))
   var {z} = coords
   if (active_hcv_dot_layer.split("_")[0] !=="none") {
-    if (high_density_cbsa[cbsa]) {
+    /*if (high_density_cbsa[cbsa]) {
       z += high_density_cbsa[cbsa]
+    }*/
+    var dot_type = active_hcv_dot_layer.split("_")[0]
+    legend_container.querySelector(".voucher-indicator > div").style.display = "none";
+    if (dot_type === "hcv") {
+      legend_container.querySelector(".voucher-circle").style.display = "inline-block";
+    } else if (dot_type === "ph") {
+      legend_container.querySelector(".voucher-square").style.display = "inline-block";
+    } else if (dot_type === "pbra") {
+      legend_container.querySelector(".voucher-triangle").style.display = "inline-block";
     }
     var dotRepresents = dotConfig[active_hcv_dot_layer].numDots(z)
     legend_container.querySelectorAll("[name='voucher-dot-represents'], [name='safmr-dot-represents']").forEach((item)=>{
-      item.innerText = dotRepresents
+      item.innerText = Math.round(dotRepresents/dot_deflator)
     })  
   }
   var ethDotRepresents = dotConfig.default.numDots(z)
   var ethnicity_dot_represents_span = legend_container.querySelectorAll("[name='num-ethnicity-dot-represents']")
   if (ethnicity_dot_represents_span.length > 0) {
-    ethnicity_dot_represents_span[0].innerText = ethDotRepresents
+    ethnicity_dot_represents_span[0].innerText = Math.round(ethDotRepresents/dot_deflator)
   }
 }
 

@@ -1,5 +1,6 @@
 import { downloadTractShapefiles } from "../shapefile_downloader"
 import { downloadTractData, downloadTractBins } from "../tract_data_downloader"
+import dotDensities from "../../../tmp/cbsa_densities"
 import { processTractShapefiles } from "./tract_shapefile_processor"
 import { downloadWaterFiles, processWaterFiles } from "./handle_water_files"
 import { downloadPlaceNames } from "../download_place_names"
@@ -10,7 +11,7 @@ import { updateLegend } from "./update_legend"
 
 const CBSAManager = function(app) {
 
-  var tractShapefiles, tractBins, waterShapes, _cbsa, places
+  var tractShapefiles, tractBins, waterShapes, _cbsa, places, dotDensity
 
   this.loadCBSA = function(cbsa) {
     _cbsa = cbsa
@@ -53,6 +54,7 @@ const CBSAManager = function(app) {
       return new Promise((resolve)=>{
         var geoData = d[0]
         var housingData = d[1]
+        dotDensity = dotDensities[cbsa]
         geoData.geojson.features.forEach((tract)=>{
           var tract_id = tract.properties.GEOID10
           if (typeof(housingData[tract_id])) {
@@ -74,6 +76,10 @@ const CBSAManager = function(app) {
         })*/
       })
     })
+  }
+
+  this.getDotDensity = () => {
+    return dotDensity
   }
 
   this.getPlaces = () => {

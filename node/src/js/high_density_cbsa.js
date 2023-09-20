@@ -1,5 +1,5 @@
 export default {
-  "35620" : -3, /*NYC - set dots to 3 zoom levels below average*/
-  "14460": -1, /*Boston*/
-  "31080": -1 /*LA*/
+  "35620" : 0, /*NYC - set dots to 3 zoom levels below average*/
+  "14460": 0, /*Boston*/
+  "31080": 0 /*LA*/
 }
