@@ -6,9 +6,10 @@ const colorConfig = {
     name: "Poverty Rate",
     f: d=>d+"%",
     colors: (function() {
-      var secRange = colorgen("#b1e3cf","#009632", 5);
-      secRange.shift();
-      //return colorgen("#e6f5f0", "#b1e3cf", 5).concat(secRange);
+      var secRange = colorgen("#f0eac7","#db6409", 5);
+      //secRange.shift();
+      //return colorgen("#e6f5f5", "#4a8270", 4).concat(secRange);
+      return colorgen("#e6f5f5", "#76a395", 4).concat(secRange);
       return colorgen("#e6f5f5", "#4a8270", 9)
     })()
   },
