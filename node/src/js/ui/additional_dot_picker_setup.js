@@ -31,8 +31,9 @@ const makeAdditionalDotsPickerOptions = function(picker) {
     var option = document.createElement("input");
     option.type="checkbox"
     option.value = key + "_dots"
+    option.checked = false;
     option.innerText = data_keys[key]
-    option.style.backgroundColor = config.fill
+    //option.style.backgroundColor = config.fill
     wrap.append(option)
     wrap.append(legend_box)
     wrap.append(label)

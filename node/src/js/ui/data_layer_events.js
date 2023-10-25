@@ -23,14 +23,8 @@ const dataLayerEvents = function(map) {
     this.setActiveLayer(data_picker.value)
     if (data_picker.value==="none") {
       pickers.querySelector(".picker-race-ethnicity").style.display = "block";
-      pickers.querySelector(".picker-race-ethnicity").querySelectorAll("input[type='checkbox']").forEach(function(el) {
-        el.checked = true;
-      })
     } else {
       pickers.querySelector(".picker-race-ethnicity").style.display = "none";
-      pickers.querySelector(".picker-race-ethnicity").querySelectorAll("input[type='checkbox']").forEach(function(el) {
-        el.checked = false;
-      })
     }
     determineAddtlDots.call(this)
     map.updateView()
@@ -61,7 +55,11 @@ const dataLayerEvents = function(map) {
     determineAddtlDots.call(this)
   });
   function determineAddtlDots() {
-    var values = Array.from(addl_dots_picker.querySelectorAll("input:checked"),e=>e.value);
+    var values = [];
+    var data_layer = data_picker.value
+    if (data_layer === "none") {
+      values = Array.from(addl_dots_picker.querySelectorAll("input:checked"),e=>e.value);
+    }
     if (document.querySelectorAll("#" + map.getId() + " .pickers input[name='safmr']")[0].checked) {
       values.push("safmr_tot_safmr_vau_dots");
     }
