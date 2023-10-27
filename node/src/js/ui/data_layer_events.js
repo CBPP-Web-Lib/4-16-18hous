@@ -15,14 +15,22 @@ const dataLayerEvents = function(map) {
     pickers.style.display="none"
   })
   document.querySelector("#" + map.getId() + " .pickers-and-map-viewport .picker-open-self").addEventListener("click", ()=>{
-    console.log("click")
     pickers.style.display="block"
   })
   var self = this;
+  var race_instructions_shown = false;
+  pickers.querySelector(".racial-density-instructions a").addEventListener("click", function(e) {
+    e.preventDefault();
+    pickers.querySelector(".racial-density-instructions").style.display = "none";
+  });
   data_picker.addEventListener("change", ()=>{
     this.setActiveLayer(data_picker.value)
     if (data_picker.value==="none") {
       pickers.querySelector(".picker-race-ethnicity").style.display = "block";
+      if (!race_instructions_shown) {
+        race_instructions_shown = true;
+        pickers.querySelector(".racial-density-instructions").style.display="block";
+      }
     } else {
       pickers.querySelector(".picker-race-ethnicity").style.display = "none";
     }
