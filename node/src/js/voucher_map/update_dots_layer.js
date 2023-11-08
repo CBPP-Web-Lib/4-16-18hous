@@ -20,25 +20,6 @@ function load_dot_config(name) {
   return config
 }
 
-/*for debugging use only; don't need to display this layer ordinarily*/
-function display_water(map, water) {
-  var water_features = []
-  var svg = map.getSvg()
-  water.forEach((file)=>{
-    water_features = water_features.concat(file.features)
-  })
-  var pathGen = map.projectionManager.getPathGen()
-  var debug_water = svg
-    .selectAll("path.water")
-    .data(water_features);
-  debug_water.enter()
-    .append("path")
-    .attr("class","water")
-    .merge(debug_water)
-    .attr("d", pathGen)
-  debug_water.exit().remove()
-  /*end debug*/
-}
 
 export function updateDotsLayer(visible_features) {
   var map = this
@@ -180,8 +161,6 @@ export function updateDotsLayer(visible_features) {
           dots: draw_dot_layer
         })
       })
-    
-      //display_water(map, water);
     
       /*draw voucher dots above ethnicity dots and randomize order of ethnicity dots*/
       var voucher_dots = []

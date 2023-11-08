@@ -2,6 +2,7 @@ import { tractFill } from "./tract_fill"
 import { bbox_overlap } from "./bbox_overlap"
 
 
+
 export function updateShapesLayer() {
   var map = this
   var tract_shapefiles = map.cbsaManager.getTractShapefiles()
@@ -10,6 +11,7 @@ export function updateShapesLayer() {
   var inverted_merged = tract_shapefiles.inverted_merged
   var tract_bins = map.cbsaManager.getTractBins()
   var active_layer = map.dataLayerManager.getActiveLayer()
+  var water = map.cbsaManager.getWaterShapes()
   var pathGen = map.projectionManager.getPathGen()
   /*limit draw/projection calculations to visible items*/
   var bounds = map.projectionManager.getBounds()
@@ -55,6 +57,45 @@ export function updateShapesLayer() {
     
   }).then(function(pathStrings) {
     return new Promise((resolve)=>{
+
+      function display_water(map, water) {
+        var water_features = []
+        var svg = map.getSvg()
+        water.forEach((file)=>{
+          water_features = water_features.concat(file.features)
+        })
+        
+        var viewWidth = map.getViewportWidth()
+        var viewHeight = map.getViewportHeight()
+        var pathGen = map.projectionManager.getPathGen()
+        svg.select("defs").selectAll("mask#waterLayerClip")
+          .data([1])
+          .enter()
+          .append("mask")
+          .attr("id", "waterLayerClip")
+        svg.select("mask#waterLayerClip").selectAll("rect.background")
+          .data([1])
+          .enter()
+          .append("rect")
+          .attr("class", "background")
+          .attr("fill", "#fff")
+          .attr("x", 0)
+          .attr("y", 0)
+          .attr("width", viewWidth)
+          .attr("height", viewHeight);
+        var waterClip = svg.select("mask#waterLayerClip")
+          .selectAll("path.water")
+          .data(water_features);
+        waterClip.enter()
+          .append("path")
+          .attr("class","water")
+          .attr("fill", "#000")
+          .merge(waterClip)
+          .attr("d", pathGen)
+        waterClip.exit().remove()
+      }
+
+
       var svg = map.getSvg().select("g.shapeLayer")
       var inverted_svg = map.getInvertedSvg().select("g.shapeLayer")
       var cbsa_group = svg.selectAll("g.cbsa_group")
@@ -96,7 +137,14 @@ export function updateShapesLayer() {
             return "url(#blur)"
           }
         })
-      var tracts = svg.selectAll("path.tract")
+    
+      var tract_layer = svg.selectAll("g.tractLayer")
+        .data([1])
+        .enter()
+        .append("g")
+        .attr("class", "tractLayer")
+        .attr("mask", "url(#waterLayerClip)")
+      var tracts = svg.select("g.tractLayer").selectAll("path.tract")
         .data(features, d=>d.properties.GEOID10);
       tracts
         .enter()
@@ -116,6 +164,8 @@ export function updateShapesLayer() {
         .exit()
         .remove()
       
+      
+      display_water(map, water);
       resolve(features);
     });
   })

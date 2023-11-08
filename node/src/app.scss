@@ -92,9 +92,21 @@ body, html {
     }
     .picker-close-self {
       position:absolute;
-      right:10px;
-      top:5px;
+      right:0px;
+      top:0px;
       cursor:pointer;
+      z-index:100;
+      padding:20px;
+      &:hover {
+        background-color: #ccc;
+      }
+      & > span {
+        position:absolute;
+        right:10px;
+        top:5px;
+        font-size:18px;
+      }
+
     }
     .picker-wrapper {
       margin-bottom:0.5em;
@@ -106,6 +118,7 @@ body, html {
       label, select, .autocomplete_wrap {
         margin-left:5pt;
         margin-right:5pt;
+        z-index:110;
       }
       select:not([multiple]) {
         max-width:150px;
