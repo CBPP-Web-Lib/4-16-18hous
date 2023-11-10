@@ -48,12 +48,12 @@ function MapZoomer(map) {
     map.coordTracker.setCoords(touchZoomDestCoords).then(function() {
       updateLegendDotRepresents(map)
       var shapeLayers = document.querySelectorAll("#" + map.getId() + " .shapeLayer")
-      var dotsLayer = document.querySelectorAll("#" + map.getId() + " .map-viewport > canvas")[0]
+      var dotsLayer = map.getTransparencyContainer().querySelectorAll("canvas")[0]
       shapeLayers.forEach((shapeLayer)=>{
         shapeLayer.style.transform = ""
         //shapeLayer.style.transformOrigin = ""
       })
-      var tileLayers = document.querySelectorAll("#" + map.getId() + " .tileLayer .zoom-layer");
+      var tileLayers = map.getTransparencyContainer().querySelectorAll(" .tileLayer .zoom-layer");
       tileLayers.forEach((tileLayer)=>{
         tileLayer.style.transform =  ""
         //tileLayer.style.transformOrigin = ""
@@ -76,8 +76,8 @@ function MapZoomer(map) {
     }
     var frameCenter = [(x1 + x2)/2, (y1 + y2)/2]
     var translate = [(frameCenter[0] - touchZoomInitialCenter[0]), (frameCenter[1] - touchZoomInitialCenter[1])]
-    var shapeLayers = document.querySelectorAll("#" + map.getId() + " .shapeLayer")
-    var dotsLayer = document.querySelectorAll("#" + map.getId() + " .map-viewport > canvas")[0]
+    var shapeLayers = map.getTransparencyContainer().querySelectorAll(".shapeLayer")
+    var dotsLayer = map.getTransparencyContainer().querySelectorAll("canvas")[0]
     shapeLayers.forEach((shapeLayer)=>{
       shapeLayer.style.transform = "scale(" + scaleFactor + ") translate(" + translate[0] + "px, " + translate[1] + "px)"
       shapeLayer.style.transformOrigin = frameCenter[0] + "px " + frameCenter[1] + "px";
@@ -136,8 +136,8 @@ function MapZoomer(map) {
             z: z,
           }
           updateTileHtml.call(map, frameCoords)
-          var shapeLayers = document.querySelectorAll("#" + map.getId() + " .shapeLayer")
-          var dotsLayer = document.querySelectorAll("#" + map.getId() + " .map-viewport > canvas")[0]
+          var shapeLayers = map.getTransparencyContainer().querySelectorAll(".shapeLayer")
+          var dotsLayer = map.getTransparencyContainer().querySelectorAll("canvas")[0]
           var transform_z = 1 + z%1
           if (startCoords.z > newCoords.z) {
             transform_z /= 2

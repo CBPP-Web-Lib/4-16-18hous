@@ -222,22 +222,26 @@ body, html {
       position:absolute;
       height:100%;
       width:100%;
-      & > svg {
-        position:absolute;
-        width:100%;
-        height:100%;
-        top:0;
-        left:0;
-        &.main-svg {mix-blend-mode: multiply;}
-        &.inverted-svg, &.text-svg {pointer-events: none;}
-      }
-      & > canvas {
-        position:absolute;
-        width:100%;
-        height:100%;
-        top:0;
-        left:0;
-        pointer-events:none;
+      & > .transparency-container {
+        opacity: 1;
+        transition: opacity 0.3s;
+        & > svg {
+          position:absolute;
+          width:100%;
+          height:100%;
+          top:0;
+          left:0;
+          &.main-svg {mix-blend-mode: multiply;}
+          &.inverted-svg, &.text-svg {pointer-events: none;}
+        }
+        & > canvas {
+          position:absolute;
+          width:100%;
+          height:100%;
+          top:0;
+          left:0;
+          pointer-events:none;
+        }
       }
     } 
   }
@@ -317,8 +321,9 @@ body, html {
     cursor:pointer;
   }
   svg path.tract.hovered {
-    stroke:#a00;
-    stroke-width:2px;
+    //stroke:#a00;
+    //stroke-width:2px;
+    filter: contrast(80%) brightness(80%);
   }
   circle.dot {
     pointer-events:none;

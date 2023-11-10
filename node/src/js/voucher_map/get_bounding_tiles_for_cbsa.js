@@ -35,8 +35,7 @@ function finalize(r) {
   }
 }
 
-const getBoundingTilesForCBSA = function(cbsa) {
-  const bbox = get_cbsa_bounds(cbsa)
+const getBoundingTilesForBbox = function(bbox) {
   const viewWidth = this.getMap().getViewportWidth()
   const viewHeight = this.getMap().getViewportHeight()
   const tiles_across = Math.min(viewWidth/256)
@@ -58,4 +57,9 @@ const getBoundingTilesForCBSA = function(cbsa) {
   }
 }
 
-export { getBoundingTilesForCBSA }
+const getBoundingTilesForCBSA = function(cbsa) {
+  const bbox = get_cbsa_bounds(cbsa)
+  return getBoundingTilesForBbox.call(this, bbox);
+}
+
+export { getBoundingTilesForCBSA, getBoundingTilesForBbox }

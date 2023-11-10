@@ -25,3 +25,4 @@ webroot/image_proxy/cache
 node/dev/*
 .env
 node/prod/*
+webroot/demo_assets/*

@@ -13,5 +13,4 @@ load_typekit(()=>{
   map.initialize({id, url_base})
 });
 
-
-
+window.cbpp_housing_voucher_map = map

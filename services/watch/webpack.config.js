@@ -5,7 +5,8 @@ module.exports = {
   entry: {
     app: './src/app.js',
     worker_project: './src/worker_project.js',
-    worker_dot: './src/worker_dot.js'
+    worker_dot: './src/worker_dot.js',
+    scroll_slides: './src/scroll_slides.js'
   },
   watch: true,
   output: {

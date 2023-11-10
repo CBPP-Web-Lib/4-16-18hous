@@ -17,8 +17,8 @@ const setupLightbox = function(dom) {
     document.querySelectorAll("body")[0].classList.remove("no-scroll")
     document.querySelectorAll("html")[0].classList.remove("no-scroll")
   })
-  document.querySelectorAll("body")[0].classList.add("no-scroll")
-  document.querySelectorAll("html")[0].classList.add("no-scroll")
+  //document.querySelectorAll("body")[0].classList.add("no-scroll")
+  //document.querySelectorAll("html")[0].classList.add("no-scroll")
   lightboxEl.append(closeBox)
 }
 

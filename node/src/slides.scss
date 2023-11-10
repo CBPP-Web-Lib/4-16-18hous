@@ -1,0 +1,66 @@
+.slide-deck {
+  position: relative;
+  z-index:9999;
+  padding-top:60vh;
+  padding-bottom:60vh;
+  .slide {
+    padding:0;
+    display:inline-block;
+  }
+  .slide-inner-wrap {
+    display:inline-block;
+    line-height:1.2;
+    background-color: rgba(255, 255, 255, 0.97);
+    h2 {
+      font-size:16pt;
+      line-height:1.2;
+    }
+    font-size:14pt;
+    margin-top:80vh;
+    margin-bottom:80vh;
+    padding:20px;
+    border:1px solid #666;
+  }
+}
+
+.slide-custom-backgrounds > div {
+  display:none;
+  opacity:0;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  position:fixed;
+  &.active {
+    display:block;
+    opacity:1;
+    transition:opacity 0.3s;
+  }
+}
+
+.cbpp-maps-story-mode {
+  .hous4-16-18-loading-blocker {
+    visibility: hidden;
+  }
+  #hous4-16-18 {
+    pointer-events:none;
+    .map-close-lightbox, .picker-open-self, .pickers {
+      display:none;
+    }
+    .map-inner-lightbox {
+      top:0px;
+      left:0px;
+      right:0px;
+      bottom:0px;
+    }
+  } 
+}
+
+#hous4-16-18 {
+  opacity: 1;
+  transition: opacity 0.3s;
+  &.map-hidden {
+    opacity: 0;
+    pointer-events:none;
+  }
+}

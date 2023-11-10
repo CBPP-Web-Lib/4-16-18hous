@@ -1,7 +1,7 @@
 var translateMap = function(dx, dy) {
   var map = this;
-  var shapeLayers = document.querySelectorAll("#" + map.getId() + " g.shapeLayer");
-  var dotsLayer = document.querySelectorAll("#" + map.getId() + " .map-viewport > canvas")[0];
+  var shapeLayers = map.getTransparencyContainer().querySelectorAll("g.shapeLayer");
+  var dotsLayer = map.getTransparencyContainer().querySelectorAll("canvas")[0];
   shapeLayers.forEach((shapeLayer)=>{
     shapeLayer.style.transform = "translate(" + dx + "px," + dy + "px)";
   })
@@ -10,8 +10,8 @@ var translateMap = function(dx, dy) {
 
 var untranslateMap = function() {
   var map = this;
-  var shapeLayers = document.querySelectorAll("#" + map.getId() + " g.shapeLayer");
-  var dotsLayer = document.querySelectorAll("#" + map.getId() + " .map-viewport > canvas")[0];
+  var shapeLayers = map.getTransparencyContainer().querySelectorAll("g.shapeLayer");
+  var dotsLayer = map.getTransparencyContainer().querySelectorAll("canvas")[0];
   shapeLayers.forEach((shapeLayer)=>{
     shapeLayer.style.transform = "";
   })

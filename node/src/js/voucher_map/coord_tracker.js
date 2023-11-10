@@ -1,4 +1,4 @@
-import { getBoundingTilesForCBSA } from "./get_bounding_tiles_for_cbsa"
+import { getBoundingTilesForCBSA, getBoundingTilesForBbox } from "./get_bounding_tiles_for_cbsa"
 //import { tileCoordToLatLong } from "./projection_manager"
 
 var z, x, y, viewportWidth, viewportHeight;
@@ -50,6 +50,7 @@ const CoordTracker = function(map) {
   }
   this.signalViewportResize = signalViewportResize.bind(this)
   this.getBoundingTilesForCBSA = getBoundingTilesForCBSA.bind(this)
+  this.getBoundingTilesForBbox = getBoundingTilesForBbox.bind(this)
 }
 
 export {

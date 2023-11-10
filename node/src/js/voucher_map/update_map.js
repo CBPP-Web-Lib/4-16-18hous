@@ -12,6 +12,7 @@ const updateMapView = function(force) {
     displayLoadingBlocker()
     var finish = () => {
       updateTileHtml.call(this)
+      this.fadeOutOldTransparencyContainer()
       hideLoadingBlocker()
       resolve()
     }

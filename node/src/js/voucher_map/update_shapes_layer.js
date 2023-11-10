@@ -67,20 +67,23 @@ export function updateShapesLayer() {
         
         var viewWidth = map.getViewportWidth()
         var viewHeight = map.getViewportHeight()
+        console.log(viewWidth, viewHeight);
         var pathGen = map.projectionManager.getPathGen()
         svg.select("defs").selectAll("mask#waterLayerClip")
           .data([1])
           .enter()
           .append("mask")
           .attr("id", "waterLayerClip")
-        svg.select("mask#waterLayerClip").selectAll("rect.background")
-          .data([1])
+        var background_rect = svg.select("mask#waterLayerClip").selectAll("rect.background")
+          .data([1]);
+        background_rect
           .enter()
           .append("rect")
           .attr("class", "background")
           .attr("fill", "#fff")
           .attr("x", 0)
           .attr("y", 0)
+          .merge(background_rect)
           .attr("width", viewWidth)
           .attr("height", viewHeight);
         var waterClip = svg.select("mask#waterLayerClip")
