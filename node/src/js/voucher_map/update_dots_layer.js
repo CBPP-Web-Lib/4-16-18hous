@@ -146,8 +146,6 @@ export function updateDotsLayer(visible_features) {
       var canvas = map.getCanvas()
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       var dotsLayer = map.getTransparencyContainer().querySelectorAll("canvas")[0];
-      console.log(dotsLayer)
-      console.log(map.getTransparencyContainer())
       dotsLayer.style.transform = "";
       var draw_dot_layers = [];
       Object.keys(dot_data_layer).forEach((layer_id)=>{

@@ -16,8 +16,6 @@ function setCoords(coords) {
     y = coords.y
     viewportWidth = this.getMap().getViewportWidth()
     viewportHeight = this.getMap().getViewportHeight()
-    //console.log(tileCoordToLatLong(x, y, z))
-    //console.log(tileCoordToLatLong(x + viewportWidth/256, y + viewportHeight/256, z))
     this.getMap().projectionManager.updateProjection().then(() => {
       window.requestAnimationFrame(()=>{
         this.getMap().updateView().then(function(result) {

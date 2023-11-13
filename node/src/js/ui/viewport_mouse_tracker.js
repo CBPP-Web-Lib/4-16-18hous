@@ -201,6 +201,15 @@ function ViewportMouseTracker(map) {
       this.pinchMove(e.touches[0].pageX, e.touches[0].pageY, e.touches[1].pageX, e.touches[1].pageY)
     }
   });
+
+  viewport.addEventListener("click", function(e) {
+    var offset = viewport.getBoundingClientRect();
+    console.log(e, offset);
+    var x = e.clientX - offset.x;
+    var y = e.clientY - offset.y;
+    console.log(x, y)
+    console.log(map.projectionManager.getLatLongFromClick(x, y));
+  })
 }
 
 export {ViewportMouseTracker}

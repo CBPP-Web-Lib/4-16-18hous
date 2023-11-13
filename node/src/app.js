@@ -9,6 +9,13 @@ const id = "hous4-16-18"
 const script_id = "script_" + id
 const url_base = getURLBaseFromScript(script_id);
 const map = new VoucherMap()
+map.ready = function(cb) {
+  if (map.initialized) {
+    cb();
+  } else {
+    map.whenReady = cb;
+  }
+}
 load_typekit(()=>{
   map.initialize({id, url_base})
 });

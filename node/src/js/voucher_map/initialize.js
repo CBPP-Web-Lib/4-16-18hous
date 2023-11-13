@@ -54,6 +54,10 @@ const initialize = function(config) {
   this.projectionWorkers = setupProjectionWorkers(this)
   this.dotWorkers = setupDotWorkers(this)
   this.dataLayerManager.setActiveDotsLayer("hcv_total")
+  if (typeof(this.whenReady)==="function") {
+    this.whenReady();
+  }
+  this.initialized = true;
 }
 
 export { initialize }

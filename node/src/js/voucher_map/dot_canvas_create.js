@@ -5,9 +5,7 @@ function makeElement(map) {
   canvas.width = map.getViewportWidth()*2
   canvas.height = map.getViewportHeight()*2
   ctx = canvas.getContext("2d")
-  console.log(map.getTransparencyContainer())
   map.getTransparencyContainer().append(canvas)
-  console.log(canvas);
 }
 
 function getCanvas() {

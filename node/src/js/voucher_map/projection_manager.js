@@ -37,6 +37,14 @@ const ProjectionManager = function(map) {
     return [tl.long, br.lat, br.long, tl.lat]
   }
 
+  this.latLongToTileCoord = latLongToTileCoord
+
+  this.getLatLongFromClick = function(x, y) {
+    var coords = map.coordTracker.getCoords()
+    var latlong = tileCoordToLatLong(coords.x + x/256, coords.y + y/256, Math.floor(coords.z));
+    return latlong;
+  }
+
   var tl, br
 
   this.updateProjection = function() {

@@ -21,7 +21,10 @@ const updateMapView = function(force) {
       finish()
       return
     }
-    if (typeof(this.cbsaManager.getTractShapefiles())==="undefined") {return;}
+    if (typeof(this.cbsaManager.getTractShapefiles())==="undefined") {
+      finish()
+      return;
+    }
     updateShapesLayer.call(this).then((visible_features) => {
       untranslateMap.call(this)
       updatePlacesLayer.call(this)

@@ -15,7 +15,6 @@ const CBSAManager = function(app) {
 
   this.loadCBSA = function(cbsa) {
     _cbsa = cbsa
-    console.log(app)
     app.remakeTransparencyElement()
     return Promise.all([
       new Promise((resolve)=>{

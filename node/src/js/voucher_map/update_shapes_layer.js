@@ -67,7 +67,6 @@ export function updateShapesLayer() {
         
         var viewWidth = map.getViewportWidth()
         var viewHeight = map.getViewportHeight()
-        console.log(viewWidth, viewHeight);
         var pathGen = map.projectionManager.getPathGen()
         svg.select("defs").selectAll("mask#waterLayerClip")
           .data([1])

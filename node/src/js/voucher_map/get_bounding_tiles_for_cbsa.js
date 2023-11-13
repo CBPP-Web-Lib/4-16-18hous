@@ -41,7 +41,7 @@ const getBoundingTilesForBbox = function(bbox) {
   const tiles_across = Math.min(viewWidth/256)
   const tiles_down = Math.min(viewHeight/256)
   var coords_for_zoom = {}
-  for (var z = 1; z <= 12; z++) {
+  for (var z = 1; z <= 13; z++) {
     var tl = latLongToTileCoord(bbox[0], bbox[1], z)
     /*to correct for presence of UI pickers*/
    // tl.x -= 1
@@ -51,7 +51,7 @@ const getBoundingTilesForBbox = function(bbox) {
     coords_for_zoom[z] = [tl, br]
     var across = br.x - tl.x
     var down = tl.y - br.y
-    if (across > tiles_across || down > tiles_down) {
+    if (across > tiles_across || down > tiles_down || z === 13) {
       return finalize({coords: coords_for_zoom[z-1], z:z-1, tiles_across, tiles_down})
     }
   }
