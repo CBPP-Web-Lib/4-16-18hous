@@ -1,3 +1,5 @@
+import { select } from "d3"
+
 function ViewportMouseTracker(map) {
   var x_start,
     y_start,
@@ -203,6 +205,10 @@ function ViewportMouseTracker(map) {
   });
 
   viewport.addEventListener("click", function(e) {
+    var el = select(e.target);
+    if (el.data()) {
+      console.log(el.data())
+    }
     var offset = viewport.getBoundingClientRect();
     console.log(e, offset);
     var x = e.clientX - offset.x;

@@ -7,11 +7,13 @@ import { downloadPlaceNames } from "../download_place_names"
 import waterIndex from "../../../tmp/waterIndex.json"
 import { cbsaUi } from "../ui/cbsa_ui"
 import { calculateNumberOfDots } from "./calculate_number_of_dots"
+import { downloadPopDensity } from "../download_pop_density"
 import { updateLegend } from "./update_legend"
+import { index_pop_density } from "./index_pop_density"
 
 const CBSAManager = function(app) {
 
-  var tractShapefiles, tractBins, waterShapes, _cbsa, places, dotDensity
+  var tractShapefiles, tractBins, waterShapes, _cbsa, places, dotDensity, popDensity
 
   this.loadCBSA = function(cbsa) {
     _cbsa = cbsa
@@ -50,6 +52,12 @@ const CBSAManager = function(app) {
           places = d
           resolve(d)
         })
+      }),
+      new Promise((resolve)=> {
+        downloadPopDensity("data/pop_density/compressed/tl_2010_tract_" + cbsa + ".bin").then((d) => {
+          popDensity = d
+          resolve(d)
+        })
       })
     ]).then(function(d) {
       return new Promise((resolve)=>{
@@ -61,9 +69,8 @@ const CBSAManager = function(app) {
           if (typeof(housingData[tract_id])) {
             tract.properties.housing_data = housingData[tract_id]
           }
+          tract.properties.pop_density_index = index_pop_density(tract, popDensity)
         })
-
-        
 
         /*This step has already been done for the voucher numbers, since
         it requires HUD approval and the raw data is subject to privacy 
@@ -77,6 +84,10 @@ const CBSAManager = function(app) {
         })*/
       })
     })
+  }
+
+  this.getPopDensity = () => {
+    return popDensity
   }
 
   this.getDotDensity = () => {

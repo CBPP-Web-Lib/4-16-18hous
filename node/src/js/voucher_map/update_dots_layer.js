@@ -26,6 +26,7 @@ export function updateDotsLayer(visible_features) {
   return new Promise((resolve)=> {
     var start_time = Date.now()
     var cbsa = map.cbsaManager.getLoadedCbsa()
+    var pop_density = map.cbsaManager.getPopDensity()
     var z = Math.round(map.coordTracker.getCoords().z)
     /*if (high_density_cbsa[cbsa]) {
       z += high_density_cbsa[cbsa]
@@ -104,7 +105,8 @@ export function updateDotsLayer(visible_features) {
                 dot_represents,
                 layer_id,
                 these_dots: layer_data.tracts[geoid].dots,
-                dot_deflator
+                dot_deflator,
+                pop_density
               })
               worker_slot++
               if (worker_slot >= map.dotWorkers.length) {

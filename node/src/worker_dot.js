@@ -5,8 +5,46 @@ import { bbox_overlap } from "./js/voucher_map/bbox_overlap"
 
 var projection, water
 
+function get_density_for_dot(dot, tiles, max) {
+  var nearest_tiles = tiles.filter((a) => {
+    if (Math.abs(a[0] - dot[0]) > 0.01) {
+      return false;
+    }
+    if (Math.abs(a[1] - dot[1]) > 0.01) {
+      return false;
+    }
+    return true;
+  })
+  var dsquared = [];
+  nearest_tiles.forEach((a) => {
+    dsquared.push([a, Math.pow(a[0] - dot[0], 2) + Math.pow(a[1] - dot[1], 2)])
+  })
+  if (dsquared.length === 0) {
+    return 0;
+  }
+  var min = dsquared[0][1]; 
+  var minIndex = 0;
+  dsquared.forEach((a, i) => {
+    if (min > a[1]) {
+      min = a[1]
+      minIndex = i
+    }
+  })
+  var density = dsquared[minIndex][0][2]
+  return density/max
+  
+} 
+
 function handle_feature(args) {
-  var { feature, name, dot_represents, layer_id, these_dots, dot_deflator } = args
+  var { feature, name, dot_represents, layer_id, these_dots, dot_deflator, pop_density } = args
+  var pop_density_tract = []
+  feature.properties.pop_density_index.forEach((key) => {
+    pop_density_tract.push(pop_density[key])
+  })
+  var max_density = 0;
+  pop_density_tract.forEach((tile) => {
+    max_density = Math.max(tile[2], max_density);
+  })
   var geoid = feature.properties.GEOID10
   var bbox = feature.bbox
   var width = bbox[2] - bbox[0]
@@ -15,9 +53,9 @@ function handle_feature(args) {
   var dots_made = these_dots.length
   var attempt = 0
   var total_attempts = 0
-  while (dots_made < num_dots && total_attempts < num_dots*20) {
+  while (dots_made < num_dots && total_attempts <= num_dots*2000) {
     total_attempts++
-    if (total_attempts >= num_dots*20) {
+    if (total_attempts >= num_dots*2000) {
       console.log("Warning: aborted dot draw after too many failed attempts")
     }
     var seed = [geoid, name, dot_represents, dots_made, attempt].join("")
@@ -40,7 +78,14 @@ function handle_feature(args) {
       }
     })
     //in_water = false
-    if (featureContains(dot, feature) && !in_water) {
+    var pop_density_of_max
+    if (!in_water) {
+      pop_density_of_max = get_density_for_dot(dot, pop_density_tract, max_density)
+    } else {
+      pop_density_of_max = 0
+    }
+    var pop_density_test = rng();
+    if (featureContains(dot, feature) && !in_water && pop_density_test < pop_density_of_max) {
       these_dots.push(dot)
       dots_made = these_dots.length
       attempt = 0

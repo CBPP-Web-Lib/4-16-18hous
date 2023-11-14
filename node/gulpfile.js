@@ -9,11 +9,12 @@ var pako = require("pako");
 var fips = require("./src/fips.json");
 var turf_area = require("@turf/area").default;
 var csv_parse = require("csv-parse");
+var csv_stream = require("csv-stream");
 const createCsvStringifier = require('csv-writer').createArrayCsvStringifier;
 var seedrandom = require("seedrandom");
 var d3 = require("d3")
 var geojsonArea = require('@mapbox/geojson-area');
-
+var get_kontur_pop_density = require("./src/pop_density")
 const {
   Worker,
   isMainThread,
@@ -183,6 +184,10 @@ gulp.task("geojson_dir", function(cb) {
   makeDirectory("./geojson");
   cb();
 });
+
+gulp.task("kontur_pop_density", function(cb) {
+  get_kontur_pop_density().then(cb)
+})
 
 
 gulp.task("unzip_shapefiles", function(cb) {
@@ -823,6 +828,59 @@ gulp.task("topojson", gulp.series(/*"topojson_dir","filter_geojson","buildDirect
     }, _cb);
   }
 }));
+
+gulp.task("split_pop_data_cbsa", function(cb) {
+  makeDirectory("./webroot/data/pop_density/");
+  var topo = fs.readdirSync("./webroot/topojson/high");
+  var bboxes = {};
+  var wss = []
+  topo.forEach((file)=>{
+    if (file.indexOf("tl_2010_tract_","")===-1) {return;}
+    var data = JSON.parse(pako.inflate(fs.readFileSync("./webroot/topojson/high/" + file),{to:"string"}));
+    var bbox = data.bbox;
+    bboxes[file] = bbox;
+    wss[file] = fs.createWriteStream("./webroot/data/pop_density/" + file.replace(".bin",".csv"));
+  });
+  var stream = csv_stream.createStream({
+    columns: ['long','lat','pop']
+  });
+  var rs = fs.createReadStream("./tmp/kontor_population.csv").pipe(stream);
+  rs.on("data", (row)=>{
+    Object.keys(bboxes).forEach((file) => {
+      var bbox = bboxes[file];
+      var ws = wss[file];
+      var inside_box = true;
+      var {long, lat, pop} = row;
+      if (long < bbox[0]) {inside_box = false;}
+      if (long > bbox[2]) {inside_box = false;}
+      if (lat < bbox[1]) {inside_box = false;}
+      if (lat > bbox[3]) {inside_box = false;}
+      if (inside_box) {
+        ws.write([long, lat, pop].join(",") + "\n");
+      }
+
+    })
+    
+  });
+  rs.on("end", () => {
+    setTimeout(()=>{
+      cb();
+    }, 100)
+  })
+})
+
+gulp.task("compress_density", function(cb) {
+  makeDirectory("./webroot/data/pop_density/compressed/");
+  var files = fs.readdirSync("./webroot/data/pop_density");
+  files.forEach((filename) => {
+    if (filename !== "compressed") {
+      console.log(filename)
+      var file = fs.readFileSync("./webroot/data/pop_density/" + filename, "utf-8")
+      fs.writeFileSync("./webroot/data/pop_density/compressed/" + filename.replace("csv","bin"), pako.deflate(file));
+    }
+  })
+  cb();
+})
 
 gulp.task("split_place_names_cbsa", function(cb) {
   makeDirectory("./webroot/data/place_names/");
