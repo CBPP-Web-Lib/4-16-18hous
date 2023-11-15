@@ -17,4 +17,4 @@ var bbox_contains = function(bbox, point) {
   return inside_box
 }
 
-export { index_pop_density }
+module.exports = { index_pop_density }

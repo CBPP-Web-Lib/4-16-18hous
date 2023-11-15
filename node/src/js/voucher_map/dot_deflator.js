@@ -12,5 +12,5 @@ var get_deflator = function(dot_density) {
   return 1/m
 }
 
-export { get_deflator }
+module.exports = { get_deflator }
       

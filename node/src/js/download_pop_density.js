@@ -1,6 +1,6 @@
 import { getURLBase } from "./get_url_base"
-import pako from "pako"
 import axios from 'axios'
+import { process_pop_density_csv } from "./process_pop_density_csv"
 
 function downloadPopDensity(filename) {
   return new Promise((resolve)=>{
@@ -9,21 +9,7 @@ function downloadPopDensity(filename) {
       responseType: 'arraybuffer'
     }
     axios.get(url_base + "/" + filename, options).then((res)=>{
-      var data = res.data;
-      console.log(data)
-      data = pako.inflate(data,{to:"string"});
-      data = data.split("\n");
-      var r = []
-      data.forEach((row, j) => {
-        row = row.split(",");
-        row[0] = row[0]*1;
-        row[1] = row[1]*1;
-        if (!isNaN(row[2]*1)) {
-          row[2] = row[2]*1
-          r.push(row)
-        }
-      })
-      resolve(r)
+      resolve(process_pop_density_csv(res.data));
     })
   })
 }

@@ -3,6 +3,7 @@ import { feature } from "topojson"
 import pako from "pako"
 import axios from 'axios'
 import geojson_bbox from "geojson-bbox"
+import { processWaterFiles as processWaterFilesUniversal } from "./process_water_files"
 
 const downloadWaterFiles = function(files) {
   const url_base = getURLBase()
@@ -24,18 +25,9 @@ const downloadWaterFiles = function(files) {
 }
 
 const processWaterFiles = function(d) {
-  var promises = [];
-  d.forEach((topology)=>{
-    promises.push(new Promise((resolve)=>{
-      var geojson = feature(topology, topology.objects.districts);
-      geojson.features.forEach((feature)=>{
-        feature.bbox =  geojson_bbox(feature)
-      })
-      resolve(geojson)
-    }));
-  });
-  return Promise.all(promises)
+  return processWaterFilesUniversal(d, {
+    feature, geojson_bbox
+  })
 }
-
 
 export { downloadWaterFiles, processWaterFiles }

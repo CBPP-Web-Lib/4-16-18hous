@@ -15,6 +15,7 @@ var seedrandom = require("seedrandom");
 var d3 = require("d3")
 var geojsonArea = require('@mapbox/geojson-area');
 var get_kontur_pop_density = require("./src/pop_density")
+var precalc_dots = require("./precalc_dots.mjs");
 const {
   Worker,
   isMainThread,
@@ -285,6 +286,9 @@ function makeDirectory(d, cb) {
   });
 }
 
+gulp.task("precalc_dots", function(cb) {
+  precalc_dots()
+})
 
 gulp.task("simplify_water", gulp.series("ogr2ogr", function(cb) {
   makeDirectory("water_simple");

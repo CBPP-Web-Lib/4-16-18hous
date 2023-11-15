@@ -11,4 +11,4 @@ const data_keys = {
   "ethnicity_white": "White"
 };
 
-export { data_keys }
+module.exports = { data_keys }

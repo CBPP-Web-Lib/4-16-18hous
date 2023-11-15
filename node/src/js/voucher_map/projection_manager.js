@@ -126,9 +126,11 @@ const ProjectionManager = function(map) {
     map.projectionWorkers.forEach((worker)=>{
       projectionUpdatePromises.push(workerPromiseGen(worker))
     })
-    map.dotWorkers.forEach((worker)=>{
-      projectionUpdatePromises.push(workerPromiseGen(worker))
-    })
+    if (map.dotWorkers) {
+      map.dotWorkers.forEach((worker)=>{
+        projectionUpdatePromises.push(workerPromiseGen(worker))
+      })
+    }
     return Promise.all(projectionUpdatePromises)
   }
 }

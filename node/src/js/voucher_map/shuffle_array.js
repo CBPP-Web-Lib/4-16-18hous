@@ -1,6 +1,6 @@
 /*https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array*/
 
-import seedrandom from "seedrandom"
+const seedrandom = require("seedrandom")
 
 function shuffle(array, seed) {
   var rng = new seedrandom(seed)
@@ -21,4 +21,4 @@ function shuffle(array, seed) {
   return array;
 }
 
-export { shuffle }
+module.exports = { shuffle }

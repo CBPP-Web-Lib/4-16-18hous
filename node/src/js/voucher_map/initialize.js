@@ -11,6 +11,7 @@ import { setupProjectionWorkers } from "./setup_projection_workers"
 import { setupDotWorkers } from "./setup_dot_workers"
 import { setupLightbox } from "../ui/setup_lightbox"
 import dom from "../../dom.html"
+import { mode } from "./mode"
 
 var id, url_base;
 
@@ -52,7 +53,9 @@ const initialize = function(config) {
   this.dataLayerManager.setupEvents(this)
   this.cbsaManager.setupEvents()
   this.projectionWorkers = setupProjectionWorkers(this)
-  this.dotWorkers = setupDotWorkers(this)
+  if (mode !== "download") {
+    this.dotWorkers = setupDotWorkers(this)
+  }
   this.dataLayerManager.setActiveDotsLayer("hcv_total")
   if (typeof(this.whenReady)==="function") {
     this.whenReady();

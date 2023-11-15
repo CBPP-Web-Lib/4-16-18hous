@@ -10,6 +10,7 @@ import { calculateNumberOfDots } from "./calculate_number_of_dots"
 import { downloadPopDensity } from "../download_pop_density"
 import { updateLegend } from "./update_legend"
 import { index_pop_density } from "./index_pop_density"
+import { mode } from "./mode"
 
 const CBSAManager = function(app) {
 
@@ -54,6 +55,10 @@ const CBSAManager = function(app) {
         })
       }),
       new Promise((resolve)=> {
+        if (mode === "download") {
+          resolve();
+          return;
+        }
         downloadPopDensity("data/pop_density/compressed/tl_2010_tract_" + cbsa + ".bin").then((d) => {
           popDensity = d
           resolve(d)
@@ -69,7 +74,9 @@ const CBSAManager = function(app) {
           if (typeof(housingData[tract_id])) {
             tract.properties.housing_data = housingData[tract_id]
           }
-          tract.properties.pop_density_index = index_pop_density(tract, popDensity)
+          if (mode !== "download") {
+            tract.properties.pop_density_index = index_pop_density(tract, popDensity)
+          }
         })
 
         /*This step has already been done for the voucher numbers, since
@@ -77,7 +84,9 @@ const CBSAManager = function(app) {
         restrictions; repeat the technique for the publicly available
         race/ethnicity data. The cbsa is needed so the random seed
         is different for each cbsa*/
-        geoData.geojson.features = calculateNumberOfDots(geoData.geojson.features, cbsa)
+        if (mode !== "download") {
+          geoData.geojson.features = calculateNumberOfDots(geoData.geojson.features, cbsa)
+        }
         resolve(d);
         /*Promise.all(worker_setup_tasks).then(()=>{
           resolve(d)

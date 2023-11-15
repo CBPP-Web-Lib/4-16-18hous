@@ -5,6 +5,13 @@ import seedrandom from "seedrandom"
 import { get_deflator } from "./dot_deflator"
 //import high_density_cbsa from "../high_density_cbsa"
 import hexRgb from 'hex-rgb'
+import axios from 'axios'
+import { getURLBase } from "../get_url_base"
+import pako from "pako"
+import { mode, use_pop_density } from "./mode"
+
+const dot_cache = {};
+
 const dot_data_layer = {}
 
 function load_dot_config(name) {
@@ -20,130 +27,181 @@ function load_dot_config(name) {
   return config
 }
 
-
 export function updateDotsLayer(visible_features) {
   var map = this
+
   return new Promise((resolve)=> {
     var start_time = Date.now()
     var cbsa = map.cbsaManager.getLoadedCbsa()
-    var pop_density = map.cbsaManager.getPopDensity()
-    var z = Math.round(map.coordTracker.getCoords().z)
-    /*if (high_density_cbsa[cbsa]) {
-      z += high_density_cbsa[cbsa]
-    }*/
-    var projection = map.projectionManager.getProjection()
-    var water = map.cbsaManager.getWaterShapes()
-    var bounds = map.projectionManager.getBounds()
-    var water_features = [];
-    water.forEach((water_group)=>{
-      water_group.features.forEach((feature)=>{
-        if (bbox_overlap(feature.bbox, bounds)) {
-          water_features.push(feature)
-        } 
-      })
-    })
-
     var worker_setup_tasks = []
-    map.dotWorkers.forEach((worker)=>{
-      worker_setup_tasks.push(new Promise((resolve)=>{
-        worker.postMessage({
-          msgType: "newWater",
-          water: water_features
+    var z = Math.round(map.coordTracker.getCoords().z)
+    var projection = map.projectionManager.getProjection()
+    var bounds = map.projectionManager.getBounds()
+    if (mode !== "download") {
+      var pop_density = map.cbsaManager.getPopDensity()
+      /*if (high_density_cbsa[cbsa]) {
+        z += high_density_cbsa[cbsa]
+      }*/
+      var water = map.cbsaManager.getWaterShapes()
+      var water_features = [];
+      water.forEach((water_group)=>{
+        water_group.features.forEach((feature)=>{
+          if (bbox_overlap(feature.bbox, bounds)) {
+            water_features.push(feature)
+          } 
         })
-        worker.newWaterCallback = function(e) {
-          resolve()
-        };
-      }))
-    });
+      })
+
+      map.dotWorkers.forEach((worker)=>{
+        worker_setup_tasks.push(new Promise((resolve)=>{
+          worker.postMessage({
+            msgType: "newWater",
+            water: water_features
+          })
+          worker.newWaterCallback = function(e) {
+            resolve()
+          };
+        }))
+      });
+    } else {
+      worker_setup_tasks.push(Promise.resolve())
+    }
     Promise.all(worker_setup_tasks).then(function() {
       var active_dots_layer = map.dataLayerManager.getActiveDotsLayers()
-      var dot_deflator = get_deflator(map.cbsaManager.getDotDensity())
-      Object.keys(dot_data_layer).forEach((layer_id)=>{
-        var name = dot_data_layer[layer_id].name
-        var config = load_dot_config(name)
-        var dot_represents = config.numDots(z)
-        if (dot_data_layer[layer_id].dotRepresents !== dot_represents) {
-          delete(dot_data_layer[layer_id])
-        }
-        if (active_dots_layer.indexOf(name)===-1) {
-          delete(dot_data_layer[layer_id])
-        }
-      })
-      var feature_piles = []
-      var worker_slot = 0
-      active_dots_layer.forEach((name)=>{
-        var config = load_dot_config(name)
-        var dot_represents = config.numDots(z)
-        var layer_id = name + "_" + dot_represents;
-        var layer_data;
-        if (!dot_data_layer[layer_id]) {
-          var layer_data = {
-            name,
-            dotRepresents: dot_represents,
-            tracts: {}
+      if (mode === "download") {
+        var downloads = [];
+        var url_base = getURLBase();
+        active_dots_layer.forEach((dot_layer) => {
+          var config = load_dot_config(dot_layer)
+          var dot_represents = config.numDots(z)
+          var layer_id = dot_layer + "_" + dot_represents
+          if (dot_layer.indexOf("none") !== -1) {
+            return;
           }
-          dot_data_layer[layer_id] = layer_data
-        } else {
-          layer_data = dot_data_layer[layer_id]
-        }
-        Object.keys(layer_data.tracts).forEach((geoid)=>{
-          layer_data.tracts[geoid].old = true
-        })
-        visible_features.forEach((feature)=>{
-          if (feature.properties.housing_data[name]) {
-            var geoid = feature.properties.GEOID10
-            layer_data.tracts[geoid] = layer_data.tracts[geoid] || {
-              dots: []
+          downloads.push(new Promise((resolve) => {
+            var options = {
+              responseType: 'arraybuffer'
             }
-            layer_data.tracts[geoid].old = false
-            feature_piles[worker_slot] = feature_piles[worker_slot] || []
-            var num_dots = Math.round(feature.properties.housing_data[name][dot_represents] * dot_deflator)
-            if (layer_data.tracts[geoid].dots.length !== num_dots) {
-              feature_piles[worker_slot].push({
-                feature,
-                name, 
-                dot_represents,
+            var file = cbsa + "/" + dot_layer + "_" + dot_represents
+            if (dot_cache[file]) {
+              resolve(dot_cache[file])
+              return;
+            }
+            axios.get(url_base +"/data/dots/" + file + ".bin", options).then((response) => {
+              var dots = pako.inflate(response.data, {to: "string"})
+              dots = dots.split("\n");
+              dots[0] = dots[0].split(",");
+              dots[0][0]*=1;
+              dots[0][1]*=1;
+              for (var i = 1, ii = dots.length; i<ii; i++) {
+                dots[i] = dots[i].split(",");
+                dots[i][0]*=1;
+                dots[i][1]*=1;
+                dots[i][0] += dots[0][0]
+                dots[i][1] += dots[0][1];
+              }
+              dots.shift()
+              var result = {
+                layer: dot_layer,
                 layer_id,
-                these_dots: layer_data.tracts[geoid].dots,
-                dot_deflator,
-                pop_density
-              })
-              worker_slot++
-              if (worker_slot >= map.dotWorkers.length) {
-                worker_slot = 0
+                dot_represents,
+                dots
+              };
+              dot_cache[file] = result
+              resolve(result)
+            })
+          }))
+        })
+        var dot_tasks = downloads
+      } else {
+        var dot_deflator = get_deflator(map.cbsaManager.getDotDensity())
+        Object.keys(dot_data_layer).forEach((layer_id)=>{
+          var name = dot_data_layer[layer_id].name
+          var config = load_dot_config(name)
+          var dot_represents = config.numDots(z)
+          if (dot_data_layer[layer_id].dotRepresents !== dot_represents) {
+            delete(dot_data_layer[layer_id])
+          }
+          if (active_dots_layer.indexOf(name)===-1) {
+            delete(dot_data_layer[layer_id])
+          }
+        })
+        var feature_piles = []
+        var worker_slot = 0
+        active_dots_layer.forEach((name)=>{
+          var config = load_dot_config(name)
+          var dot_represents = config.numDots(z)
+          var layer_id = name + "_" + dot_represents;
+          var layer_data;
+          if (!dot_data_layer[layer_id]) {
+            var layer_data = {
+              name,
+              dotRepresents: dot_represents,
+              tracts: {}
+            }
+            dot_data_layer[layer_id] = layer_data
+          } else {
+            layer_data = dot_data_layer[layer_id]
+          }
+          Object.keys(layer_data.tracts).forEach((geoid)=>{
+            layer_data.tracts[geoid].old = true
+          })
+          visible_features.forEach((feature)=>{
+            if (feature.properties.housing_data[name]) {
+              var geoid = feature.properties.GEOID10
+              layer_data.tracts[geoid] = layer_data.tracts[geoid] || {
+                dots: []
+              }
+              layer_data.tracts[geoid].old = false
+              feature_piles[worker_slot] = feature_piles[worker_slot] || []
+              var num_dots = Math.round(feature.properties.housing_data[name][dot_represents] * dot_deflator)
+              if (layer_data.tracts[geoid].dots.length !== num_dots) {
+                feature_piles[worker_slot].push({
+                  feature,
+                  name, 
+                  dot_represents,
+                  layer_id,
+                  these_dots: layer_data.tracts[geoid].dots,
+                  dot_deflator,
+                  pop_density
+                })
+                worker_slot++
+                if (worker_slot >= map.dotWorkers.length) {
+                  worker_slot = 0
+                }
               }
             }
-          }
-        })
-        Object.keys(layer_data.tracts).forEach((geoid)=>{
-          if (layer_data.tracts[geoid].old) {
-            delete(layer_data.tracts[geoid])
-          }
-        })
-      })
-      var dot_tasks = []
-      feature_piles.forEach((pile, i)=>{
-        dot_tasks.push(new Promise((resolve)=>{
-          map.dotWorkers[i].postMessage({
-            msgType: "requestDotLocations",
-            features: pile
           })
-          pile = null
-          map.dotWorkers[i].dotLocationCallback = (data)=>{
-            Object.keys(data).forEach((layer_id)=>{
-              Object.keys(data[layer_id]).forEach((geoid)=>{
-                var layer_data = dot_data_layer[layer_id]
-                layer_data.tracts[geoid].dots = data[layer_id][geoid].dots
-              })
+          Object.keys(layer_data.tracts).forEach((geoid)=>{
+            if (layer_data.tracts[geoid].old) {
+              delete(layer_data.tracts[geoid])
+            }
+          })
+        })
+        var dot_tasks = []
+        feature_piles.forEach((pile, i)=>{
+          dot_tasks.push(new Promise((resolve)=>{
+            map.dotWorkers[i].postMessage({
+              msgType: "requestDotLocations",
+              features: pile,
+              do_not_use_density: use_pop_density==="off"
             })
-            resolve()
-          }
-        }))
-      })
-      feature_piles = null
+            pile = null
+            map.dotWorkers[i].dotLocationCallback = (data)=>{
+              Object.keys(data).forEach((layer_id)=>{
+                Object.keys(data[layer_id]).forEach((geoid)=>{
+                  var layer_data = dot_data_layer[layer_id]
+                  layer_data.tracts[geoid].dots = data[layer_id][geoid]
+                })
+              })
+              resolve()
+            }
+          }))
+        })
+        feature_piles = null
+      }
       return Promise.all(dot_tasks)
-    }).then(()=>{
-      
+    }).then((d)=>{
       var ctx = map.getCanvasContext()
       var canvas = map.getCanvas()
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -164,24 +222,46 @@ export function updateDotsLayer(visible_features) {
         })
       })
     
-      /*draw voucher dots above ethnicity dots and randomize order of ethnicity dots*/
       var voucher_dots = []
       var ethnicity_dots = []
       var configs = {}
-      draw_dot_layers.forEach((layer)=>{
-        configs[layer.name] = load_dot_config(layer.name)
-        var is_ethnicity_layer = false
-        if (layer.name.indexOf("ethnicity")!==-1) {
-          is_ethnicity_layer = true
-        }
-        layer.dots.forEach((dot)=>{
-          if (is_ethnicity_layer) {
-            ethnicity_dots.push([dot, layer.name])
-          } else {
-            voucher_dots.push([dot, layer.name])
+
+      /*draw voucher dots above ethnicity dots and randomize order of ethnicity dots*/
+      /*download*/
+      if (mode==="download") {
+        d.forEach((file) => {
+          configs[file.layer] = load_dot_config(file.layer)
+          var ethnicity = false;
+          if (file.layer.indexOf("ethnicity")!==-1) {
+            ethnicity = true;
           }
+          file.dots.forEach((dot) => {
+            if (in_bounds(dot, bounds)) {
+              if (ethnicity) {
+                ethnicity_dots.push([dot, file.layer]);
+              } else {
+                voucher_dots.push([dot, file.layer]);
+              }
+            }
+          })
         })
-      })
+      } else {
+        draw_dot_layers.forEach((layer)=>{
+          configs[layer.name] = load_dot_config(layer.name)
+          var is_ethnicity_layer = false
+          if (layer.name.indexOf("ethnicity")!==-1) {
+            is_ethnicity_layer = true
+          }
+          layer.dots.forEach((dot)=>{
+            if (is_ethnicity_layer) {
+              ethnicity_dots.push([dot, layer.name])
+            } else {
+              voucher_dots.push([dot, layer.name])
+            }
+          })
+        })
+
+      }
 
       var draw_dot = (dot, z) => {
         var layer_type = dot[1].split("_")[0]
@@ -254,4 +334,13 @@ export function updateDotsLayer(visible_features) {
     
   })
   
+}
+
+function in_bounds(dot, bounds) {
+  var result = true;
+  if (dot[0] < bounds[0]) {result = false;}
+  if (dot[0] > bounds[2]) {result = false;}
+  if (dot[1] < bounds[1]) {result = false;}
+  if (dot[1] > bounds[3]) {result = false;}
+  return result;
 }

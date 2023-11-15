@@ -1,4 +1,4 @@
-import { polygonContains } from "d3"
+const { polygonContains } = require("d3")
 
 function polygonContainsWithHoles(geometry, point) {
   var result = false;
@@ -34,4 +34,4 @@ const featureContains = function(point, feature) {
   return result
 }
 
-export { featureContains }
+module.exports = { featureContains }

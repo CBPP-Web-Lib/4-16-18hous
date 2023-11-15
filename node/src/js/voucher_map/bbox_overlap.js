@@ -18,4 +18,4 @@ function bbox_overlap(box1, box2) {
   return true
 }
 
-export { bbox_overlap }
+module.exports = { bbox_overlap }

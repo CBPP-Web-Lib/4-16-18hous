@@ -1,5 +1,6 @@
-import { shuffle } from "./shuffle_array"
-import { data_keys} from "./ethnicity_data_keys"
+const { shuffle } = require("./shuffle_array")
+const { data_keys} = require("./ethnicity_data_keys")
+
 const extra_keys = [
   "safmr_tot_safmr_vau",
   "safmr_unused"
@@ -50,4 +51,4 @@ function get_dots_for_data_key_and_size(features, key, dot_size, cbsa) {
   })
 }
 
-export { calculateNumberOfDots }
+module.exports = { calculateNumberOfDots }

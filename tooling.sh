@@ -1,0 +1,1 @@
+docker exec --user $UID -it 4-16-18hous-watch node --inspect=0.0.0.0 --max-old-space-size=32000 $1
