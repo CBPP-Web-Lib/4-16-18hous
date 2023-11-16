@@ -28,7 +28,7 @@ var others = [
   "ethnicity_nhpi_dots",
   "ethnicity_other_dots",
   "ethnicity_tot_pop",
-  "safmr_tot_safmr_vau"
+  "safmr_tot_safmr_vau_dots"
 ]
 const represents = [10000, 5000, 2000, 1000, 500, 200, 100, 50, 20, 12].reverse();
 
