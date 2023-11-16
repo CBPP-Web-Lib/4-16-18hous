@@ -15,7 +15,6 @@ var seedrandom = require("seedrandom");
 var d3 = require("d3")
 var geojsonArea = require('@mapbox/geojson-area');
 var get_kontur_pop_density = require("./src/pop_density")
-var precalc_dots = require("./precalc_dots.mjs");
 const {
   Worker,
   isMainThread,

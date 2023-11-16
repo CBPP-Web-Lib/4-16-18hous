@@ -12,6 +12,8 @@ const dotDensities = JSON.parse(fs.readFileSync("./tmp/cbsa_densities.json"));
 const { index_pop_density } = require("./src/js/voucher_map/index_pop_density.js")
 const { get_deflator } = require("./src/js/voucher_map/dot_deflator.js")
 const { calculateNumberOfDots } = require("./src/js/voucher_map/calculate_number_of_dots.js")
+const { fork } = require('node:child_process');
+const os = require("os")
 
 
 var programs = ["hcv", "pbra", "ph"]
@@ -47,6 +49,23 @@ programs.forEach((program) => {
   })
 })
 
+var child_process_tracker = function() {
+  this.status = "ready"
+  var child;
+  var self = this;
+  this.start = function(args) {
+    return new Promise((resolve) => {
+      this.status = "busy";
+      child = fork("./precalc_dots.js", ["child"])
+      child.send(args)
+      child.on("message", (m) => {
+        self.status = "ready";
+        console.log("child says " + m)
+        resolve(m);
+      })
+    })
+  }
+}
 
 const waterIndex = JSON.parse(fs.readFileSync("./tmp/waterIndex.json"));
 async function precalc_dots() {
@@ -54,15 +73,12 @@ async function precalc_dots() {
   try {
     fs.mkdirSync("./webroot/data/dots");
   } catch (ex) {}
-  //var slots = Math.max(1, os.cpus().length - 1);
-  //var workers = [];
-  /*for (var i = 0; i <= slots; i++) {
-    workers.push({
-      state: "ready",
-      worker: new Worker("./src/worker_dot.js")
-    });
+  var slots = Math.max(1, os.cpus().length - 1);
+  var workers = [];
+  for (var i = 0; i <= slots; i++) {
+    workers.push(new child_process_tracker())
   }
-  var jobs = [];*/
+  var jobs = [];
   //topo.length = 2;
   var water_by_cbsa = {}
   for (file of topo) {
@@ -99,18 +115,8 @@ async function precalc_dots() {
     layers.forEach((layer) => {
       var destfile = "./webroot/data/dots/" + cbsa + "/" + layer.join("_") + ".bin";
       if (fs.existsSync(destfile)) {return;}
-      console.log(destfile)
-      var csv = []
-      features.forEach((feature) => {
-        feature.bbox = geojson_bbox(feature)
-        var tract_id = feature.properties.GEOID10
-        if (typeof(housing_data[tract_id])) {
-          feature.properties.housing_data = housing_data[tract_id]
-        }
-        feature.properties.pop_density_index = index_pop_density(feature, pop_density)
-      })
-      features = calculateNumberOfDots(features, cbsa)
-      /*jobs.push({
+      
+      jobs.push({
         dot_deflator,
         dot_represents: layer[1],
         layer_id: layer.join("_"),
@@ -118,8 +124,14 @@ async function precalc_dots() {
         pop_density,
         features,
         water_features,
-        file
-      })*/
+        file,
+        housing_data, 
+        pop_density, 
+        cbsa
+      })
+      return;
+      var csv = []
+      features = prepare_features(features, housing_data, pop_density, cbsa)
       features.forEach((feature) => {
         var args = {
           dot_deflator,
@@ -142,55 +154,79 @@ async function precalc_dots() {
       fs.writeFileSync(destfile, compress(csv), "utf-8");
     })
   })
-  return;
-  console.log("here");
-  var jobIndex = 0;
-  var workerIndex = 0;
 
   function startNextJob() {
-    var job = jobs[jobIndex]
-    workers.forEach((worker, i) => {
-      if (worker.state === "ready") {
-        console.log("start job")
-        worker.worker.postMessage({
-          msgType: "newWater",
-          water: job.water_features
-        })
-        worker.worker.on("message", function(e) {
-          console.log(e)
-          if (e.data.msgType === "newWater") {
-            var features = [];
-            job.features.forEach((feature) => {
-              var { dot_deflator, dot_represents, layer_id, name, pop_density } = job;
-              features.push({
-                feature,
-                dot_deflator,
-                dot_represents,
-                layer_id,
-                name, 
-                pop_density,
-                these_dots: []
-              })
-            })
-            worker.worker.postMessage({
-              msgType: "requestDotLocations",
-              data: { features }
-            })
-          }
-          if (e.data.msgType === "requestDotLocations") {
-            var results = e.data.dotLocations;
-            console.log(results);
-          }
-        });
-        jobIndex++;
+    var still_busy = false;
+    workers.forEach((worker) => {
+      if (jobs.length) {
+        var job = jobs[0];
+        if (worker.status === "ready") {
+          console.log("start job")
+          worker.start(job).then(startNextJob)
+          jobs.shift()
+        }
+      } else {
+        if (worker.status === "busy") {
+          still_busy = true;
+        }
       }
     })
-
+    if (!still_busy && !jobs.length) {
+      console.log("finished!");
+    }
   }
-  setTimeout(function() {
-    console.log("sleep")
-  }, 86400000)
   startNextJob()
+}
+
+function prepare_features(features, housing_data, pop_density, cbsa) {
+  features.forEach((feature) => {
+    feature.bbox = geojson_bbox(feature)
+    var tract_id = feature.properties.GEOID10
+    if (typeof(housing_data[tract_id])) {
+      feature.properties.housing_data = housing_data[tract_id]
+    }
+    feature.properties.pop_density_index = index_pop_density(feature, pop_density)
+  })
+  features = calculateNumberOfDots(features, cbsa)
+  return features;
+}
+
+function calculate_dots(job) {
+  var {
+    dot_deflator,
+    dot_represents,
+    layer_id,
+    name,
+    pop_density,
+    features,
+    water_features,
+    file,
+    housing_data,
+    pop_density,
+    cbsa
+  } = job;
+  var csv = []
+  features = prepare_features(features, housing_data, pop_density, cbsa)
+  features.forEach((feature) => {
+    var args = {
+      dot_deflator,
+      dot_represents,
+      feature,
+      layer_id,
+      name,
+      pop_density,
+      these_dots: []
+    }
+    var result = handle_dots_for_feature(args, water_features, {
+      featureContains,
+      seedrandom,
+      bbox_overlap
+    });
+    result.forEach((coord, i) => {
+      csv.push(result[i]);
+    })
+  })
+  fs.writeFileSync("./webroot/data/dots/" + cbsa + "/" + layer_id + ".bin", compress(csv), "utf-8");
 }
 
 function compress(csv) {
@@ -210,5 +246,14 @@ function compress(csv) {
   return pako.deflate(csv.join("\n"));
 }
 
+if (process.argv.length === 2) {
+  precalc_dots()
+} else {
+  //calculate_dots(process.argv[2])
+}
 
-precalc_dots()
+process.on("message", function(msg) {
+  calculate_dots(msg);
+  process.send({msg:"done"})
+  process.exit(1);
+})

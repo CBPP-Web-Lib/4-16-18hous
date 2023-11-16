@@ -89,7 +89,6 @@ function handle_dots_for_feature(args, water, imports, do_not_use_density) {
       pop_density_of_max = 0
     }
     var pop_density_test = rng();
-    console.log(do_not_use_density)
     if (do_not_use_density === true) {
       pop_density_of_max = 1
     }

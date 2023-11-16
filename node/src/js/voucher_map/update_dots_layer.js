@@ -262,24 +262,58 @@ export function updateDotsLayer(visible_features) {
         })
 
       }
-
+      /*To speed up a few repetitive tasks in dot drawing*/
+      var pi2 = 2*Math.PI;
+      var ScaleFactorCalc = function() {
+        var cache = {}
+        this.calc = function(z) {
+          if (cache[z]) {return cache[z]}
+          cache[z] = Math.exp(0.07*z) - 1
+          return cache[z]
+        }
+      }
+      var LayerTypeGetter = function() {
+        var cache = {};
+        this.calc = function(name) {
+          if (cache[name]) {return cache[name]}
+          cache[name] = name.split("_")[0];
+          return cache[name];
+        }
+      }
+      var MultiplierCache = function() {
+        var cache = {};
+        this.calc = function(a, b) {
+          if (typeof(cache[a])==="undefined") {
+            cache[a] = {}
+          }
+          if (typeof(cache[a][b] === "undefined")) {
+            cache[a][b] = a*b;
+          }
+          return cache[a][b]
+        }
+        this.getCache = function() {return cache;}
+      }
+      var scaleFactorCalcInstance = new ScaleFactorCalc();
+      var layerNameCacheInstance = new LayerTypeGetter();
+      var multiplierCacheInstance = new MultiplierCache();
       var draw_dot = (dot, z) => {
-        var layer_type = dot[1].split("_")[0]
+        var layer_type = layerNameCacheInstance.calc(dot[1]);
         var coords = projection(dot[0])
         var config = configs[dot[1]]
         ctx.beginPath()
-        var dot_sf = Math.exp(0.07*z) - 1
+        var dot_sf = scaleFactorCalcInstance.calc(z)
         ctx.strokeStyle = config.stroke
         ctx.fillStyle = config.fill
-        ctx.lineWidth = config["stroke-width"]*dot_sf 
+        ctx.lineWidth = multiplierCacheInstance.calc(config["stroke-width"], dot_sf) 
         var x = coords[0]*2;
         var y = coords[1]*2;
-        var r = config.radius*2*dot_sf;
+        var r = multiplierCacheInstance.calc(multiplierCacheInstance.calc(config.radius, 2), dot_sf);
         if (layer_type === "ph") {
           /*draw square*/
-          ctx.fillRect(x - r, y - r, r*2, r*2)
+          var twiceR = multiplierCacheInstance.calc(r, 2)
+          ctx.fillRect(x - r, y - r, twiceR, twiceR)
           if (ctx.lineWidth > 0) {
-            ctx.strokeRect(x - r, y - r, r*2, r*2)
+            ctx.strokeRect(x - r, y - r, twiceR, twiceR)
           }
         } else if (layer_type === "pbra") {
           /*draw triangle*/
@@ -295,7 +329,7 @@ export function updateDotsLayer(visible_features) {
           }
         } else {
           /*draw dot*/
-          ctx.arc(x, y, r, 0, 2 * Math.PI)
+          ctx.arc(x, y, r, 0, pi2)
           ctx.fill()
           if (ctx.lineWidth > 0) {
             ctx.stroke()
@@ -328,6 +362,7 @@ export function updateDotsLayer(visible_features) {
       //ethnicity_dots = shuffle(ethnicity_dots, [z, cbsa].join("-"))
       ethnicity_dots.forEach((dot)=>{draw_dot(dot, z)})
       voucher_dots.forEach((dot)=>{draw_dot(dot, z)})
+      console.log(multiplierCacheInstance.getCache())
       resolve()
 
     })
