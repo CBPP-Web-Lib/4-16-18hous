@@ -50,6 +50,7 @@ function ViewportMouseTracker(map) {
     endCallbacks.push({name, fn})
   }
 
+
   this.mouseDown = (_x, _y) => {
     mousedown = true;
     x_start = _x
@@ -165,8 +166,25 @@ function ViewportMouseTracker(map) {
     this.mouseUp(e.pageX, e.pageY)
   });
   /*if user touches somewhere outside viewport*/
+
+  var touch_timer;
+  var double_tap
   window.addEventListener("touchstart", (e) => {
-    console.log(e)
+    if (touch_timer) {
+      /*double tap*/
+      setTimeout(() => {
+        var rect = viewport.getBoundingClientRect();
+        map.zoomer.zoomIn((e.touches[0].clientX - rect.left), (e.touches[0].clientY - rect.top));
+      }, 50);
+      double_tap = true;
+      setTimeout(() => {
+        double_tap = false;
+      }, 500);
+      return;
+    }
+    touch_timer = setTimeout(function() {
+      touch_timer = null
+    }, 300);
     var elements = [e.target]
     var element = e.target
     if (e.target.tagName==="path" && e.target.attributes.className==="tract") {
@@ -181,10 +199,15 @@ function ViewportMouseTracker(map) {
     }
   });
   window.addEventListener("mouseup", (e) => {
+    
+    if (double_tap) { return; }
     this.mouseUp(e.pageX, e.pageY)
   });
   
   window.addEventListener("touchend", (e) => {
+    if (double_tap) {
+      return;
+    }
     if (e.touches.length !== 2 && in_pinch) {
       this.pinchEnd()
     } else {
@@ -204,18 +227,26 @@ function ViewportMouseTracker(map) {
     }
   });
 
-  viewport.addEventListener("click", function(e) {
+  
+  viewport.addEventListener("dblclick", function(e) {
+    clearTimeout(map.mouseTracker.dragEndTimer)
+    e.preventDefault();
+    var rect = viewport.getBoundingClientRect();
+    map.zoomer.zoomIn((e.clientX - rect.left), (e.clientY - rect.top));
+  });
+  viewport.parentElement.addEventListener("click", function(e) {
     var el = select(e.target);
-    if (el.data()) {
-      console.log(el.data())
+    var data = el.data();
+    if (data) {
+      if (data[0]) {
+        console.log(data[0])
+      }
     }
     var offset = viewport.getBoundingClientRect();
-    console.log(e, offset);
     var x = e.clientX - offset.x;
     var y = e.clientY - offset.y;
-    console.log(x, y)
     console.log(map.projectionManager.getLatLongFromClick(x, y));
-  })
+  });
 }
 
 export {ViewportMouseTracker}

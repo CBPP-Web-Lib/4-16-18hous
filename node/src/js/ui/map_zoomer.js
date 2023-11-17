@@ -231,6 +231,7 @@ function MapZoomer(map) {
     }
     return transitionCoordsTo(end_coords, x, y, 200).then(()=>{
       locked = false;
+      console.log(map.coordTracker.getCoords())
       unlock_out()
     });
   }

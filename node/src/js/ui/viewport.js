@@ -11,6 +11,7 @@ function viewportEvents() {
   this.isZooming = function() {
     return zoomer.getLocked()
   }
+  this.zoomer = zoomer
   mapResizer.call(this)
   tractHover.call(this)
 }
