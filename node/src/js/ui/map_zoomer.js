@@ -11,6 +11,20 @@ function MapZoomer(map) {
 
   var acc_scroll = 0;
 
+  document.querySelector("#" + map.getId() + " .zoom-buttons button[name='zoom-in']")
+    .addEventListener("click", (e) => {
+      var height = map.getViewportHeight();
+      var width = map.getViewportWidth();
+      this.zoomIn(width/2, height/2);
+    })
+
+  document.querySelector("#" + map.getId() + " .zoom-buttons button[name='zoom-out']")
+    .addEventListener("click", (e) => {
+      var height = map.getViewportHeight();
+      var width = map.getViewportWidth();
+      this.zoomOut(width/2, height/2);
+    })
+
   el.addEventListener("wheel", (e)=> {
     e.preventDefault();
     map.mouseTracker.mouseUp()
@@ -109,9 +123,12 @@ function MapZoomer(map) {
             y: newCoords.y,
             z: newCoords.z
           };
-          map.coordTracker.setCoords(frameCoords);
-          updateLegendDotRepresents(map)
-          resolve();
+          setTimeout(() => {
+            map.coordTracker.setCoords(frameCoords, {destroyOldCanvas: true}).then(function() {
+              updateLegendDotRepresents(map)
+              resolve();
+            });
+          }, 0);
         } else {
           p = easeQuadInOut(p);
           var ease = x=>2/(2-x)-1

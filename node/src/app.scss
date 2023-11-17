@@ -40,6 +40,20 @@ body, html {
       background-color:#ccc;
     }
   }
+  .zoom-buttons {
+    display:inline-block;
+    position:relative;
+    top:60px;
+    z-index:30;
+    font-weight:bold;
+    & > * {
+      display:block;
+      margin-bottom:1em;
+      width:100px;
+      font-weight:bold;
+      font-family:inherit;
+    }
+  }
   .pickers {
     .racial-density-instructions {
       position:absolute;
@@ -241,6 +255,7 @@ body, html {
           top:0;
           left:0;
           pointer-events:none;
+          transition: opacity 0.2s;
         }
       }
     } 
@@ -392,17 +407,30 @@ body, html {
   }
 
   .legend-container {
-    font-size:12pt;
+    font-size:16pt;
     position:absolute;
-    left:10px;
-    right:10px;
-    bottom:10px;
+    left:0;
+    right:0;
+    text-align:center;
+    .legend-position {
+      text-align:left;
+      display:inline-block;
+      max-width:100%;
+      border:2px solid #aaa;
+      background-color: rgba(250, 242, 240, 0.95);
+      padding:10px;
+    }
+    bottom:20px;
+    
+    @media (max-width: 620px) {
+      font-size:12pt;
+      bottom:0px;
+    }
     z-index:10;
     font-family:"proxima-nova-condensed",sans-serif;
-    background-color: rgba(255, 255, 255, 0.85);
+    user-select:none;
+    //pointer-events: none;
     min-height:50px;
-    border:1px solid #ddd;
-    padding:10px;
     &.hide-while-zoom {
       display:none;
     }
@@ -419,16 +447,18 @@ body, html {
         &.label-offset {
           right:20vw;
         }
+        font-weight:bold;
       }
-    }
-    .legend-bins {
-      width:100%;
-
     }
     .legend-bins-inner {
       height:60px;
-      width:100%;
+      width:600px;
       position:relative;
+    }
+    @media (max-width: 620px) {
+      .legend-bins-inner {
+        width:300px;
+      }
     }
     .legend-bin {
       display:inline-block;
@@ -437,6 +467,12 @@ body, html {
         display:inline-block;
         position:relative;
         top:20px;
+        
+        @media (max-width: 620px) {
+          font-size:12pt;
+          top:15px;
+          
+        }
       }
       label {
         position:relative;
@@ -451,14 +487,15 @@ body, html {
     .voucher-indicator, .safmr-indicator {
       margin-bottom:0.3em;
       display:inline-block;
+      font-weight:bold;
     }
     .voucher-square {
       background-color: rgba(111, 66, 245, 0.8);
       border: 2px solid rgba(255, 255, 255, 0.8);
     }
     .voucher-indicator > div {
-      width:12px;
-      height:12px;
+      width:18px;
+      height:18px;
       position:relative;
       overflow:visible;
       display:none;
@@ -470,34 +507,37 @@ body, html {
         left:-25%;
       }
     }
-    .safmr-indicator {
-      margin-left:20px;
-    }
     .voucher-circle, .safmr-circle {
       display:inline-block;
       background-color: rgba(111, 66, 245, 0.8);
       border-radius:50%;
     }
     .voucher-circle {
-      width:12px;
-      height:12px;
       background-color: rgba(111, 66, 245, 0.8);
       border: 2px solid rgba(255, 255, 255, 0.8);
     }
     .safmr-circle {
-      width:10px;
-      height:10px;
+      width:14px;
+      height:14px;
       margin:2px;
       background-color: rgba(111, 66, 245, 0.4);
       border:0px;
     }
     .ethnicity-legend {
       line-height:1.2;
+      background-color: rgba(255, 255, 255, 0.5);
+      padding:0.3em 0.5em;
+      font-size:14pt;
+      @media (max-width: 620px) {
+        font-size:10pt;
+      }
     }
     .ethnicity-label {
       margin-right:10px;
-      vertical-align: middle;
       margin-bottom:0;
+      text-align:center;
+      display:block;
+      font-weight:bold;
     }
     .eth-legend-inner {
       display:inline-block;

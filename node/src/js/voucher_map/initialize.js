@@ -32,9 +32,14 @@ const initialize = function(config) {
   this.getTransparencyContainer = svg_create.getTransparencyContainer
   this.getOldTransparencyContainer = svg_create.getOldTransparencyContainer
   this.fadeOutOldTransparencyContainer = svg_create.fadeOutOldTransparencyContainer
+  this.remakeCanvas = function() {
+    dot_canvas_create.makeElement(this)
+  }
+  this.destroyOldCanvas = function(delete_current) {
+    dot_canvas_create.deleteExistingCanvas(this, delete_current)
+  }
   this.remakeTransparencyElement = () => {
     svg_create.makeElement(this)
-    dot_canvas_create.makeElement(this)
     tile_layer_create.makeElement(this)
     svg_create.getInvertedSvg().raise()
     svg_create.getTextSvg().raise()

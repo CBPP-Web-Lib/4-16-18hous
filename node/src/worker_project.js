@@ -17,4 +17,13 @@ onmessage = (e) => {
     e.data.features = null
     pathStrings = null
   }
+  if (e.data.msgType === "requestDotProjection") {
+    let projectedChunk = []
+    e.data.chunk.forEach((dot) => {
+      let coords = projection(dot[0])
+      dot[0] = coords
+      projectedChunk.push(dot);
+    })
+    postMessage({msgType: "requestDotProjection", result: {chunk: projectedChunk}})
+  }
 }

@@ -20,7 +20,7 @@ const updateLegend = function(map) {
     legend_container.querySelectorAll("[name='voucher-layer-name']")[0].innerText = dotConfig[active_hcv_dot_layer].name.toLowerCase()
   }
   if (active_dots_layer.indexOf("safmr_tot_safmr_vau_dots")!==-1) {
-    legend_container.querySelector(".safmr-indicator").style.display = "inline-block"
+    legend_container.querySelector(".safmr-indicator").style.display = "block"
   } else {
     legend_container.querySelector(".safmr-indicator").style.display = "none"
   }
@@ -84,21 +84,24 @@ const updateLegend = function(map) {
     eth_legend.classList.add("ethnicity-legend")
     const eth_dots = Object.keys(dotConfig).filter((a)=>{
       if (a.indexOf("tot_pop")!==-1 || a.indexOf("nonwhite")!==-1) return false
+      if (active_dots_layer.indexOf(a)===-1) return false
       return a.indexOf("ethnicity_")!==-1
     })
-    eth_legend.innerHTML = `<label class='ethnicity-label'><span name='num-ethnicity-dot-represents'></span> individuals:</label><div class='eth-legend-inner'></div>`
-    var eth_legend_inner = eth_legend.querySelector(".eth-legend-inner")
-    eth_dots.forEach((dot_name)=>{
-      var eth_legend_item = document.createElement("div")
-      eth_legend_item.classList.add("eth-legend-item")
-      var name = data_keys[dot_name.replace("_dots","")]
-      svg_circle(eth_legend_item, dotConfig[dot_name].fill)
-      var name_el = document.createElement("span")
-      name_el.innerText = name
-      eth_legend_item.appendChild(name_el)
-      eth_legend_inner.appendChild(eth_legend_item)
-    })
-    legend_container.querySelector(".legend-inner").appendChild(eth_legend)
+    if (eth_dots.length > 0) {
+      eth_legend.innerHTML = `<label class='ethnicity-label'><span name='num-ethnicity-dot-represents'></span> individuals:</label><div class='eth-legend-inner'></div>`
+      var eth_legend_inner = eth_legend.querySelector(".eth-legend-inner")
+      eth_dots.forEach((dot_name)=>{
+        var eth_legend_item = document.createElement("div")
+        eth_legend_item.classList.add("eth-legend-item")
+        var name = data_keys[dot_name.replace("_dots","")]
+        svg_circle(eth_legend_item, dotConfig[dot_name].fill)
+        var name_el = document.createElement("span")
+        name_el.innerText = name
+        eth_legend_item.appendChild(name_el)
+        eth_legend_inner.appendChild(eth_legend_item)
+      })
+      legend_container.querySelector(".legend-inner").appendChild(eth_legend)
+    }
   } else {
     legend_container.querySelector(".legend-bins-wrapper").style.display = "block";
   }

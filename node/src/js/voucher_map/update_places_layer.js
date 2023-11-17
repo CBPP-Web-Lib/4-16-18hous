@@ -20,7 +20,7 @@ var updatePlacesLayer = function() {
     }
     _place.population = place[3]*1
     _place.type = place[1]
-    _place.name = place[2]
+    _place.name = place[2].replace(/\?/g,"");
     _place.id = i
     _place.weight = _place.population/10000000 + {
       'country': 0,

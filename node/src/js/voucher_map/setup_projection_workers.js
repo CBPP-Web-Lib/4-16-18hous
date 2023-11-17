@@ -20,6 +20,11 @@ var WorkerWrapper = function(url_base) {
         this.newProjectionCallback(e.data.result)
       }
     }
+    if (e.data.msgType === "requestDotProjection") {
+      if (this.dotProjectionCallback) {
+        this.dotProjectionCallback(e.data.result)
+      }
+    }
   }
 }
 
@@ -28,6 +33,7 @@ function setupProjectionWorkers(map) {
   if (navigator.hardwareConcurrency) {
     numWorkers = Math.max(1, navigator.hardwareConcurrency - 1)
   }
+  //numWorkers = 1
   var url_base = map.getURLBase()
   var workers = []
   for (var i = 0; i < numWorkers; i++) {

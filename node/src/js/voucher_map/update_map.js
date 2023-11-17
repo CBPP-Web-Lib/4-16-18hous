@@ -7,28 +7,30 @@ import { displayLoadingBlocker, hideLoadingBlocker } from "../ui/loading_blocker
 
 var performance_timer
 var ignore_shapes = false
-const updateMapView = function(force) {
+const updateMapView = function(args) {
   return new Promise((resolve)=>{
     displayLoadingBlocker()
     var finish = () => {
-      updateTileHtml.call(this)
       this.fadeOutOldTransparencyContainer()
       hideLoadingBlocker()
       resolve()
     }
 
     if (ignore_shapes) {
+      updateTileHtml.call(this)
       finish()
       return
     }
     if (typeof(this.cbsaManager.getTractShapefiles())==="undefined") {
+      updateTileHtml.call(this)
       finish()
       return;
     }
     updateShapesLayer.call(this).then((visible_features) => {
       untranslateMap.call(this)
       updatePlacesLayer.call(this)
-      updateDotsLayer.call(this, visible_features).then(finish)
+      updateTileHtml.call(this)
+      updateDotsLayer.call(this, visible_features, args).then(finish)
     })
 
     

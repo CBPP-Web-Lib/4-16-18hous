@@ -27,7 +27,7 @@ function load_dot_config(name) {
   return config
 }
 
-export function updateDotsLayer(visible_features) {
+export function updateDotsLayer(visible_features, extra_args) {
   var map = this
 
   return new Promise((resolve)=> {
@@ -202,12 +202,8 @@ export function updateDotsLayer(visible_features) {
       }
       return Promise.all(dot_tasks)
     }).then((d)=>{
-      var ctx = map.getCanvasContext()
-      var canvas = map.getCanvas()
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      var dotsLayer = map.getTransparencyContainer().querySelectorAll("canvas")[0];
-      dotsLayer.style.transform = "";
       var draw_dot_layers = [];
+      var ctx;
       Object.keys(dot_data_layer).forEach((layer_id)=>{
         var dot_layer = dot_data_layer[layer_id]
         var layer_name = dot_layer.name
@@ -298,7 +294,8 @@ export function updateDotsLayer(visible_features) {
       var multiplierCacheInstance = new MultiplierCache();
       var draw_dot = (dot, z) => {
         var layer_type = layerNameCacheInstance.calc(dot[1]);
-        var coords = projection(dot[0])
+        //var coords = projection(dot[0])
+        var coords = dot[0]
         var config = configs[dot[1]]
         ctx.beginPath()
         var dot_sf = scaleFactorCalcInstance.calc(z)
@@ -358,12 +355,76 @@ export function updateDotsLayer(visible_features) {
         return a[2] - b[2]
       })
 
-      /*to do - adapt this to use seeded rng so the dots don't change order when moving the map*/
-      //ethnicity_dots = shuffle(ethnicity_dots, [z, cbsa].join("-"))
-      ethnicity_dots.forEach((dot)=>{draw_dot(dot, z)})
-      voucher_dots.forEach((dot)=>{draw_dot(dot, z)})
-      console.log(multiplierCacheInstance.getCache())
-      resolve()
+      var total_dots = ethnicity_dots.length + voucher_dots.length;
+      var chunk_size = total_dots / Math.max(1, (map.projectionWorkers.length - 1))
+      var current_chunk = []
+      var chunks = []
+
+      function add_to_chunk(dot) {
+        if (current_chunk.length > chunk_size) {
+          chunks.push(current_chunk)
+          current_chunk = []
+        }
+        current_chunk.push(dot)
+      }
+
+      ethnicity_dots.forEach(add_to_chunk)
+      voucher_dots.forEach(add_to_chunk)
+      chunks.push(current_chunk)
+      var worker_slots = map.projectionWorkers
+      var worker_queue = []
+      var slot = 0
+      chunks.forEach((chunk, i) => {
+        if (slot >= worker_slots.length) return
+        worker_queue[slot] = {chunk, i};
+        slot++
+        if (slot >= worker_slots.length) {
+          slot = 0
+        }
+      })
+      var promise_slots = []
+      worker_queue.forEach((chunkMeta, slot)=>{
+        promise_slots.push(new Promise((resolve)=>{
+          var {chunk, i} = chunkMeta
+          worker_slots[slot].postMessage({
+            msgType: "requestDotProjection",
+            chunk
+          })
+          worker_slots[slot].dotProjectionCallback = function(d) {
+            var {chunk} = d
+            resolve({chunk, i})
+          }
+        }))
+      })
+      Promise.all(promise_slots).then((results)=>{
+        return new Promise((resolve, reject) => {
+          var projected_chunks = []
+          results.forEach((result)=>{
+            projected_chunks[result.i] = result.chunk
+          })
+          resolve(projected_chunks)
+        });
+      }).then(function(chunks) {
+        if (extra_args) {
+          if (extra_args.destroyOldCanvas) {
+            map.destroyOldCanvas(true)
+          }
+        }
+        map.remakeCanvas()
+        ctx = map.getCanvasContext()
+        function draw_next_chunk() {
+          if (chunks.length === 0) {
+            map.destroyOldCanvas()
+            resolve();
+          } else {
+            var current_chunk = chunks[0]
+            chunks.shift()
+            current_chunk.forEach((dot) => {draw_dot(dot, z)})
+            setTimeout(draw_next_chunk, 0);
+          }
+        }
+        draw_next_chunk()
+      })
 
     })
     

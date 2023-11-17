@@ -26,7 +26,34 @@ function get_density_for_dot(dot, tiles, max) {
   var density = dsquared[minIndex][0][2]
   return density/max
   
-} 
+}
+
+/*The idea here is that we want to draw the dots in the same places for
+hcv_total, hcv_children, and hcv_children_poc because each subsequent one
+is a smaller subset of the previous, so visually it should just look like dots
+are disappearing/appearing when switching between them without them moving
+around. But hcv_disability overlaps with all three, so it should be a different
+unrelated subset of the total. By messing with the seed for the rng we can
+achieve this*/
+function get_layer_seed(name, data, dot_represents) {
+  if (name.indexOf("_total") !== -1 || name.indexOf("_children") !== -1) {
+    return {
+      layer_seed_name: name.split("_")[0] + "subset",
+      layer_seed_skip_percent: 0
+    }
+  }
+  if (name.indexOf("_disability") !== -1) {
+    var base = name.split("_")[0]
+    return {
+      layer_seed_name: base + "subset",
+      layer_seed_skip_percent: data[name][dot_represents]/data[base + "_total"][dot_represents]
+    }
+  }
+  return {
+    layer_seed_name: name,
+    layer_seed_skip_percent: 0
+  }
+}
 
 function handle_dots_for_feature(args, water, imports, do_not_use_density) {
   if (typeof(do_not_use_density) === "undefined") {
@@ -54,15 +81,19 @@ function handle_dots_for_feature(args, water, imports, do_not_use_density) {
     return [];
   }
   var num_dots = Math.round(feature.properties.housing_data[name][dot_represents] * dot_deflator)
+  these_dots = []
   var dots_made = these_dots.length
   var attempt = 0
   var total_attempts = 0
+  var skip_rng = new seedrandom(geoid)
+  var skipped = 0;
+  var {layer_seed_name, layer_seed_skip_percent} = get_layer_seed(name, feature.properties.housing_data, dot_represents)
   while (dots_made < num_dots && total_attempts <= num_dots*20000) {
     total_attempts++
     if (total_attempts >= num_dots*20000) {
       console.log("Warning: aborted dot draw after too many failed attempts")
     }
-    var seed = [geoid, name, dot_represents, dots_made, attempt].join("")
+    var seed = [geoid, layer_seed_name, dot_represents, (dots_made + skipped), attempt].join("")
     attempt++;
     var rng = new seedrandom(seed)
     var dot = [
@@ -94,6 +125,10 @@ function handle_dots_for_feature(args, water, imports, do_not_use_density) {
     }
     if (featureContains(dot, feature) && !in_water && pop_density_test < pop_density_of_max) {
       these_dots.push(dot)
+      if (skip_rng() < layer_seed_skip_percent) {
+        skipped++;
+      }
+      skipped = Math.min(skipped, num_dots - dots_made)
       dots_made = these_dots.length
       attempt = 0
     }

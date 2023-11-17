@@ -4,7 +4,7 @@ import { getBoundingTilesForCBSA, getBoundingTilesForBbox } from "./get_bounding
 var z, x, y, viewportWidth, viewportHeight;
 var in_progress = false
 
-function setCoords(coords) {
+function setCoords(coords, args) {
   return new Promise((resolve)=>{
     if (in_progress) {
       resolve(false)
@@ -18,7 +18,7 @@ function setCoords(coords) {
     viewportHeight = this.getMap().getViewportHeight()
     this.getMap().projectionManager.updateProjection().then(() => {
       window.requestAnimationFrame(()=>{
-        this.getMap().updateView().then(function(result) {
+        this.getMap().updateView(args).then(function(result) {
           in_progress = false
           resolve(true);
         })
