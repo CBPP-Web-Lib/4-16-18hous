@@ -170,7 +170,7 @@ function ViewportMouseTracker(map) {
   var touch_timer;
   var double_tap
   window.addEventListener("touchstart", (e) => {
-    if (touch_timer) {
+    if (touch_timer && e.touches.length === 1) {
       /*double tap*/
       setTimeout(() => {
         var rect = viewport.getBoundingClientRect();
