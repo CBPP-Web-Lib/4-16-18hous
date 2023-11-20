@@ -24,7 +24,13 @@ function makeElement(map) {
   canvas.height = map.getViewportHeight()*2
   ctx = canvas.getContext("2d")
   canvas.style.opacity = 0;
-  map.getSvg().node().after(canvas)
+  var canvas_container = map.getSvg().node().parentElement.querySelector(".canvas-container");
+  if (!canvas_container) {
+    canvas_container = document.createElement("div")
+    canvas_container.classList.add("canvas-container")
+    map.getSvg().node().after(canvas_container)
+  }
+  canvas_container.appendChild(canvas)
   setImmediate(function() {
     canvas.style.opacity = 1;
   })

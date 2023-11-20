@@ -295,7 +295,7 @@ export function updateDotsLayer(visible_features, extra_args) {
       var draw_dot = (dot, z) => {
         var layer_type = layerNameCacheInstance.calc(dot[1]);
         //var coords = projection(dot[0])
-        var coords = dot[0]
+        var coords = dot[5]
         var config = configs[dot[1]]
         ctx.beginPath()
         var dot_sf = scaleFactorCalcInstance.calc(z)
@@ -355,6 +355,8 @@ export function updateDotsLayer(visible_features, extra_args) {
         return a[2] - b[2]
       })
 
+      var offset = projection([-103, 44]);
+
       var total_dots = ethnicity_dots.length + voucher_dots.length;
       var chunk_size = total_dots / Math.max(1, (map.projectionWorkers.length - 1))
       var current_chunk = []
@@ -365,6 +367,13 @@ export function updateDotsLayer(visible_features, extra_args) {
           chunks.push(current_chunk)
           current_chunk = []
         }
+        dot[0][0] = Math.round(dot[0][0]*10000)/10000
+        dot[0][1] = Math.round(dot[0][1]*10000)/10000
+        var dot_address = dot[0].join("-");
+        dot_cache[z] = dot_cache[z] || {}
+        if (typeof(dot_cache[z][dot_address]) !== "undefined") {
+          dot[5] = dot_cache[z][dot_address]
+        } 
         current_chunk.push(dot)
       }
 
@@ -399,7 +408,14 @@ export function updateDotsLayer(visible_features, extra_args) {
       Promise.all(promise_slots).then((results)=>{
         return new Promise((resolve, reject) => {
           var projected_chunks = []
+          dot_cache[z] = dot_cache[z] || {}
           results.forEach((result)=>{
+            result.chunk.forEach((dot) => {
+              dot_cache[z][dot[0].join("-")] = dot[4]
+              dot[5] = []
+              dot[5][0] = offset[0] + dot[4][0]
+              dot[5][1] = offset[1] + dot[4][1]
+            })
             projected_chunks[result.i] = result.chunk
           })
           resolve(projected_chunks)

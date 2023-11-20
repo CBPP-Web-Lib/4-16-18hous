@@ -248,7 +248,7 @@ body, html {
           &.main-svg {mix-blend-mode: multiply;}
           &.inverted-svg, &.text-svg {pointer-events: none;}
         }
-        & > canvas {
+        & > .canvas-container > canvas {
           position:absolute;
           width:100%;
           height:100%;
