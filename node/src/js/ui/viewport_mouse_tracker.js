@@ -174,6 +174,7 @@ function ViewportMouseTracker(map) {
       /*double tap*/
       setTimeout(() => {
         var rect = viewport.getBoundingClientRect();
+        console.log(rect)
         map.zoomer.zoomIn((e.touches[0].clientX - rect.left), (e.touches[0].clientY - rect.top));
       }, 50);
       double_tap = true;
@@ -194,9 +195,9 @@ function ViewportMouseTracker(map) {
       elements.push(element.parentNode)
       element = element.parentNode
     }
-    if (elements.indexOf(viewport)===-1) {
-      this.mouseUp(e.pageX, e.pageY)
-    }
+    /*if (elements.indexOf(viewport)===-1) {
+      this.mouseUp(e.touches[0].pageX, e.touches[0].pageY)
+    }*/
   });
   window.addEventListener("mouseup", (e) => {
     
