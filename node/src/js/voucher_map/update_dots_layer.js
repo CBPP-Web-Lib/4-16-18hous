@@ -429,17 +429,15 @@ export function updateDotsLayer(visible_features, extra_args) {
         map.remakeCanvas()
         ctx = map.getCanvasContext()
         function draw_next_chunk() {
-          if (chunks.length === 0) {
-            map.destroyOldCanvas()
-            resolve();
-          } else {
-            var current_chunk = chunks[0]
-            chunks.shift()
-            current_chunk.forEach((dot) => {draw_dot(dot, z)})
-            window.requestAnimationFrame(draw_next_chunk);
-          }
+          var current_chunk = chunks[0]
+          chunks.shift()
+          current_chunk.forEach((dot) => {draw_dot(dot, z)})
         }
-        draw_next_chunk()
+        while (chunks.length > 0) {
+          draw_next_chunk()
+        }
+        map.destroyOldCanvas()
+        resolve();
       })
 
     })
