@@ -436,7 +436,7 @@ export function updateDotsLayer(visible_features, extra_args) {
             var current_chunk = chunks[0]
             chunks.shift()
             current_chunk.forEach((dot) => {draw_dot(dot, z)})
-            setTimeout(draw_next_chunk, 0);
+            window.requestAnimationFrame(draw_next_chunk);
           }
         }
         draw_next_chunk()
