@@ -113,6 +113,9 @@ function MapZoomer(map) {
       var start = Date.now();
       var startCoords = map.coordTracker.getCoords();
       var p = 0.001;
+      document.querySelectorAll("#" + map.getId() + " .tract_actual").forEach((el) => {
+        el.parentElement.removeChild(el);
+      })
       var frame = function() {
         p = (Date.now() - start)/duration;
         var frameCoords;
@@ -231,7 +234,6 @@ function MapZoomer(map) {
     }
     return transitionCoordsTo(end_coords, x, y, 200).then(()=>{
       locked = false;
-      console.log(map.coordTracker.getCoords())
       unlock_out()
     });
   }

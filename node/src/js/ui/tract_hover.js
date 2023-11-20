@@ -60,13 +60,14 @@ const tractHover = function() {
     }
     if (hovered_tract) {
       tooltip.style.display = "block"
+      tooltip.style.opacity = 0;
       var boundingRect = container.querySelectorAll(".map-viewport")[0].getBoundingClientRect();
       var el_pos = {
         left: (e.clientX - boundingRect.x),
         top:  (e.clientY - boundingRect.y),
       }
       var box_width = boundingRect.width * 0.3
-      box_width = Math.min(box_width, 350)
+      box_width = Math.max(box_width, 250)
       tooltip.querySelectorAll(".tooltip-inner")[0].style.width = box_width + "px"
       
       var percent_right = el_pos.left / boundingRect.width
@@ -81,6 +82,9 @@ const tractHover = function() {
       }
       tooltip.style.left = el_pos.left + "px"
       tooltip.style.top = el_pos.top + "px"
+      window.requestAnimationFrame(() => {
+        tooltip.style.opacity = 1;
+      })
     } else {
       tooltip.style.display = "none"
     }
