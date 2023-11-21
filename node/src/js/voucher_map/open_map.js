@@ -2,6 +2,7 @@
 import { updateLegend } from "./update_legend"
 
 const openMap = (map, value)=> {
+  document.body.classList.add("no-scroll")
   document.querySelectorAll("#" + map.getId() + " .map-outer-lightbox")[0]
     .style.visibility = "visible"
   return map.cbsaManager.loadCBSA(value).then(() => {

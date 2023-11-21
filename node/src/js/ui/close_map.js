@@ -1,6 +1,6 @@
 
 const closeMap = (map)=> {
-  console.log(map)
+  document.body.classList.remove("no-scroll")
   document.querySelectorAll("#" + map.getId() + " .map-outer-lightbox")[0]
     .style.visibility = "hidden"
   //var cbsa = 25540;
