@@ -38,20 +38,6 @@ function mapDragger() {
     };
     updateTileHtml.call(map, coords);
     translateMap.call(map, x, y)
-    return;
-
-    map.coordTracker.setCoords(coords).then((result)=> {
-      if (!result) {
-        deferred = coords
-      } else {
-        if (deferred) {
-          clearTimeout(timer)
-          timer = setTimeout(function() {
-            //map.coordTracker.setCoords(deferred)
-          }, 50)
-        }
-      }
-    })
   })
   mouse_tracker.registerEndCallback("mapDragEnd", (x, y)=>{
     is_dragging = false

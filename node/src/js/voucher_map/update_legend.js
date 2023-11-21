@@ -142,9 +142,11 @@ const updateLegendDotRepresents = function(map) {
       legend_container.querySelector(".voucher-triangle").style.display = "inline-block";
     }
     var dotRepresents = dotConfig[active_hcv_dot_layer].numDots(z)
-    legend_container.querySelectorAll("[name='voucher-dot-represents'], [name='safmr-dot-represents']").forEach((item)=>{
-      item.innerText = Math.round(dotRepresents/dot_deflator)
-    })  
+    if (dotRepresents) {
+      legend_container.querySelectorAll("[name='voucher-dot-represents'], [name='safmr-dot-represents']").forEach((item)=>{
+        item.innerText = Math.round(dotRepresents/dot_deflator)
+      })  
+    }
   }
   var ethDotRepresents = dotConfig.default.numDots(z)
   var ethnicity_dot_represents_span = legend_container.querySelectorAll("[name='num-ethnicity-dot-represents']")

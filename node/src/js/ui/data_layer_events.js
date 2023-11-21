@@ -11,11 +11,16 @@ const dataLayerEvents = function(map) {
   var pickers = document.querySelector("#" + map.getId() + " .pickers");
   var self = this;
   var data_picker =  pickers.querySelector("select[name='tract-dataset']")
-  pickers.querySelector(".picker-close-self").addEventListener("click", ()=>{
+  var picker_open_self = document.querySelector("#" + map.getId() + " .pickers-and-map-viewport .picker-open-self")
+  var picker_close_self = pickers.querySelector(".picker-close-self")
+  picker_open_self.style.display="none";
+  picker_close_self.addEventListener("click", ()=>{
     pickers.style.display="none"
+    picker_open_self.style.display="block"
   })
-  document.querySelector("#" + map.getId() + " .pickers-and-map-viewport .picker-open-self").addEventListener("click", ()=>{
-    pickers.style.display="block"
+  picker_open_self.addEventListener("click", ()=>{
+    picker_open_self.style.display = "none"
+    pickers.style.display="inline-block"
   })
   var self = this;
   var race_instructions_shown = false;

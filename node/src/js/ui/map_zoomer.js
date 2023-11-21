@@ -166,8 +166,10 @@ function MapZoomer(map) {
             shapeLayer.style.transform = "scale(" + transform_z + ")"
             shapeLayer.style.transformOrigin = x + "px " + y + "px";
           })
-          dotsLayer.style.transform = "scale(" + transform_z + ")"
-          dotsLayer.style.transformOrigin = x + "px " + y + "px";
+          if (dotsLayer) {
+            dotsLayer.style.transform = "scale(" + transform_z + ")"
+            dotsLayer.style.transformOrigin = x + "px " + y + "px";
+          }
           window.requestAnimationFrame(frame);
         }
         

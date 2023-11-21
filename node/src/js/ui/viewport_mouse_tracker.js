@@ -174,7 +174,6 @@ function ViewportMouseTracker(map) {
       /*double tap*/
       setTimeout(() => {
         var rect = viewport.getBoundingClientRect();
-        console.log(rect)
         map.zoomer.zoomIn((e.touches[0].clientX - rect.left), (e.touches[0].clientY - rect.top));
       }, 50);
       double_tap = true;

@@ -8,6 +8,4 @@ if (window.location.href.indexOf("pop-density")!==-1) {
     use_pop_density = "off"
 }
 
-console.log(use_pop_density)
-
 export { mode , use_pop_density }

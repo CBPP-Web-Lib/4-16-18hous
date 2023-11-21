@@ -34,8 +34,9 @@ var AutocompleteInput = function(sel_input) {
       el = el.parentNode
     }
     removeOptions()
-    if (typeof(old_text)!=="undefined") {
+    if (old_text) {
       text_input.value = old_text
+      old_text = null;
     }
   })
 

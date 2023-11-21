@@ -24,26 +24,33 @@ const cbsaUi = function(map)  {
       option.value = item[0]
       picker.appendChild(option)
     })
-    picker.addEventListener("change", ()=>{
-      var cbsa = picker.value
-      if (picker.classList.contains("opener")) {
-        openMap(map, picker.value)
-      } else {
-        map.cbsaManager.loadCBSA(cbsa).then(function() {
-          var cbsa_start_coords = map.coordTracker.getBoundingTilesForCBSA(cbsa)
-          map.coordTracker.setCoords(cbsa_start_coords).then(function() {
-            updateLegend(map)
-          })
-        });
-      }
-      pickers.forEach((_picker)=>{
-        if (picker !== _picker) {
-          _picker.value = picker.value
-          if (_picker.hous41618_associated_autocomplete_textinput) {
-            _picker.hous41618_associated_autocomplete_textinput.value = _picker.options[_picker.selectedIndex].text
-          }
+    picker.addEventListener("change", function() {
+      var cbsa_text = this.options[this.selectedIndex].innerText
+      return new Promise((resolve, reject) => {
+        var cbsa = picker.value
+          if (picker.classList.contains("opener")) {
+          openMap(map, picker.value).then(resolve)
+        } else {
+          map.cbsaManager.loadCBSA(cbsa).then(function() {
+            var cbsa_start_coords = map.coordTracker.getBoundingTilesForCBSA(cbsa)
+            map.coordTracker.setCoords(cbsa_start_coords).then(function() {
+              updateLegend(map);
+              resolve();
+            })
+          });
         }
+      }).then(function() {
+        pickers.forEach((_picker)=>{
+          if (picker !== _picker) {
+            _picker.value = picker.value
+            if (_picker.hous41618_associated_autocomplete_textinput) {
+              _picker.hous41618_associated_autocomplete_textinput.value = cbsa_text
+            }
+          }
+        })
+
       })
+      
     })
     make_autocomplete(picker)
   })
