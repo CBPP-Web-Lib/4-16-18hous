@@ -20,7 +20,7 @@ function build_script(theMgr) {
 
   /*--new slide--*/
   item = {
-    position: -50,
+    position: 0,
     anchor: "milwaukee-1",
     type: "mapConfig",
     config: {
@@ -41,7 +41,7 @@ function build_script(theMgr) {
 
   /*--new slide--*/
   script.push({
-    position: -50,
+    position: 0,
     anchor: "milwaukee-3",
     type: "customBackground",
     config: {name: "families_poc_milwaukee_chart"}
@@ -50,7 +50,7 @@ function build_script(theMgr) {
   /*--new slide--*/
   item = JSON.parse(JSON.stringify(item));
   item.anchor = "milwaukee-4";
-  item.position = -50;
+  item.position = 0;
   item.config.layer = "none";
   item.config.races = ["black"];
   script.push(item);
@@ -76,7 +76,7 @@ function build_script(theMgr) {
 
   /*--new slide--*/
   script.push({
-    position: -50,
+    position: 0,
     anchor: "milwaukee-6",
     type: "customBackground",
     config: {name: "poverty_voucher"}
@@ -84,7 +84,7 @@ function build_script(theMgr) {
 
   /*--new slide--*/
   item = JSON.parse(JSON.stringify(item));
-  item.position = -50;
+  item.position = 0;
   item.anchor = "milwaukee-7";
   item.config.aff_units = false;
   item.config.races = [
@@ -101,7 +101,7 @@ function build_script(theMgr) {
 
   /*--new slide--*/
   item = {
-    position: -50,
+    position: 0,
     anchor: "madison-1",
     type: "mapConfig",
     config: {
