@@ -42,10 +42,10 @@ function get_name(code) {
   var household = code.join("_")
   return (
     {
-      "total": "families using ",
+      "total": "households using ",
       "children": "families with children using ",
       "children_poc": "families of color with children using ",
-      "disability": "families with a member with a disability using ",
+      "disability": "households with a member with a disability using ",
     }[household] + {
       "hcv": "housing vouchers",
       "pbra": "project-based rental assistance",
@@ -95,13 +95,13 @@ const dotConfig = {
   "ethnicity_black_dots": {fill:"#e28f4488"},
   "ethnicity_hisp_dots": {fill:"#c1c11a88"},
   "ethnicity_multi_dots": {fill:"#a3a3a388"},
-  "ethnicity_nhpi_dots": {fill:"#1ea5a588"},
+  "ethnicity_nhpi_dots": {fill:"#3f3f3f88"},
   "ethnicity_nonwhite_dots": {fill:ethnicity_palette[5].hex()+ "bb"},
-  "ethnicity_other_dots": {fill:"#3f3f3f88"},
+  "ethnicity_other_dots": {fill:"#1ea5a588"},
   "ethnicity_tot_pop_dots": {fill:"#2228"},
   "ethnicity_white_dots": {fill:"#99b9d688"},
   "safmr_tot_safmr_vau_dots": {
-    fill: "rgba(111, 66, 245, 0.2)",
+    fill: "rgba(185, 89, 194, 0.2)",
     "stroke-opacity": 0.8,
     stroke: "rgb(0, 0, 0, 0)",
     radius: 3,

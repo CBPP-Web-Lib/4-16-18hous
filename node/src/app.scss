@@ -388,6 +388,11 @@ body, html {
       div.hover-data-item {
         display:flex;
         line-height:1;
+        &.top-border {
+          border-top:1px solid #aaa;
+          padding-top:0.2em;
+          margin-top:0.2em;
+        }
         &:not(.no-border) {
           border-bottom:1px solid #aaa;
           padding-bottom:0.2em;
@@ -414,9 +419,11 @@ body, html {
       td {
         padding-top:2px;
         padding-bottom:2px;
+        text-align:right;
       }
       td:first-child {
         padding-left:10px;
+        text-align:left;
       }
       td:last-child {
         padding-right:4px;
@@ -538,7 +545,7 @@ body, html {
       width:14px;
       height:14px;
       margin:2px;
-      background-color: rgba(111, 66, 245, 0.4);
+      background-color: rgba(185, 89, 194, 0.4);
       border:0px;
     }
     .ethnicity-legend {
