@@ -237,15 +237,14 @@ function ViewportMouseTracker(map) {
   viewport.parentElement.addEventListener("click", function(e) {
     var el = select(e.target);
     var data = el.data();
-    if (data) {
+    /*if (data) {
       if (data[0]) {
         console.log(data[0])
       }
-    }
+    }*/
     var offset = viewport.getBoundingClientRect();
     var x = e.clientX - offset.x;
     var y = e.clientY - offset.y;
-    console.log(map.projectionManager.getLatLongFromClick(x, y));
   });
 }
 
