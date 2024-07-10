@@ -714,7 +714,7 @@ gulp.task("filter_geojson", gulp.series(/*"ogr2ogr","split_data", */function(cb)
   fs.writeFileSync("./filtered/tl_2020_us_cbsa.json", JSON.stringify(cbsa, null, " "));*/
   var files = fs.readdirSync("./geojson");
   files = files.filter(function(f) {
-    return f.indexOf("areawater")===-1;
+    return f.indexOf("areawater")===-1 && f.indexOf("kontor")===-1;
   });
   var filterTasks = [];
   files.forEach(function(f) {
@@ -873,6 +873,7 @@ gulp.task("split_pop_data_cbsa", function(cb) {
 })
 
 gulp.task("compress_density", function(cb) {
+  makeDirectory("./webroot/data/pop_density/");
   makeDirectory("./webroot/data/pop_density/compressed/");
   var files = fs.readdirSync("./webroot/data/pop_density");
   files.forEach((filename) => {

@@ -1,5 +1,6 @@
 ./gulp.sh temp
 ./gulp.sh geojson_dir
+./gulp.sh kontur_pop_density
 ./gulp.sh download_shapefiles
 ./gulp.sh unzip_shapefiles
 ./gulp.sh ogr2ogr
@@ -17,3 +18,6 @@
 ./gulp.sh binCBSA
 ./gulp.sh process_places
 ./gulp.sh split_place_names_cbsa
+./gulp.sh split_pop_data_cbsa
+./gulp.sh calculate_dot_densities
+./gulp.sh compress_density
