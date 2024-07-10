@@ -20,7 +20,7 @@ const cbsaUi = function(map)  {
     picker.append(option)
     arr.forEach((item)=>{
       var option = document.createElement("option")
-      option.innerText = item[1]
+      option.innerText = filter_cbsa_name(item[1])
       option.value = item[0]
       picker.appendChild(option)
     })
@@ -54,6 +54,13 @@ const cbsaUi = function(map)  {
     })
     make_autocomplete(picker)
   })
+}
+
+function filter_cbsa_name(name) {
+  if (name === "Urban Honolulu, HI") {
+    name = "Honolulu, HI";
+  }
+  return name;
 }
 
 export { cbsaUi }

@@ -101,7 +101,7 @@ const dotConfig = {
   "ethnicity_tot_pop_dots": {fill:"#2228"},
   "ethnicity_white_dots": {fill:"#99b9d688"},
   "safmr_tot_safmr_vau_dots": {
-    fill: "rgba(185, 89, 194, 0.2)",
+    fill: "rgba(185, 89, 194, 0.4)",
     "stroke-opacity": 0.8,
     stroke: "rgb(0, 0, 0, 0)",
     radius: 3,
