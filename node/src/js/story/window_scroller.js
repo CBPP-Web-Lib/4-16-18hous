@@ -37,7 +37,6 @@ var WindowScroller = function(config) {
       return a.absPosition - b.absPosition
     });
     script.forEach((item, i) => {
-      console.log(progress)
       if (progress > item.absPosition) {
         item_to_do = item;
         next_item = direction === "down" ? script[i+1] : script[i-1]

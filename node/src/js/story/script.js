@@ -36,7 +36,7 @@ function build_script(theMgr) {
 
   /*--new slide--*/
   item = JSON.parse(JSON.stringify(item));
-  item.name = "dc-15";
+  item.anchor = "dc-15";
   script.push(item);
 
   /*--new slide--*/
@@ -62,12 +62,46 @@ function build_script(theMgr) {
     config: {name: "dc-chart-2"}
   });
 
+
+
+  var item = {
+    position: 0,
+    anchor: "la-1",
+    type: "mapConfig",
+    config: {
+      cbsa: 31080,
+      mode: "story",
+      bounds: [-118.456, 34.235, -117.791, 33.700],
+      household_type: "none",
+      layer: "none",
+      races: ["asian","black","hisp","nhpi","white"]
+    }
+  };
+  script.push(item);
+
   /*--new slide--*/
   item = JSON.parse(JSON.stringify(item));
-  item.anchor = "milwaukee-4";
-  item.position = 0;
+  item.anchor = "la-2";
+  item.config.household_type = "pbra_total";
   item.config.layer = "none";
-  item.config.races = ["black"];
+  item.config.races = ["asian","nhpi"];
+  script.push(item);
+
+  /*--new slide--*/
+  script.push({
+    position: 0,
+    anchor: "la-3",
+    type: "customBackground",
+    config: {name: "la-chart-1"}
+  });
+
+  /*--new slide--*/
+  item = JSON.parse(JSON.stringify(item));
+  item.anchor = "la-4";
+  item.position = 0;
+  item.config.household_type = "pbra_disability";
+  item.config.layer = "poverty_pov_pct";
+  item.config.races = [];
   script.push(item);
   
 
