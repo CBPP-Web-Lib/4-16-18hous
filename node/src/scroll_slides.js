@@ -9,7 +9,7 @@ window.addEventListener("DOMContentLoaded", function() {
 
   document.querySelector(".slide-deck").querySelectorAll(".slide").forEach((slide)=> {
     slide.innerHTML = "<div class='slide-inner-wrap'>" + slide.innerHTML + "</div>"
-  })
+  });
 
   map.ready(function() {
     var scroller = new WindowScroller({map, script})
@@ -28,7 +28,6 @@ var windowResize = function() {
   var { left, right } = deck.parentElement.getBoundingClientRect()
   var outerRight = window.innerWidth;
   deck.style["margin-left"] = (-left + outerRight - right) + "px"
-
   calculate_absolute_percentages()
 
 }
@@ -45,10 +44,14 @@ function calculate_absolute_percentages() {
     anchors[slide.getAttribute("name")] = {height, start}
   })
   script.forEach((change) => {
-    var { anchor } = change;
-    if (!anchor) {return;}
-    var slide_pos = anchors[anchor]
-    change.absPosition = slide_pos.start + change.position/100 * slide_pos.height
+    try {
+      var { anchor } = change;
+      if (!anchor) {return;}
+      var slide_pos = anchors[anchor]
+      change.absPosition = slide_pos.start + change.position/100 * slide_pos.height
+    } catch (ex) {
+      console.error(ex);
+    }
   })
   script.sort((a, b) => {
     return a.absPosition - b.absPosition

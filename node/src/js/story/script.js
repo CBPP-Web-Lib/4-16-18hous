@@ -21,30 +21,45 @@ function build_script(theMgr) {
   /*--new slide--*/
   item = {
     position: 0,
-    anchor: "milwaukee-1",
+    anchor: "dc-1",
     type: "mapConfig",
     config: {
-      cbsa: 33340,
+      cbsa: 47900,
       mode: "story",
-      bounds: [-88.1447, 42.8989, -87.7661, 43.2077],
-      household_type: "hcv_total",
-      layer: "poverty_pov_pct"
+      bounds: [-77.231, 39.062, -76.849, 38.722],
+      household_type: "ph_total",
+      layer: "none",
+      races: ["black","white"]
     }
   };
   script.push(item);
 
   /*--new slide--*/
   item = JSON.parse(JSON.stringify(item));
-  item.anchor = "milwaukee-2";
-  item.config.household_type = "hcv_children_poc",
+  item.name = "dc-15";
+  script.push(item);
+
+  /*--new slide--*/
+  item = JSON.parse(JSON.stringify(item));
+  item.anchor = "dc-2";
+  item.config.household_type = "ph_children_poc";
+  item.config.layer = "poverty_pov_pct";
+  item.config.races = [];
   script.push(item);
 
   /*--new slide--*/
   script.push({
     position: 0,
-    anchor: "milwaukee-3",
+    anchor: "dc-3",
     type: "customBackground",
-    config: {name: "families_poc_milwaukee_chart"}
+    config: {name: "dc-chart-1"}
+  });
+
+  script.push({
+    position: 0,
+    anchor: "dc-4",
+    type: "customBackground",
+    config: {name: "dc-chart-2"}
   });
 
   /*--new slide--*/
@@ -54,6 +69,7 @@ function build_script(theMgr) {
   item.config.layer = "none";
   item.config.races = ["black"];
   script.push(item);
+  
 
   /*--new slide--*/
   item = JSON.parse(JSON.stringify(item));
@@ -164,6 +180,7 @@ function build_script(theMgr) {
       }
     }
   });
+  console.log(script);
   return script;
 }
 

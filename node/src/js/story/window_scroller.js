@@ -1,3 +1,5 @@
+import { active } from "d3";
+
 var WindowScroller = function(config) {
   var { map, script } = config
   var current_item;
@@ -7,22 +9,41 @@ var WindowScroller = function(config) {
   this.onScroll = function(e) {
     var direction = window.scrollY >= prev ? "down" : "up"
     prev = window.scrollY;
-    var deck = document.querySelector(".slide-deck").getBoundingClientRect();
-    var intro_text = document.querySelector(".intro-text").getBoundingClientRect();
-    var height = window.innerHeight;
-    var progress = 0 - deck.top/deck.height
-    var opacity = Math.max(0, Math.min(1, 1 - (intro_text.height + intro_text.y) / (height*0.5)))
+    var deck = document.querySelector(".slide-deck");
+    var deck_rect = deck.getBoundingClientRect();
+    var sections = deck.querySelectorAll("section");
+    var active_section, section_rect;
+    sections.forEach((section) => {
+      var this_section_rect = section.getBoundingClientRect()
+      if (this_section_rect.top < window.innerHeight && this_section_rect.top + this_section_rect.height > 0) {
+        active_section = section;
+        section_rect = this_section_rect;
+      }
+    })
+    if (!active_section) {
+      var opacity = 0;
+    } else {
+      //var intro_text = document.querySelector(".intro-text").getBoundingClientRect();
+      var height = window.innerHeight;
+      var progress = 0 - deck_rect.top/deck_rect.height
+      var opacity = Math.min(1, 1.5 + (0 - section_rect.top) / (window.innerHeight/2))
+      opacity = Math.min(opacity, (section_rect.top + section_rect.height)/window.innerHeight);
+      //var opacity = Math.max(0, Math.min(1, 1 - (intro_text.height + intro_text.y) / (height*0.5)))
+    }
     document.querySelector("#" + map.getId() + " .map-outer-lightbox").style.opacity = opacity;
+    document.querySelector(".slide-custom-backgrounds").style.opacity = opacity;
     var item_to_do, next_item;
     script.sort((a, b) => {
       return a.absPosition - b.absPosition
     });
     script.forEach((item, i) => {
+      console.log(progress)
       if (progress > item.absPosition) {
         item_to_do = item;
         next_item = direction === "down" ? script[i+1] : script[i-1]
       }
     })
+    console.log(item_to_do);
     if (!item_to_do) {
       item_to_do = script[0];
       if (direction === "down") {
