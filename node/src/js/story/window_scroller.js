@@ -42,7 +42,6 @@ var WindowScroller = function(config) {
         next_item = direction === "down" ? script[i+1] : script[i-1]
       }
     })
-    console.log(item_to_do);
     if (!item_to_do) {
       item_to_do = script[0];
       if (direction === "down") {

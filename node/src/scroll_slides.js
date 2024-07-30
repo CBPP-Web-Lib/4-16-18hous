@@ -56,7 +56,6 @@ function calculate_absolute_percentages() {
   script.sort((a, b) => {
     return a.absPosition - b.absPosition
   })
-  console.log(script);
 }
 
 var theMgr = new MapManager(map);

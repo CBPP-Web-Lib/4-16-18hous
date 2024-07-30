@@ -13,14 +13,11 @@ var MapManager = function(map) {
   var changeBackground = function(config) {
     return new Promise((resolve) => {
       var { name } = config
-      console.log(config)
       document.querySelector("#" + map.getId()).classList.add("map-hidden")
       document.querySelectorAll(".slide-custom-backgrounds > div").forEach(function(el) {
         el.classList.remove("active");
       })
       var new_bg = document.querySelector(".slide-custom-backgrounds [name='" + name + "']");
-      console.log(name)
-      console.log(new_bg);
       if (new_bg) {
         new_bg.classList.add("active")
       }

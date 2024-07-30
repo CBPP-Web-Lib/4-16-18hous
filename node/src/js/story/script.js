@@ -103,13 +103,29 @@ function build_script(theMgr) {
   item.config.layer = "poverty_pov_pct";
   item.config.races = [];
   script.push(item);
+
+  /*--new slide--*/
+  item = {
+    position: 0,
+    anchor: "milwaukee-1",
+    type: "mapConfig",
+    config: {
+      cbsa: 33340,
+      mode: "story",
+      bounds: [-88.1447, 42.8989, -87.7661, 43.2077],
+      household_type: "none",
+      layer: "none",
+      races: ["black","white","hisp"]
+    }
+  };
+  script.push(item);
   
 
   /*--new slide--*/
   item = JSON.parse(JSON.stringify(item));
-  item.anchor = "milwaukee-5";
+  item.anchor = "milwaukee-2";
   item.config.aff_units = true;
-  item.config.annotations = [{
+  /*item.config.annotations = [{
     id: "aff_units_ellipse",
     type: "ellipse",
     major_axis: {
@@ -121,83 +137,27 @@ function build_script(theMgr) {
     minor_axis: {
       length: 0.6
     }
-  }];
+  }];*/
+  item.config.layer="poverty_pov_pct";
+  item.config.races = []
+  item.config.household_type = "hcv_total"
+  script.push(item);
+
+  /*--new slide--*/
+  item = JSON.parse(JSON.stringify(item));
+  item.anchor = "milwaukee-3";
+  item.config.aff_units = false;
   script.push(item);
 
   /*--new slide--*/
   script.push({
     position: 0,
-    anchor: "milwaukee-6",
+    anchor: "milwaukee-4",
     type: "customBackground",
-    config: {name: "poverty_voucher"}
+    config: {name: "milwaukee-chart-1"}
   });
 
-  /*--new slide--*/
-  item = JSON.parse(JSON.stringify(item));
-  item.position = 0;
-  item.anchor = "milwaukee-7";
-  item.config.aff_units = false;
-  item.config.races = [
-    "aian",
-    "asian",
-    "black",
-    "hisp",
-    "multi",
-    "nhpi",
-    "other",
-    "white"
-  ];
-  script.push(item);
-
-  /*--new slide--*/
-  item = {
-    position: 0,
-    anchor: "madison-1",
-    type: "mapConfig",
-    config: {
-      cbsa: 31540,
-      mode: "story",
-      bounds: [-89.5911, 43.2020, -89.2196, 42.9582],
-      household_type: "hcv_children_poc",
-      layer: "none",
-      races: [
-        "black",
-        "hisp"
-      ],
-      annotations: [{
-        id: "milwaukee-shorewood-hills",
-        type: "ellipse",
-        major_axis: {
-          x1: -89.51556,
-          y1: 43.08998,
-          x2: -89.40228,
-          y2: 43.04484
-        },
-        minor_axis: {
-          length: 0.4
-        }
-      }, {
-        id: "milwaukee-monona",
-        type: "ellipse",
-        major_axis: {
-          x1: -89.35500,
-          y1: 43.06240,
-          x2: -89.27937,
-          y2: 43.06240
-        },
-        minor_axis: {
-          length: 0.6
-        }
-      }]
-    }
-  };
-  script.push(item);
-
-  /*--new slide--*/
-  item = JSON.parse(JSON.stringify(item));
-  item.anchor = "madison-2";
-  item.config.aff_units = true;
-  script.push(item);
+  /*configure actions*/
   script.forEach((item) => {
     if (item.type === "mapConfig") {
       item.action = function(bg) {
@@ -214,7 +174,6 @@ function build_script(theMgr) {
       }
     }
   });
-  console.log(script);
   return script;
 }
 
