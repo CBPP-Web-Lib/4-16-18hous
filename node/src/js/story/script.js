@@ -8,6 +8,7 @@ function build_script(theMgr) {
   the complete config to the map manager.*/
 
   /*--new slide--*/
+  var mode = "static"
   var item;
   item = {
     position: "lessThanMin",
@@ -18,35 +19,56 @@ function build_script(theMgr) {
   };
   script.push(item);
 
-  /*--new slide--*/
-  item = {
-    position: 0,
-    anchor: "dc-1",
-    type: "mapConfig",
-    config: {
-      cbsa: 47900,
-      mode: "story",
-      bounds: [-77.231, 39.062, -76.849, 38.722],
-      household_type: "ph_total",
-      layer: "none",
-      races: ["black","white"]
+  if (mode !== "static") {
+    /*--new slide--*/
+    item = {
+      position: 0,
+      anchor: "dc-1",
+      type: "mapConfig",
+      config: {
+        cbsa: 47900,
+        mode: "story",
+        bounds: [-77.231, 39.062, -76.849, 38.722],
+        household_type: "ph_total",
+        layer: "none",
+        races: ["black","white"]
+      }
+    };
+    script.push(item);
+  } else {
+    /*--new slide--*/
+    var item = {
+      position: 0,
+      anchor: "dc-1",
+      type: "customBackground",
+      config: {name: "dc-map-1"}
     }
-  };
-  script.push(item);
+    script.push(item)
+  }
 
   /*--new slide--*/
   item = JSON.parse(JSON.stringify(item));
   item.anchor = "dc-15";
   script.push(item);
 
-  /*--new slide--*/
-  item = JSON.parse(JSON.stringify(item));
-  item.anchor = "dc-2";
-  item.config.household_type = "ph_children_poc";
-  item.config.layer = "poverty_pov_pct";
-  item.config.races = [];
-  script.push(item);
-
+  if (mode !== "static") {
+    /*--new slide--*/
+    item = JSON.parse(JSON.stringify(item));
+    item.anchor = "dc-2";
+    item.config.household_type = "ph_children_poc";
+    item.config.layer = "poverty_pov_pct";
+    item.config.races = [];
+    script.push(item);
+  } else {
+    item = {
+      position: 0,
+      anchor: "dc-2",
+      type: "customBackground",
+      config: {name: "dc-map-2"}
+    }
+    script.push(item)
+  }
+  
   /*--new slide--*/
   script.push({
     position: 0,
@@ -62,30 +84,49 @@ function build_script(theMgr) {
     config: {name: "dc-chart-2"}
   });
 
+  if (mode !== "static") {
 
-
-  var item = {
-    position: 0,
-    anchor: "la-1",
-    type: "mapConfig",
-    config: {
-      cbsa: 31080,
-      mode: "story",
-      bounds: [-118.456, 34.235, -117.791, 33.700],
-      household_type: "none",
-      layer: "none",
-      races: ["asian","black","hisp","nhpi","white"]
+    var item = {
+      position: -40,
+      anchor: "la-1",
+      type: "mapConfig",
+      config: {
+        cbsa: 31080,
+        mode: "story",
+        bounds: [-118.456, 34.235, -117.791, 33.700],
+        household_type: "none",
+        layer: "none",
+        races: ["asian","black","hisp","nhpi","white"]
+      }
+    };
+    script.push(item);
+  } else {
+    var item = {
+      position: -40,
+      anchor: "la-1",
+      type: "customBackground",
+      config: {name: "la-map-1"}
     }
-  };
-  script.push(item);
+    script.push(item)
+  }
 
-  /*--new slide--*/
-  item = JSON.parse(JSON.stringify(item));
-  item.anchor = "la-2";
-  item.config.household_type = "pbra_total";
-  item.config.layer = "none";
-  item.config.races = ["asian","nhpi"];
-  script.push(item);
+  if (mode !== "static") {
+    /*--new slide--*/
+    item = JSON.parse(JSON.stringify(item));
+    item.anchor = "la-2";
+    item.config.household_type = "pbra_total";
+    item.config.layer = "none";
+    item.config.races = ["asian","nhpi"];
+    script.push(item);
+  } else {
+    var item = {
+      position: 0,
+      anchor: "la-2",
+      type: "customBackground",
+      config: {name: "la-map-2"}
+    }
+    script.push(item)
+  }
 
   /*--new slide--*/
   script.push({
@@ -95,59 +136,101 @@ function build_script(theMgr) {
     config: {name: "la-chart-1"}
   });
 
-  /*--new slide--*/
-  item = JSON.parse(JSON.stringify(item));
-  item.anchor = "la-4";
-  item.position = 0;
-  item.config.household_type = "pbra_disability";
-  item.config.layer = "poverty_pov_pct";
-  item.config.races = [];
-  script.push(item);
-
-  /*--new slide--*/
-  item = {
-    position: 0,
-    anchor: "milwaukee-1",
-    type: "mapConfig",
-    config: {
-      cbsa: 33340,
-      mode: "story",
-      bounds: [-88.1447, 42.8989, -87.7661, 43.2077],
-      household_type: "none",
-      layer: "none",
-      races: ["black","white","hisp"]
+  if (mode !== "static") {
+    /*--new slide--*/
+    item = JSON.parse(JSON.stringify(item));
+    item.anchor = "la-4";
+    item.position = 0;
+    item.config.household_type = "pbra_disability";
+    item.config.layer = "poverty_pov_pct";
+    item.config.races = [];
+    script.push(item);
+  } else {
+    var item = {
+      position: 0,
+      anchor: "la-4",
+      type: "customBackground",
+      config: {name: "la-map-3"}
     }
-  };
-  script.push(item);
-  
+    script.push(item)
+  }
 
-  /*--new slide--*/
-  item = JSON.parse(JSON.stringify(item));
-  item.anchor = "milwaukee-2";
-  item.config.aff_units = true;
-  /*item.config.annotations = [{
-    id: "aff_units_ellipse",
-    type: "ellipse",
-    major_axis: {
-      x1: -87.90446,
-      y1: 43.038,
-      x2: -87.88116,
-      y2: 43.065
-    },
-    minor_axis: {
-      length: 0.6
+  if (mode !== "static") {
+    /*--new slide--*/
+    item = {
+      position: -40,
+      anchor: "milwaukee-1",
+      type: "mapConfig",
+      config: {
+        cbsa: 33340,
+        mode: "story",
+        bounds: [-88.1447, 42.8989, -87.7661, 43.2077],
+        household_type: "none",
+        layer: "none",
+        races: ["black","white","hisp"]
+      }
+    };
+    script.push(item);
+  } else {
+    var item = {
+      position: -40,
+      anchor: "milwaukee-1",
+      type: "customBackground",
+      config: {name: "milwaukee-map-1"}
     }
-  }];*/
-  item.config.layer="poverty_pov_pct";
-  item.config.races = []
-  item.config.household_type = "hcv_total"
-  script.push(item);
+    script.push(item)
+  }
 
-  /*--new slide--*/
-  item = JSON.parse(JSON.stringify(item));
-  item.anchor = "milwaukee-3";
-  item.config.aff_units = false;
-  script.push(item);
+  if (mode !== "static") {
+
+    /*--new slide--*/
+    item = JSON.parse(JSON.stringify(item));
+    item.anchor = "milwaukee-2";
+    item.config.aff_units = true;
+    /*item.config.annotations = [{
+      id: "aff_units_ellipse",
+      type: "ellipse",
+      major_axis: {
+        x1: -87.90446,
+        y1: 43.038,
+        x2: -87.88116,
+        y2: 43.065
+      },
+      minor_axis: {
+        length: 0.6
+      }
+    }];*/
+    item.config.layer="poverty_pov_pct";
+    item.config.races = []
+    item.config.household_type = "hcv_total"
+    script.push(item);
+  } else {
+    var item = {
+      position: 0,
+      anchor: "milwaukee-2",
+      type: "customBackground",
+      config: {name: "milwaukee-map-2"}
+    }
+    script.push(item)
+  }
+
+  if (mode !== "static") {
+
+    /*--new slide--*/
+    item = JSON.parse(JSON.stringify(item));
+    item.anchor = "milwaukee-3";
+    item.config.aff_units = false;
+    script.push(item);
+    
+  } else {
+    var item = {
+      position: 0,
+      anchor: "milwaukee-3",
+      type: "customBackground",
+      config: {name: "milwaukee-map-3"}
+    }
+    script.push(item)
+  }
 
   /*--new slide--*/
   script.push({
