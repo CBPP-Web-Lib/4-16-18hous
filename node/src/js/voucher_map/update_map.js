@@ -4,6 +4,7 @@ import { updateDotsLayer } from "./update_dots_layer"
 import { untranslateMap } from "../ui/translate_map"
 import { updatePlacesLayer } from "./update_places_layer"
 import { displayLoadingBlocker, hideLoadingBlocker } from "../ui/loading_blocker"
+import { updateUrl } from "../ui/update_url"
 
 var performance_timer
 var ignore_shapes = false
@@ -13,6 +14,7 @@ const updateMapView = function(args) {
     var finish = () => {
       this.fadeOutOldTransparencyContainer()
       hideLoadingBlocker()
+      updateUrl.call(this)
       resolve()
     }
 

@@ -14,7 +14,7 @@ const dot_cache = {};
 
 const dot_data_layer = {}
 
-function load_dot_config(name) {
+function loadDotConfig(name) {
   var config = {};
   Object.keys(dotConfig.default).forEach((prop)=>{
     config[prop] = dotConfig.default[prop]
@@ -27,7 +27,7 @@ function load_dot_config(name) {
   return config
 }
 
-export function updateDotsLayer(visible_features, extra_args) {
+function updateDotsLayer(visible_features, extra_args) {
   var map = this
 
   return new Promise((resolve)=> {
@@ -72,7 +72,7 @@ export function updateDotsLayer(visible_features, extra_args) {
         var downloads = [];
         var url_base = getURLBase();
         active_dots_layer.forEach((dot_layer) => {
-          var config = load_dot_config(dot_layer)
+          var config = loadDotConfig(dot_layer)
           var dot_represents = config.numDots(z)
           var layer_id = dot_layer + "_" + dot_represents
           if (dot_layer.indexOf("none") !== -1) {
@@ -117,7 +117,7 @@ export function updateDotsLayer(visible_features, extra_args) {
         var dot_deflator = get_deflator(map.cbsaManager.getDotDensity())
         Object.keys(dot_data_layer).forEach((layer_id)=>{
           var name = dot_data_layer[layer_id].name
-          var config = load_dot_config(name)
+          var config = loadDotConfig(name)
           var dot_represents = config.numDots(z)
           if (dot_data_layer[layer_id].dotRepresents !== dot_represents) {
             delete(dot_data_layer[layer_id])
@@ -129,7 +129,7 @@ export function updateDotsLayer(visible_features, extra_args) {
         var feature_piles = []
         var worker_slot = 0
         active_dots_layer.forEach((name)=>{
-          var config = load_dot_config(name)
+          var config = loadDotConfig(name)
           var dot_represents = config.numDots(z)
           var layer_id = name + "_" + dot_represents;
           var layer_data;
@@ -226,7 +226,7 @@ export function updateDotsLayer(visible_features, extra_args) {
       /*download*/
       if (mode==="download") {
         d.forEach((file) => {
-          configs[file.layer] = load_dot_config(file.layer)
+          configs[file.layer] = loadDotConfig(file.layer)
           var ethnicity = false;
           if (file.layer.indexOf("ethnicity")!==-1) {
             ethnicity = true;
@@ -243,7 +243,7 @@ export function updateDotsLayer(visible_features, extra_args) {
         })
       } else {
         draw_dot_layers.forEach((layer)=>{
-          configs[layer.name] = load_dot_config(layer.name)
+          configs[layer.name] = loadDotConfig(layer.name)
           var is_ethnicity_layer = false
           if (layer.name.indexOf("ethnicity")!==-1) {
             is_ethnicity_layer = true
@@ -445,6 +445,8 @@ export function updateDotsLayer(visible_features, extra_args) {
   })
   
 }
+
+export {loadDotConfig, updateDotsLayer}
 
 function in_bounds(dot, bounds) {
   var result = true;

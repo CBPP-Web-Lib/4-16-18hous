@@ -12,6 +12,7 @@ import { setupDotWorkers } from "./setup_dot_workers"
 import { setupLightbox } from "../ui/setup_lightbox"
 import dom from "../../dom.html"
 import { mode } from "./mode"
+import { handleUrlHash } from "../ui/handle_url_hash"
 
 var id, url_base;
 
@@ -61,11 +62,18 @@ const initialize = function(config) {
   if (mode !== "download") {
     this.dotWorkers = setupDotWorkers(this)
   }
-  this.dataLayerManager.setActiveDotsLayer("hcv_total")
+
+  var custom_config = handleUrlHash(this);
+  if (!custom_config) {
+    this.dataLayerManager.setActiveDotsLayer("hcv_total")
+  }
   if (typeof(this.whenReady)==="function") {
     this.whenReady();
   }
   this.initialized = true;
+
+
+
 }
 
 export { initialize }

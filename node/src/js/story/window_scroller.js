@@ -26,8 +26,8 @@ var WindowScroller = function(config) {
       //var intro_text = document.querySelector(".intro-text").getBoundingClientRect();
       var height = window.innerHeight;
       var progress = 0 - deck_rect.top/deck_rect.height
-      var opacity = Math.min(1, 1.5 + (0 - section_rect.top) / (window.innerHeight/2))
-      opacity = Math.min(opacity, (section_rect.top + section_rect.height)/window.innerHeight);
+      var opacity = Math.min(1, 1.5 + (0 - section_rect.top) / (window.innerHeight/4))
+      opacity = Math.min(opacity, (section_rect.top - window.innerHeight + section_rect.height)/(window.innerHeight/4));
       //var opacity = Math.max(0, Math.min(1, 1 - (intro_text.height + intro_text.y) / (height*0.5)))
     }
     document.querySelector("#" + map.getId() + " .map-outer-lightbox").style.opacity = opacity;
@@ -39,22 +39,22 @@ var WindowScroller = function(config) {
     script.forEach((item, i) => {
       if (progress > item.absPosition) {
         item_to_do = item;
-        next_item = direction === "down" ? script[i+1] : script[i-1]
+        //next_item = direction === "down" ? script[i+1] : script[i-1]
       }
     })
     if (!item_to_do) {
       item_to_do = script[0];
       if (direction === "down") {
-        next_item = script[1];
+        //next_item = script[1];
       } 
     }
     function do_item_and_next() {
       item_to_do.action();
-      if (next_item) {
+      /*if (next_item) {
         if ((item_to_do.type === "customBackground" || item_to_do.config.hideMap) && next_item.type === "mapConfig") {
           next_item.action({backgroundChange: true})
         }
-      }
+      }*/
     }
     if (current_item !== item_to_do) {
       clearTimeout(deferred_action);

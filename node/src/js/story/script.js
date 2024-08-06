@@ -38,7 +38,7 @@ function build_script(theMgr) {
   } else {
     /*--new slide--*/
     var item = {
-      position: 0,
+      position: -40,
       anchor: "dc-1",
       type: "customBackground",
       config: {name: "dc-map-1"}
@@ -87,7 +87,7 @@ function build_script(theMgr) {
   if (mode !== "static") {
 
     var item = {
-      position: -40,
+      position: -30,
       anchor: "la-1",
       type: "mapConfig",
       config: {
@@ -102,7 +102,7 @@ function build_script(theMgr) {
     script.push(item);
   } else {
     var item = {
-      position: -40,
+      position: -70,
       anchor: "la-1",
       type: "customBackground",
       config: {name: "la-map-1"}
@@ -158,7 +158,7 @@ function build_script(theMgr) {
   if (mode !== "static") {
     /*--new slide--*/
     item = {
-      position: -40,
+      position: -60,
       anchor: "milwaukee-1",
       type: "mapConfig",
       config: {
