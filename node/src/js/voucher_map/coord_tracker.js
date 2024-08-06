@@ -7,6 +7,7 @@ var in_progress = false
 function setCoords(coords, args) {
   return new Promise((resolve)=>{
     if (in_progress) {
+      console.log("oh no")
       resolve(false)
       return
     }
@@ -14,6 +15,7 @@ function setCoords(coords, args) {
     z = coords.z
     x = coords.x
     y = coords.y
+    console.log(coords)
     viewportWidth = this.getMap().getViewportWidth()
     viewportHeight = this.getMap().getViewportHeight()
     this.getMap().projectionManager.updateProjection().then(() => {

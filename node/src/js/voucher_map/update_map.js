@@ -28,6 +28,7 @@ const updateMapView = function(args) {
       finish()
       return;
     }
+    console.log("loading")
     updateShapesLayer.call(this).then((visible_features) => {
       untranslateMap.call(this)
       updatePlacesLayer.call(this)

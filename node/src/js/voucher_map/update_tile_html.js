@@ -20,6 +20,7 @@ export function updateTileHtml(custom_cords) {
   var width = map.getViewportWidth()
   var height = map.getViewportHeight()
   var coords = coord_tracker.getCoords()
+  console.log(coords)
   if (custom_cords) {
     coords = custom_cords
   }
