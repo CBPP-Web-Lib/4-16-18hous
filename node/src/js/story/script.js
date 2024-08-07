@@ -23,7 +23,7 @@ function build_script(theMgr) {
     /*--new slide--*/
     item = {
       position: 0,
-      anchor: "dc-1",
+      anchor: "dc-0",
       type: "mapConfig",
       config: {
         cbsa: 47900,
@@ -39,6 +39,20 @@ function build_script(theMgr) {
     /*--new slide--*/
     var item = {
       position: -40,
+      anchor: "dc-0",
+      type: "customBackground",
+      config: {name: "dc-map-0"}
+    }
+    script.push(item)
+  }
+
+ 
+
+  if (mode !== "static") {
+
+  } else {
+    var item = {
+      position: -40,
       anchor: "dc-1",
       type: "customBackground",
       config: {name: "dc-map-1"}
@@ -48,8 +62,13 @@ function build_script(theMgr) {
 
   /*--new slide--*/
   item = JSON.parse(JSON.stringify(item));
-  item.anchor = "dc-15";
+  item.anchor = "dc-12";
   script.push(item);
+
+   /*--new slide--*/
+   item = JSON.parse(JSON.stringify(item));
+   item.anchor = "dc-15";
+   script.push(item);
 
   if (mode !== "static") {
     /*--new slide--*/
@@ -68,10 +87,13 @@ function build_script(theMgr) {
     }
     script.push(item)
   }
+
+ 
+  
   
   /*--new slide--*/
   script.push({
-    position: 0,
+    position: -40,
     anchor: "dc-3",
     type: "customBackground",
     config: {name: "dc-chart-1"}
