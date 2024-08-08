@@ -52,7 +52,7 @@ function build_script(theMgr) {
 
   } else {
     var item = {
-      position: -40,
+      position: 20,
       anchor: "dc-1",
       type: "customBackground",
       config: {name: "dc-map-1"}
@@ -93,14 +93,14 @@ function build_script(theMgr) {
   
   /*--new slide--*/
   script.push({
-    position: -40,
+    position: 40,
     anchor: "dc-3",
     type: "customBackground",
     config: {name: "dc-chart-1"}
   });
 
   script.push({
-    position: 0,
+    position: 20,
     anchor: "dc-4",
     type: "customBackground",
     config: {name: "dc-chart-2"}
