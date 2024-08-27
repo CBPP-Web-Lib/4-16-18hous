@@ -7,6 +7,10 @@ var map = window.cbpp_housing_voucher_map
 
 window.addEventListener("DOMContentLoaded", function() {
 
+  script.forEach((script_item) => {
+    console.log(script_item)
+  })
+
   document.querySelector(".slide-deck").querySelectorAll(".slide").forEach((slide)=> {
     slide.innerHTML = "<div class='slide-inner-wrap'>" + slide.innerHTML + "</div>"
   });

@@ -8,7 +8,7 @@ function build_script(theMgr) {
   the complete config to the map manager.*/
 
   /*--new slide--*/
-  var mode = "static"
+  var mode = "dynamic"
   var item;
   item = {
     position: "lessThanMin",
@@ -264,18 +264,20 @@ function build_script(theMgr) {
 
   /*configure actions*/
   script.forEach((item) => {
-    if (item.type === "mapConfig") {
-      item.action = function(bg) {
-        if (bg) {
-          item.config.backgroundChange = bg.backgroundChange;
-        } else {
-          item.config.backgroundChange = false;
+    if (theMgr) {
+      if (item.type === "mapConfig") {
+        item.action = function(bg) {
+          if (bg) {
+            item.config.backgroundChange = bg.backgroundChange;
+          } else {
+            item.config.backgroundChange = false;
+          }
+          theMgr.setNewConfig(item.config)
         }
-        theMgr.setNewConfig(item.config)
-      }
-    } else if (item.type === "customBackground") {
-      item.action = function() {
-        theMgr.customBackground(item.config);
+      } else if (item.type === "customBackground") {
+        item.action = function() {
+          theMgr.customBackground(item.config);
+        }
       }
     }
   });

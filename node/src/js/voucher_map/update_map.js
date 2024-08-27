@@ -9,12 +9,17 @@ import { updateUrl } from "../ui/update_url"
 var performance_timer
 var ignore_shapes = false
 const updateMapView = function(args) {
+  if (typeof(args)==="undefined") {
+    args = {destroyOldCanvas: true}
+  }
   return new Promise((resolve)=>{
     displayLoadingBlocker()
     var finish = () => {
       this.fadeOutOldTransparencyContainer()
       hideLoadingBlocker()
-      updateUrl.call(this)
+      if (this.noUrlHash() !== true) {
+        updateUrl.call(this)
+      }
       resolve()
     }
 

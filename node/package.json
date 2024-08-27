@@ -36,6 +36,7 @@
     "point-in-polygon": "^1.0.1",
     "promise-polyfill": "^7.1.2",
     "regenerator-runtime": "^0.13.9",
+    "scrollmagic": "^2.0.8",
     "seedrandom": "^3.0.5",
     "stringify": "^5.1.0",
     "style-loader": "^3.3.1",

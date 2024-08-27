@@ -1,13 +1,13 @@
 var canvas, ctx;
 
 function deleteExistingCanvas(map, delete_current) {
-  if (delete_current) {
+  if (delete_current && canvas) {
     canvas.style.opacity = 0;
     canvas.parentElement.removeChild(canvas)
   }
   document.querySelectorAll("#" + map.getId() + " .old-canvas").forEach((old_canvas) => {
+    old_canvas.style.opacity = 0;
     setTimeout(function() {
-      old_canvas.style.opacity = 0;
       if (old_canvas.parentElement) {
         old_canvas.parentElement.removeChild(old_canvas)
       }
@@ -31,9 +31,9 @@ function makeElement(map) {
     map.getSvg().node().after(canvas_container)
   }
   canvas_container.appendChild(canvas)
-  setImmediate(function() {
+  setTimeout(function() {
     canvas.style.opacity = 1;
-  })
+  }, 0)
 }
 
 function getCanvas() {

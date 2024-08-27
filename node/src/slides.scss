@@ -117,4 +117,8 @@
     opacity: 0;
     pointer-events:none;
   }
+  .map-slide-container {
+    overflow:hidden;
+    position:relative;
+  }
 }

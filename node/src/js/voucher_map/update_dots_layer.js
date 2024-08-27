@@ -436,7 +436,7 @@ function updateDotsLayer(visible_features, extra_args) {
         while (chunks.length > 0) {
           draw_next_chunk()
         }
-        map.destroyOldCanvas()
+        //map.destroyOldCanvas()
         resolve();
       })
 

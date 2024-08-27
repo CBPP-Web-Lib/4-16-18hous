@@ -14,18 +14,27 @@ import dom from "../../dom.html"
 import { mode } from "./mode"
 import { handleUrlHash } from "../ui/handle_url_hash"
 
-var id, url_base;
+//var id, url_base;
 
 const initialize = function(config) {
-  id = config.id
-  url_base = config.url_base
+  var id = config.id
+  var url_base = config.url_base
+  this.switchId = function(_id) {
+    id = _id
+    document.getElementById(id).innerHTML = dom
+    this.remakeTransparencyElement()
+  }
   this.getId = function() {
     return id
   }
   this.getURLBase = function() {
     return url_base
   }
-  setupLightbox.call(this, dom)
+  if (config.disable_lightbox !== true) {
+    setupLightbox.call(this, dom)
+  } else {
+    document.getElementById(id).innerHTML = dom
+  }
   //svg_create.makeElement(this)
   this.getSvg = svg_create.getSvg
   this.getInvertedSvg = svg_create.getInvertedSvg
@@ -62,8 +71,11 @@ const initialize = function(config) {
   if (mode !== "download") {
     this.dotWorkers = setupDotWorkers(this)
   }
-
-  var custom_config = handleUrlHash(this);
+  var custom_config;
+  if (config.no_url_hash !== true) {
+    custom_config = handleUrlHash(this);
+  }
+  this.noUrlHash = () => {return config.no_url_hash;}
   if (!custom_config) {
     this.dataLayerManager.setActiveDotsLayer("hcv_total")
   }

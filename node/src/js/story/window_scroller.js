@@ -1,5 +1,3 @@
-import { active } from "d3";
-
 var WindowScroller = function(config) {
   var { map, script } = config
   var current_item;
