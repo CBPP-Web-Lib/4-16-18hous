@@ -7,12 +7,22 @@ import { build_script } from "./js/story/script"
 import { drawConfig } from "./js/story/draw_config"
 import "./app.scss"
 import "./slides.scss"
+import { setupProjectionWorkers } from "./js/voucher_map/setup_projection_workers"
+import { setupDotWorkers } from "./js/voucher_map/setup_dot_workers"
+import { mode } from "./js/voucher_map/mode"
 const id = "hous4-16-18"
 const script_id = "script_" + id
 const url_base = getURLBaseFromScript(script_id);
+const worker_manager = new (function() {
+  this.getURLBase = () => {return url_base}
+  this.projectionWorkers = setupProjectionWorkers(this)
+  if (mode !== "download") {
+    this.dotWorkers = setupDotWorkers(this)
+  }
+})
 //const map = new VoucherMap()
 var script = build_script();
-var map = new VoucherMap();
+var maps = [];
 
 Promise.all([
   new Promise((resolve, reject) => {
@@ -20,10 +30,6 @@ Promise.all([
   }),
   new Promise((resolve)=>{
     window.addEventListener("DOMContentLoaded", resolve);
-  }),
-  new Promise((resolve) => {
-    map.whenReady = resolve
-    map.initialize({id, url_base, no_url_hash:true, no_lightbox: true})
   })
 ]).then(() => {
   function do_item(script_item, item_index, cb) {
@@ -31,8 +37,8 @@ Promise.all([
     container.classList.add("map-slide-container")
     container.id = id + "-map-wrap-" + item_index;
     document.getElementById(id).append(container)
-    map.switchId(container.id)
-    drawConfig(map, script_item).then(cb)
+    //map.switchId(container.id)
+    maps.push(drawConfig({id: container.id, worker_manager, url_base, script_item}).then(cb))
   }
   var item_index;
   next_item();
@@ -44,6 +50,7 @@ Promise.all([
     }
     if (script[item_index]) {
       var item = script[item_index]
+      console.log(item)
       if (item.type === "mapConfig" && item.config.cbsa) {
         do_item(item.config, item_index, next_item)
       } else {

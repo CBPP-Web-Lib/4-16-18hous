@@ -1,24 +1,25 @@
-import * as svg_create from "./svg_create"
-import * as tile_layer_create from "./tile_layer_create"
-import * as dot_canvas_create from "./dot_canvas_create"
+import { SVG_Manager } from "./svg_create"
+import {TileLayerManager}from "./tile_layer_create"
+import { DotCanvasManager } from "./dot_canvas_create"
+//import * as dot_canvas_create from "./dot_canvas_create"
 
 import { CoordTracker } from "./coord_tracker"
 import { CBSAManager } from "./cbsa_manager";
 import { updateMapView } from "./update_map"
 import { ProjectionManager } from "./projection_manager"
 import { DataLayerManager } from "./data_layer_manager"
-import { setupProjectionWorkers } from "./setup_projection_workers"
-import { setupDotWorkers } from "./setup_dot_workers"
 import { setupLightbox } from "../ui/setup_lightbox"
 import dom from "../../dom.html"
-import { mode } from "./mode"
 import { handleUrlHash } from "../ui/handle_url_hash"
+import { mode } from "./mode"
 
 //var id, url_base;
 
-const initialize = function(config) {
+const initialize = function(config, workerManager) {
   var id = config.id
   var url_base = config.url_base
+  console.log("initialise " + id, config)
+  console.trace()
   this.switchId = function(_id) {
     id = _id
     document.getElementById(id).innerHTML = dom
@@ -36,6 +37,9 @@ const initialize = function(config) {
     document.getElementById(id).innerHTML = dom
   }
   //svg_create.makeElement(this)
+  var svg_create = new SVG_Manager();
+  var dot_canvas_create = new DotCanvasManager();
+  var tile_layer_create = new TileLayerManager();
   this.getSvg = svg_create.getSvg
   this.getInvertedSvg = svg_create.getInvertedSvg
   this.getTextSvg = svg_create.getTextSvg
@@ -67,9 +71,10 @@ const initialize = function(config) {
   this.viewportEvents()
   this.dataLayerManager.setupEvents(this)
   this.cbsaManager.setupEvents()
-  this.projectionWorkers = setupProjectionWorkers(this)
+  console.log(workerManager)
+  this.projectionWorkers = workerManager.projectionWorkers;
   if (mode !== "download") {
-    this.dotWorkers = setupDotWorkers(this)
+    this.dotWorkers = workerManager.dotWorkers;
   }
   var custom_config;
   if (config.no_url_hash !== true) {
@@ -78,9 +83,6 @@ const initialize = function(config) {
   this.noUrlHash = () => {return config.no_url_hash;}
   if (!custom_config) {
     this.dataLayerManager.setActiveDotsLayer("hcv_total")
-  }
-  if (typeof(this.whenReady)==="function") {
-    this.whenReady();
   }
   this.initialized = true;
 

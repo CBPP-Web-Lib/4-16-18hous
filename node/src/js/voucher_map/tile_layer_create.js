@@ -1,17 +1,18 @@
 import {select} from "d3"
 
-var tileLayer;
+var TileLayerManager = function() {
+  
+  var tileLayer;
 
-function makeElement(map) {
-  tileLayer = select(map.getTransparencyContainer()).append("div")
-    .attr("class","tileLayer");
+  this.makeElement = function(map) {
+    tileLayer = select(map.getTransparencyContainer()).append("div")
+      .attr("class","tileLayer");
+  }
+  
+  this.getTileLayer = function() {
+    return tileLayer
+  }
+
 }
 
-function getTileLayer() {
-  return tileLayer
-}
-
-export {
-  makeElement,
-  getTileLayer
-}
+export { TileLayerManager }

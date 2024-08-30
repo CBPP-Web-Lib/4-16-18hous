@@ -427,6 +427,7 @@ function updateDotsLayer(visible_features, extra_args) {
           }
         }
         map.remakeCanvas()
+        console.log("remake", map.getId())
         ctx = map.getCanvasContext()
         function draw_next_chunk() {
           var current_chunk = chunks[0]

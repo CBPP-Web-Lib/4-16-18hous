@@ -28,6 +28,7 @@ const mapResizer = function() {
         return false;
       }
       map.projectionManager.updateProjection().then(function() {
+        console.log("update ", map.getId())
         map.updateView()
       })
     }
