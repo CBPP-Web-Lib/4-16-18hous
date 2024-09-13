@@ -37,13 +37,15 @@ export function updateShapesLayer() {
       }
     })
     var promise_slots = []
+    var id = map.getId()
     worker_queue.forEach((features, slot)=>{
       promise_slots.push(new Promise((resolve)=>{
         worker_slots[slot].postMessage({
           msgType: "requestPathString",
+          id,
           features
         })
-        worker_slots[slot].pathStringCallback = resolve
+        worker_slots[slot].pathStringCallback[id] = resolve
       }))
     })
     Promise.all(promise_slots).then((results)=>{

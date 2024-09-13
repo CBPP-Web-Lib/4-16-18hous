@@ -392,14 +392,17 @@ function updateDotsLayer(visible_features, extra_args) {
         }
       })
       var promise_slots = []
+      var id = map.getId()
+      console.log(id);
       worker_queue.forEach((chunkMeta, slot)=>{
         promise_slots.push(new Promise((resolve)=>{
           var {chunk, i} = chunkMeta
           worker_slots[slot].postMessage({
             msgType: "requestDotProjection",
+            id,
             chunk
           })
-          worker_slots[slot].dotProjectionCallback = function(d) {
+          worker_slots[slot].dotProjectionCallback[id] = function(d) {
             var {chunk} = d
             resolve({chunk, i})
           }

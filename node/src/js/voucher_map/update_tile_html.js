@@ -1,7 +1,5 @@
 import { select as d3_select } from "d3"
 
-var tile_transform
-
 export function updateTileHtml(custom_cords) {
   var map = this;
   var coord_tracker = this.coordTracker
@@ -23,6 +21,7 @@ export function updateTileHtml(custom_cords) {
   if (custom_cords) {
     coords = custom_cords
   }
+  console.log(coords, map.getId())
   var tileLayer = map.getTileLayer()
   var x_images = Math.ceil(width/256) + 1
   var y_images = Math.ceil(height/256) + 1

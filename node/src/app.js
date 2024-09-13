@@ -15,9 +15,9 @@ const url_base = getURLBaseFromScript(script_id);
 const map = new VoucherMap()
 const worker_manager = new (function() {
   this.getURLBase = () => {return url_base}
-  this.projectionWorkers = setupProjectionWorkers(this)
+  this.projectionWorkers = setupProjectionWorkers(this, id)
   if (mode !== "download") {
-    this.dotWorkers = setupDotWorkers(this)
+    this.dotWorkers = setupDotWorkers(this, id)
   }
 })
 /*map.ready = function(cb) {

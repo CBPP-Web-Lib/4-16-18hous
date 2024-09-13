@@ -1,5 +1,6 @@
 const mapResizer = function() {
   var map = this
+  var throttle;
   window.addEventListener("resize", (d)=>{
     map.coordTracker.signalViewportResize()
     var canvas = map.getCanvas()
@@ -18,7 +19,6 @@ const mapResizer = function() {
       map.getTextSvg().attr("viewBox", [
         0, 0, map.getViewportWidth(), map.getViewportHeight()
       ].join(" "))
-      console.log("resize")
       if (map.isZooming()) {
         console.log("is zooming")
         return false;
@@ -27,12 +27,15 @@ const mapResizer = function() {
         console.log("coord change in progress")
         return false;
       }
-      map.projectionManager.updateProjection().then(function() {
-        console.log("update ", map.getId())
-        map.updateView()
-      })
+      clearTimeout(throttle);
+      throttle = setTimeout(function() {
+        map.projectionManager.updateProjection().then(function() {
+          console.log("update ", map.getId())
+          map.updateView()
+        })
+        
+      }, 1000);
     }
-    
   })
 }
 

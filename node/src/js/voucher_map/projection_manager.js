@@ -48,6 +48,7 @@ const ProjectionManager = function(map) {
   var tl, br
 
   this.updateProjection = function() {
+    console.log("update projection for " + map.getId())
     var coords = map.coordTracker.getCoords()
     var z = Math.floor(coords.z)
     var viewWidth = map.getViewportWidth()
@@ -113,12 +114,13 @@ const ProjectionManager = function(map) {
       return new Promise((resolve)=>{
         worker.postMessage({
           msgType: "newProjection",
+          id: map.getId(),
           bounds: {
             size: [viewWidth, viewHeight], 
             obj: bounding_obj
           }
         })
-        worker.newProjectionCallback = function(e) {
+        worker.newProjectionCallback[map.getId()] = function(e) {
           resolve()
         };
       })

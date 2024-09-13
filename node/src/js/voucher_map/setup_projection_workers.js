@@ -2,27 +2,31 @@
 var WorkerWrapper = function(url_base) {
   var the_worker = new Worker(url_base + "/js/worker_project.js")
   this.busy = false
-  this.postMessage = (e) => {
+  this.newProjectionCallback = {}
+  this.dotProjectionCallback = {}
+  this.pathStringCallback = {}
+  this.postMessage = (e) => { 
     if (e.msgType === "requestPathString") {
       this.busy = true;
     }
     the_worker.postMessage(e)
   }
   the_worker.onmessage = (e) => {
+    var id = e.data.id;
     if (e.data.msgType === "requestPathString") {
-      if (this.pathStringCallback) {
-        this.pathStringCallback(e.data.pathStrings)
+      if (this.pathStringCallback[id]) {
+        this.pathStringCallback[id](e.data.pathStrings)
         this.busy = false
       }
     }
     if (e.data.msgType === "newProjection") {
       if (this.newProjectionCallback) {
-        this.newProjectionCallback(e.data.result)
+        this.newProjectionCallback[id](e.data.result)
       }
     }
     if (e.data.msgType === "requestDotProjection") {
       if (this.dotProjectionCallback) {
-        this.dotProjectionCallback(e.data.result)
+        this.dotProjectionCallback[id](e.data.result)
       }
     }
   }
