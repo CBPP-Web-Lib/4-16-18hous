@@ -36,7 +36,6 @@ function finalize(r) {
 }
 
 const getBoundingTilesForBbox = function(bbox) {
-  console.log(bbox)
   const viewWidth = this.getMap().getViewportWidth()
   const viewHeight = this.getMap().getViewportHeight()
   const tiles_across = Math.min(viewWidth/256)

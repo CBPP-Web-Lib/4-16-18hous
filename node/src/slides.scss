@@ -35,9 +35,10 @@
   }
 }
 
-.slide-custom-backgrounds > div {
+.slide-custom-backgrounds {display:none}
+
+.static-slide-container > div {
   display:block;
-  opacity:0;
   top:10vh;
   left:0;
   width:100%;
@@ -99,6 +100,12 @@
     pointer-events:none;
     .map-close-lightbox, .picker-open-self, .pickers {
       display:none;
+    }
+    .map-outer-lightbox {
+      visibility:visible;
+    }
+    .map-slide-container {
+      opacity:0;
     }
     .map-inner-lightbox {
       top:0px;

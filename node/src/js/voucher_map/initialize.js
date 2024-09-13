@@ -19,7 +19,6 @@ const initialize = function(config, workerManager) {
   var id = config.id
   var url_base = config.url_base
   console.log("initialise " + id, config)
-  console.trace()
   this.switchId = function(_id) {
     id = _id
     document.getElementById(id).innerHTML = dom
@@ -71,7 +70,6 @@ const initialize = function(config, workerManager) {
   this.viewportEvents()
   this.dataLayerManager.setupEvents(this)
   this.cbsaManager.setupEvents()
-  console.log(workerManager)
   this.projectionWorkers = workerManager.projectionWorkers;
   if (mode !== "download") {
     this.dotWorkers = workerManager.dotWorkers;

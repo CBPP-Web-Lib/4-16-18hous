@@ -10,14 +10,14 @@ function build_script(theMgr) {
   /*--new slide--*/
   var mode = "dynamic"
   var item;
-  item = {
+  /*item = {
     position: "lessThanMin",
     type: "mapConfig",
     config: {
       hideMap: true
     }
   };
-  script.push(item);
+  script.push(item);*/
 
   if (mode !== "static") {
     /*--new slide--*/

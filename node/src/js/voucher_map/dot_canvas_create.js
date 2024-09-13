@@ -5,8 +5,11 @@ var DotCanvasManager = function() {
   this.deleteExistingCanvas = function(map, delete_current) {
     if (delete_current && canvas) {
       canvas.style.opacity = 0;
-      console.log("delete", canvas)
-      canvas.parentElement.removeChild(canvas)
+      var canvas_to_delete = canvas;
+      canvas = null;
+      setTimeout(function() {
+        canvas_to_delete.parentElement.removeChild(canvas_to_delete)
+      }, 200);
     }
     document.querySelectorAll("#" + map.getId() + " .old-canvas").forEach((old_canvas) => {
       old_canvas.style.opacity = 0;

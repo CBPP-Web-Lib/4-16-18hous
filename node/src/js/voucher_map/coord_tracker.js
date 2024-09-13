@@ -7,7 +7,6 @@ var in_progress = false
 function setCoords(coords, args) {
   return new Promise((resolve)=>{
     if (in_progress) {
-      console.log("oh no")
       resolve(false)
       return
     }

@@ -26,6 +26,7 @@ function MapZoomer(map) {
     })
 
   el.addEventListener("wheel", (e)=> {
+    if (map.isDragging()) {return;}
     e.preventDefault();
     map.mouseTracker.mouseUp()
     var rect = el.getBoundingClientRect();
@@ -213,6 +214,7 @@ function MapZoomer(map) {
 
   this.zoomIn = function(x, y) {
     if (locked || in_lock) {return;}
+    if (map.isDragging()) {return;}
     locked = true;
     out_lock = true;
     var start_coords = map.coordTracker.getCoords();
@@ -254,6 +256,7 @@ function MapZoomer(map) {
 
   this.zoomOut = function(x, y) {
     if (locked || out_lock) {return;}
+    if (map.isDragging()) {return;}
     locked = true;
     in_lock = true;
     var start_coords = map.coordTracker.getCoords();
