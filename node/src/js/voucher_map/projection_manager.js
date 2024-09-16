@@ -50,6 +50,7 @@ const ProjectionManager = function(map) {
   this.updateProjection = function() {
     console.log("update projection for " + map.getId())
     var coords = map.coordTracker.getCoords()
+    console.log(coords)
     var z = Math.floor(coords.z)
     var viewWidth = map.getViewportWidth()
     var viewHeight = map.getViewportHeight()

@@ -2,7 +2,6 @@ import { tractFill } from "./tract_fill"
 import { bbox_overlap } from "./bbox_overlap"
 
 
-
 export function updateShapesLayer() {
   var map = this
   var tract_shapefiles = map.cbsaManager.getTractShapefiles()
@@ -74,8 +73,8 @@ export function updateShapesLayer() {
           .data([1])
           .enter()
           .append("mask")
-          .attr("id", "waterLayerClip")
-        var background_rect = svg.select("mask#waterLayerClip").selectAll("rect.background")
+          .attr("id", "waterLayerClip-" + map.uniqid)
+        var background_rect = svg.select("mask#waterLayerClip-" + map.uniqid).selectAll("rect.background")
           .data([1]);
         background_rect
           .enter()
@@ -87,7 +86,7 @@ export function updateShapesLayer() {
           .merge(background_rect)
           .attr("width", viewWidth)
           .attr("height", viewHeight);
-        var waterClip = svg.select("mask#waterLayerClip")
+        var waterClip = svg.select("mask#waterLayerClip-" + map.uniqid)
           .selectAll("path.water")
           .data(water_features);
         waterClip.enter()
@@ -147,7 +146,7 @@ export function updateShapesLayer() {
         .enter()
         .append("g")
         .attr("class", "tractLayer")
-        .attr("mask", "url(#waterLayerClip)")
+        .attr("mask", "url(#waterLayerClip-" +  map.uniqid + ")")
       var tracts = svg.select("g.tractLayer").selectAll("path.tract")
         .data(features, d=>d.properties.GEOID10);
       tracts

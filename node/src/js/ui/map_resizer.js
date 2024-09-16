@@ -31,7 +31,10 @@ const mapResizer = function() {
       throttle = setTimeout(function() {
         map.projectionManager.updateProjection().then(function() {
           console.log("update ", map.getId())
-          map.updateView()
+          map.updateView().then(function() {
+            console.log("post update view");
+            map.coordTracker.doHooks(map.coordTracker.postResizeHooks);
+          })
         })
         
       }, 1000);

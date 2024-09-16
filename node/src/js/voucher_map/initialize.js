@@ -12,6 +12,7 @@ import { setupLightbox } from "../ui/setup_lightbox"
 import dom from "../../dom.html"
 import { handleUrlHash } from "../ui/handle_url_hash"
 import { mode } from "./mode"
+import { v4 as uuidv4 } from 'uuid';
 
 //var id, url_base;
 
@@ -82,6 +83,7 @@ const initialize = function(config, workerManager) {
   if (!custom_config) {
     this.dataLayerManager.setActiveDotsLayer("hcv_total")
   }
+  this.uniqid = uuidv4();
   this.initialized = true;
 
 

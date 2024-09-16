@@ -35,31 +35,33 @@ function finalize(r) {
   }
 }
 
-const getBoundingTilesForBbox = function(bbox) {
-  const viewWidth = this.getMap().getViewportWidth()
-  const viewHeight = this.getMap().getViewportHeight()
-  const tiles_across = Math.min(viewWidth/256)
-  const tiles_down = Math.min(viewHeight/256)
+const getBoundingTilesForBbox = function(bbox, screenBox) {
+  const viewWidth = screenBox[2] - screenBox[0];
+  const viewHeight = screenBox[3] - screenBox[1];
+  const tiles_across = Math.min(screenBox[2]/256)
+  const tiles_down = Math.min(screenBox[3]/256)
+  var tile_x_offset = screenBox[0]/256;
+  var tile_y_offset = screenBox[1]/256;
   var coords_for_zoom = {}
   for (var z = 1; z <= 13; z++) {
     var tl = latLongToTileCoord(bbox[0], bbox[1], z)
-    /*to correct for presence of UI pickers*/
-   // tl.x -= 1
+    tl.x -= tile_x_offset;
     var br = latLongToTileCoord(bbox[2], bbox[3], z)
-    /*and legend*/
-  // br.y += 1
+    br.y += tile_y_offset;
     coords_for_zoom[z] = [tl, br]
+
     var across = br.x - tl.x
     var down = tl.y - br.y
-    if (across > tiles_across || down > tiles_down || z === 13) {
-      return finalize({coords: coords_for_zoom[z-1], z:z-1, tiles_across, tiles_down})
+    if (across > tiles_across || down > tiles_down || z === 12) {
+      return finalize({coords: coords_for_zoom[z], z:z, tiles_across, tiles_down})
     }
   }
 }
 
 const getBoundingTilesForCBSA = function(cbsa) {
   const bbox = get_cbsa_bounds(cbsa)
-  return getBoundingTilesForBbox.call(this, bbox);
+  console.log(this)
+  return getBoundingTilesForBbox.call(this, bbox, [0, 0, this.getMap().getViewportWidth(), this.getMap().getViewportHeight()]);
 }
 
 export { getBoundingTilesForCBSA, getBoundingTilesForBbox }
