@@ -44,6 +44,7 @@ function MapZoomer(map) {
   }
   var touchZoomInitialScale, touchZoomInitialCenter, touchZoomStartCoords, touchZoomDestCoords, touchZoomFrameCenter
   mouse_tracker.registerPinchStartCallback("pinchStart", (x1, y1, x2, y2) => {
+    if (map.static) {return;}
     console.log("pinchStart")
     if (touchZoomStartCoords) {
       console.log("not done yet")
@@ -56,6 +57,7 @@ function MapZoomer(map) {
     touchZoomStartCoords = map.coordTracker.getCoords()
   })
   mouse_tracker.registerPinchEndCallback("pinchEnd", ()=>{
+    if (map.static) {return;}
     document.querySelectorAll("#" + map.getId() + " .pickers")[0].classList.remove("hide-while-zoom")
     document.querySelectorAll("#" + map.getId() + " .legend-container")[0].classList.remove("hide-while-zoom")
     if (!touchZoomDestCoords) return
@@ -83,6 +85,7 @@ function MapZoomer(map) {
   mouse_tracker.registerPinchMoveCallback("pinchMove", (
     x1, y1, x2, y2, drag_x1, drag_y1, drag_x2, drag_y2, viewport
   ) => {
+    if (map.static) {return;}
     if (!touchZoomStartCoords) return
     var frameScale = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
     var scaleFactor = frameScale/touchZoomInitialScale
@@ -215,6 +218,7 @@ function MapZoomer(map) {
   this.zoomIn = function(x, y) {
     if (locked || in_lock) {return;}
     if (map.isDragging()) {return;}
+    if (map.static) {return;}
     locked = true;
     out_lock = true;
     var start_coords = map.coordTracker.getCoords();

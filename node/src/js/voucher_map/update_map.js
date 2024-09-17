@@ -9,7 +9,6 @@ import { updateUrl } from "../ui/update_url"
 var performance_timer
 var ignore_shapes = false
 const updateMapView = function(args) {
-  console.log("updateMapView") 
   if (typeof(args)==="undefined") {
     args = {destroyOldCanvas: true}
   }

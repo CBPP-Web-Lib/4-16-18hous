@@ -19,7 +19,6 @@ import { v4 as uuidv4 } from 'uuid';
 const initialize = function(config, workerManager) {
   var id = config.id
   var url_base = config.url_base
-  console.log("initialise " + id, config)
   this.switchId = function(_id) {
     id = _id
     document.getElementById(id).innerHTML = dom
@@ -84,8 +83,8 @@ const initialize = function(config, workerManager) {
     this.dataLayerManager.setActiveDotsLayer("hcv_total")
   }
   this.uniqid = uuidv4();
+  this.static = config.static;
   this.initialized = true;
-
 
 
 }

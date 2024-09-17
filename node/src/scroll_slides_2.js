@@ -27,7 +27,7 @@ const worker_manager = new (function() {
 })
 //const map = new VoucherMap()
 var script = build_script();
-var maps = [];
+var maps = {};
 
 Promise.all([
   new Promise((resolve, reject) => {
@@ -42,16 +42,21 @@ Promise.all([
   });
 
   var resizeFunction = function() {
+    
     var offset = document.querySelector(".slide-deck").getBoundingClientRect();
     document.querySelectorAll(".slide-deck section").forEach((section) => {
-      section.style.left = (0 - offset.left + 40) + "px";
+      if (!window.matchMedia("(min-width: 994px)").matches) {
+        section.style.left = "";
+      } else {
+        section.style.left = (0 - offset.left + 40) + "px";
+      }
     });
   }
 
   window.addEventListener("resize", resizeFunction);
   resizeFunction();
 
-  var ScrollMgr = function(script) {
+  var ScrollMgr = function(script, drawMgr) {
     var slides = [];
     var items_by_anchor = {};
     var updating = {}
@@ -61,7 +66,6 @@ Promise.all([
     }
     this.signalUpdateComplete = function(map_id) {
       delete(updating[map_id]);
-      console.log(Object.keys(updating))
       if (Object.keys(updating).length === 0) {
         document.getElementById(id).classList.remove("updating");
       }
@@ -78,11 +82,11 @@ Promise.all([
       })
       window.addEventListener("scroll", this.onScroll);
     }
-    this.onScroll = function(e) {
-      console.log("scroll!");
-      var slide_pos = {};
+    var resizeThrottle;
+    this.onScroll = function(e, noRedraw) {
+      var slide_pos = [];
       var bodyRect = document.body.getBoundingClientRect()
-      const transition_margin = 0.1;
+      const transition_margin = 200;
       script.forEach((item, i) => {
         var slide = item.slide;
         if (slide) {
@@ -107,65 +111,113 @@ Promise.all([
             pos.height = item.override_height;
           }
           pos.progress = (scrollTop + 0.5*windowHeight - pos.top) / (pos.height)
-          //slide_pos[anchor] = pos
+          slide_pos[i] = pos
           var current_el = document.getElementById(item.id);
-          var fadeIn = (pos.progress + transition_margin)/(2*transition_margin)
-          var fadeOut = (1 - pos.progress + transition_margin)/(2*transition_margin)
+          var fadeIn = (pos.progress + transition_margin/pos.height)/(2*(transition_margin/pos.height))
+          var fadeOut = (1 - pos.progress + transition_margin/pos.height)/(2*(transition_margin/pos.height))
           var opacity = Math.max(0, Math.min(1, fadeIn, fadeOut))
-          console.log(item, slide, pos)
           if (current_el) {
             current_el.style.opacity = (opacity*100) + "%"
+            var map_id = current_el.id;
+            var map = maps[map_id];
+            if (map) {
+              if ((slideRect.top > 2000) || (slideRect.top + slideRect.height) < -2000) {
+                //map.deferResize = true;
+              } else {
+                map.triggerResize();
+               // map.deferResize = false;
+              }
+            }
           }
+          
         }
       });
+      
+      if (noRedraw !== true) {
+        drawMgr.reset();
+        drawMgr.next_item();
+      }
+
+      //window.dispatchEvent(new Event("resize"));
+      /*clearTimeout(resizeThrottle);
+      resizeThrottle = setTimeout(function() {
+        window.dispatchEvent(new Event("resize"));
+      }, 1000);*/
+
     }
   }
 
-  var theScrollMgr = new ScrollMgr(script)
-  theScrollMgr.setupScroll();
 
-  var item_index;
-  next_item();
-  function next_item() {
-    if (typeof(item_index)==="undefined") {
-      item_index = 0;
-    } else {
+  var DrawMgr = function() {
+    var item_index = -1;
+    var self = this;
+    this.next_item = function() {
       item_index++;
+      if (script[item_index]) {
+        var item = script[item_index]
+        item.id = do_item(item, item_index, self.next_item, theScrollMgr)
+      } else {
+        if (theScrollMgr) {
+          theScrollMgr.onScroll({}, true);
+        }
+        document.getElementById(id).classList.remove("updating");
+      }
     }
-    if (script[item_index]) {
-      var item = script[item_index]
-      //if (item.type === "mapConfig" && item.config.cbsa) {
-        item.id = do_item(item, item_index, next_item, theScrollMgr)
-      //} else {
-       // next_item()
-     // }
-    } else {
-      theScrollMgr.onScroll();
-      document.getElementById(id).classList.remove("updating");
-      //setup_scroll();
+    this.reset = function() {
+      item_index = -1;
     }
   }
 
+  var theDrawMgr = new DrawMgr();
+  var theScrollMgr = new ScrollMgr(script, theDrawMgr)
+  
+  theDrawMgr.next_item();
+  theScrollMgr.setupScroll();
   
   function do_item(item, item_index, cb, scrollMgr) {
     var script_item = item.config;
-    var container = document.createElement("div");
-    container.id = id + "-map-wrap-" + item_index;
-    document.getElementById(id).append(container)
+    var anchor = item.anchor;
+    var slide = document.querySelector(".slide-deck .slide[name='" + anchor + "']");
+    var rect = slide.getBoundingClientRect();
+    var container_id = id + "-map-wrap-" + item_index;
+    if ((rect.top > 2000) || (rect.top + rect.height) < -2000) {
+      cb();
+      return container_id;
+    }
+    var container;
+    container = document.getElementById(container_id);
+    if (!container) {
+      container = document.createElement("div");
+      container.id = container_id;
+      document.getElementById(id).append(container)
+    }
     //map.switchId(container.id)
     if (item.type === "mapConfig" && script_item.cbsa) {
-      container.classList.add("map-slide-container")
-      maps.push(drawConfig({id: container.id, worker_manager, url_base, script_item, scrollMgr}).then(cb))
+      if (container.classList.contains("map-slide-container")) {
+        cb();
+      } else {
+        container.classList.add("map-slide-container")
+        drawConfig({id: container.id, worker_manager, url_base, script_item, scrollMgr}).then(function(map) {
+          cb();
+          maps[container.id] = map;
+          return map;
+        })
+      }
     } else {
-      var bg = document.querySelector(".slide-custom-backgrounds div[name='" + script_item.name + "']");
-      console.log(bg)
-      bg.parentElement.removeChild(bg);
-      container.appendChild(bg);
-      container.classList.add("static-slide-container")
-      document.getElementById(id).append(container)
-      cb();
+      if (container.classList.contains("static-slide-processed")) {
+        cb();
+        return container_id;
+      } else {
+        var bg = document.querySelector(".slide-custom-backgrounds div[name='" + script_item.name + "']");
+        bg.parentElement.removeChild(bg);
+        container.appendChild(bg);
+        container.classList.add("static-slide-container")
+        document.getElementById(id).append(container)
+        container.classList.add("static-slide-processed");
+        cb();
+      }
     }
-    return container.id;
+    return container_id;
   }
   
   

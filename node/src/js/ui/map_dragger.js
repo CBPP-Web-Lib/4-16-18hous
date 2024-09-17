@@ -11,6 +11,7 @@ function mapDragger() {
     if (map.isZooming()) {
       return false;
     }
+    if (map.static) {return;}
     if (map.coordTracker.coordChangeInProgress()) {
       return false;
     }
@@ -32,6 +33,7 @@ function mapDragger() {
     if (typeof(start_coords)==="undefined" || !start_coords) {
       return;
     }
+    if (map.static) {return;}
     var coords = {
       x: start_coords.x - x/256,
       y: start_coords.y - y/256,
@@ -42,6 +44,7 @@ function mapDragger() {
   })
   mouse_tracker.registerEndCallback("mapDragEnd", (x, y)=>{
     is_dragging = false
+    if (map.static) {return;}
     if (start_coords) {
       if (map.coordTracker.getCoords().z !== start_coords.z) {
         start_coords = map.coordTracker.getCoords()

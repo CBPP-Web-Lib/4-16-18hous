@@ -43,7 +43,6 @@ const CoordTracker = function(map) {
     z = coords.z
     x = coords.x
     y = coords.y
-    console.log(z, x, y)
   }
 
   function getCoords() {

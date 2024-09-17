@@ -21,7 +21,6 @@ export function updateTileHtml(custom_cords) {
   if (custom_cords) {
     coords = custom_cords
   }
-  console.log(coords, map.getId())
   var tileLayer = map.getTileLayer()
   var x_images = Math.ceil(width/256) + 1
   var y_images = Math.ceil(height/256) + 1

@@ -8,12 +8,11 @@ var drawConfig = function(args) {
     var config = script_item;
     var {cbsa, bounds, layer, races, household_type, aff_units} = config;
     var map = new VoucherMap()
-    map.initialize({id, url_base, no_url_hash:true, no_lightbox: true}, worker_manager);
+    map.initialize({id, url_base, no_url_hash:true, no_lightbox: true, static: true}, worker_manager);
     map.cbsaManager.loadCBSA(cbsa).then(() => {
       function getScreenBox() {
         var screenBox = [540, 0, map.getViewportWidth(), map.getViewportHeight()];
         var mobileLayout = window.matchMedia("(max-width: 994px)").matches;
-        console.log(mobileLayout)
         if (mobileLayout) {
           screenBox = [0, 0, window.innerWidth, window.innerHeight];
         }
@@ -65,7 +64,9 @@ var drawConfig = function(args) {
       map.dataLayerManager.setAdditionalDotsLayers(layer_names)
       map.coordTracker.setCoords(tileCoords, {
         destroyOldCanvas: false
-      }).then(resolve)
+      }).then(function() {
+        resolve(map)
+      })
     });
   });
 };

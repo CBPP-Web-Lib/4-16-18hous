@@ -393,7 +393,6 @@ function updateDotsLayer(visible_features, extra_args) {
       })
       var promise_slots = []
       var id = map.getId()
-      console.log(id);
       worker_queue.forEach((chunkMeta, slot)=>{
         promise_slots.push(new Promise((resolve)=>{
           var {chunk, i} = chunkMeta

@@ -1,9 +1,10 @@
 body, html {
-  overscroll-behavior-y: none;
-  overscroll-behavior-x: none;
+  overscroll-behavior-y: none !important;
+  overscroll-behavior-x: none !important;
   &.no-scroll {
     overflow:hidden;
   }
+  overscroll-behavior: none !important;
 }
 
 #hous4-16-18 {
@@ -248,7 +249,7 @@ body, html {
     user-select: none;
     //padding-bottom:56.25%;
     & > div {
-      border:1px solid #aaa;
+      //border:1px solid #aaa;
       overflow:hidden;
       position:absolute;
       height:100%;
