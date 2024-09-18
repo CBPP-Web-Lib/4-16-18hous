@@ -18,5 +18,6 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
 RUN pecl install xdebug
 
 RUN a2enmod headers
+RUN a2enmod rewrite
 
 EXPOSE 9000

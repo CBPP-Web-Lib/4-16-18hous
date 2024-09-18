@@ -36,8 +36,9 @@ function finalize(r) {
 }
 
 const getBoundingTilesForBbox = function(bbox, screenBox) {
-  const viewWidth = screenBox[2] - screenBox[0];
-  const viewHeight = screenBox[3] - screenBox[1];
+  if (typeof(screenBox)==="undefined") {
+    screenBox = [0, 0, this.getMap().getViewportWidth(), this.getMap().getViewportHeight()]
+  }
   const tiles_across = Math.min(screenBox[2]/256)
   const tiles_down = Math.min(screenBox[3]/256)
   var tile_x_offset = screenBox[0]/256;
@@ -60,7 +61,6 @@ const getBoundingTilesForBbox = function(bbox, screenBox) {
 
 const getBoundingTilesForCBSA = function(cbsa) {
   const bbox = get_cbsa_bounds(cbsa)
-  console.log(this)
   return getBoundingTilesForBbox.call(this, bbox, [0, 0, this.getMap().getViewportWidth(), this.getMap().getViewportHeight()]);
 }
 

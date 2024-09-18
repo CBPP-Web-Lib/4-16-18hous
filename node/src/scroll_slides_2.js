@@ -18,13 +18,16 @@ const id = "hous4-16-18"
 const script_id = "script_" + id
 const url_base = getURLBaseFromScript(script_id);
 document.getElementById(id).classList.add("updating");
-const worker_manager = new (function() {
+const WorkerManager = function() {
   this.getURLBase = () => {return url_base}
-  this.projectionWorkers = setupProjectionWorkers(this)
+  this.setup = function() {
+    return setupProjectionWorkers(this);
+  }
   if (mode !== "download") {
     this.dotWorkers = setupDotWorkers(this)
   }
-})
+}
+const worker_manager = new WorkerManager();
 //const map = new VoucherMap()
 var script = build_script();
 var maps = {};
@@ -35,7 +38,8 @@ Promise.all([
   }),
   new Promise((resolve)=>{
     window.addEventListener("DOMContentLoaded", resolve);
-  })
+  }),
+  worker_manager.setup()
 ]).then(() => {
   document.querySelector(".slide-deck").querySelectorAll(".slide").forEach((slide)=> {
     slide.innerHTML = "<div class='slide-inner-wrap'>" + slide.innerHTML + "</div>"

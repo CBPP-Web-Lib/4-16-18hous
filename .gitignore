@@ -25,3 +25,5 @@ webroot/image_proxy/cache
 node/dev/*
 .env
 node/prod/*
+login_cookie.php
+password_hash.php

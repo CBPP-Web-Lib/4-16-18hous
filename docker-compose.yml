@@ -24,6 +24,18 @@ services:
         ports:
             - "8888:80"
         container_name: 4-16-18hous-dev
+    apache-embargo:
+        volumes: 
+            - ./login:/var/www/html:rw
+            - ./node/prod:/var/www/html/protected/js:rw
+            - ./webroot:/var/www/html/protected:rw
+            - ${TILE_DIR}:/var/www/html/protected/image_proxy/cache:rw
+        build:
+            context: .
+            dockerfile: services/apache/Dockerfile
+        ports:
+            - "8890:80"
+        container_name: 4-16-18hous-embargo
     apache-prod:
         volumes:
             - ./node/prod:/var/www/html/js:rw
