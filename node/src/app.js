@@ -13,9 +13,19 @@ const script_id = "script_" + id
 const url_base = getURLBaseFromScript(script_id);
 const map = new VoucherMap()
 const WorkerManager = function() {
+  var mgr = this;
   this.getURLBase = () => {return url_base}
   this.setup = function() {
-    return setupProjectionWorkers(this);
+    return new Promise((resolve, reject) => {
+      var script = new XMLHttpRequest();
+      script.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          setupProjectionWorkers(mgr, script.response).then(resolve);
+        }
+      }
+      script.open("GET", url_base + "/js/worker_project.js", true);
+      script.send();
+    })
   }
   if (mode !== "download") {
     this.dotWorkers = setupDotWorkers(this, id)

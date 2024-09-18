@@ -1,19 +1,11 @@
 
 var WorkerWrapper = function(url_base) {
   var the_worker;
-  this.setup = function() {
+  this.setup = function(worker_script_js) {
     return new Promise((resolve, reject) => {
-      var script = new XMLHttpRequest();
-      script.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-          var blob = new Blob([script.response], { type: 'application/javascript' });
-          var url = URL.createObjectURL(blob);
-          the_worker = new Worker(url);
-          finish();
-        }
-      }
-      script.open("GET", url_base + "/js/worker_project.js", true);
-      script.send();
+      var blob = new Blob([worker_script_js], { type: 'application/javascript' });
+      var url = URL.createObjectURL(blob);
+      the_worker = new Worker(url);
       var finish = () => {
         this.busy = false
         this.newProjectionCallback = {}
@@ -43,14 +35,15 @@ var WorkerWrapper = function(url_base) {
               this.dotProjectionCallback[id](e.data.result)
             }
           }
-        }
+        } 
         resolve();
       }
+      finish();
     })
   }
 }
 
-function setupProjectionWorkers(mgr) {
+function setupProjectionWorkers(mgr, worker_script_js) {
   return new Promise((resolve, reject) => {
     var numWorkers = 1
     if (navigator.hardwareConcurrency) {
@@ -64,7 +57,7 @@ function setupProjectionWorkers(mgr) {
     for (var i = 0; i < numWorkers; i++) {
       var this_wrapper = new WorkerWrapper(url_base);
       workers.push(this_wrapper)
-      setupPromises.push(this_wrapper.setup())
+      setupPromises.push(this_wrapper.setup(worker_script_js))
     }
     mgr.projectionWorkers = workers;
     Promise.all(setupPromises).then(resolve);
