@@ -11,7 +11,7 @@ var drawConfig = function(args) {
     map.initialize({id, url_base, no_url_hash:true, no_lightbox: true, static: true}, worker_manager);
     map.cbsaManager.loadCBSA(cbsa).then(() => {
       function getScreenBox() {
-        var screenBox = [540, 0, map.getViewportWidth(), map.getViewportHeight()];
+        var screenBox = [520, 0, map.getViewportWidth(), map.getViewportHeight()];
         var mobileLayout = window.matchMedia("(max-width: 994px)").matches;
         if (mobileLayout) {
           screenBox = [0, 0, window.innerWidth, window.innerHeight];

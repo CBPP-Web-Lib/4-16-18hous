@@ -16,7 +16,7 @@ function build_script(theMgr) {
     config: {
       cbsa: 47900,
       mode: "story",
-      bounds: [-77.231, 39.062, -76.849, 38.722],
+      bounds: [-77.21, 39.03, -76.87, 38.77],
       household_type: "ph_total",
       layer: "none",
       races: ["black","white"],
@@ -59,7 +59,7 @@ function build_script(theMgr) {
       cbsa: 31080,
       mode: "story",
      // bounds: [-118.456, 34.235, -117.791, 33.700],
-      bounds: [-118.756, 34.235, -117.691, 33.700],
+      bounds: [-118.523, 34.3, -117.91, 33.63],
       household_type: "none",
       layer: "none",
       races: ["asian","black","hisp","nhpi","white"],
@@ -105,7 +105,7 @@ function build_script(theMgr) {
     config: {
       cbsa: 33340,
       mode: "story",
-      bounds: [-88.1447, 42.8989, -87.7661, 43.2077],
+      bounds: [-87.94, 43.06, -87.85, 42.96],
       household_type: "none",
       layer: "none",
       races: ["black","white","hisp"],

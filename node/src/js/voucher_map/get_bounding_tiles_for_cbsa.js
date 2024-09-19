@@ -35,26 +35,38 @@ function finalize(r) {
   }
 }
 
-const getBoundingTilesForBbox = function(bbox, screenBox) {
+const getBoundingTilesForBbox = function(bbox, screenBox, forceZ) {
   if (typeof(screenBox)==="undefined") {
     screenBox = [0, 0, this.getMap().getViewportWidth(), this.getMap().getViewportHeight()]
   }
-  const tiles_across = Math.min(screenBox[2]/256)
-  const tiles_down = Math.min(screenBox[3]/256)
+  const tiles_across = screenBox[2]/256
+  const tiles_down = screenBox[3]/256
   var tile_x_offset = screenBox[0]/256;
   var tile_y_offset = screenBox[1]/256;
   var coords_for_zoom = {}
-  for (var z = 1; z <= 13; z++) {
+  function coordsForZ(z) {
     var tl = latLongToTileCoord(bbox[0], bbox[1], z)
     tl.x -= tile_x_offset;
     var br = latLongToTileCoord(bbox[2], bbox[3], z)
     br.y += tile_y_offset;
-    coords_for_zoom[z] = [tl, br]
-
-    var across = br.x - tl.x
-    var down = tl.y - br.y
-    if (across > tiles_across || down > tiles_down || z === 12) {
-      return finalize({coords: coords_for_zoom[z], z:z, tiles_across, tiles_down})
+    return [tl, br];
+  }
+  console.log(bbox);
+  if (forceZ) {
+    var coords = coordsForZ(forceZ);
+    return finalize({coords: coords, z:forceZ, tiles_across, tiles_down})
+  } else {
+    for (var z = 1; z <= 13; z++) {
+      var coords = coordsForZ(z);
+      console.log(coords)
+      var tl = coords[0];
+      var br = coords[1];
+      coords_for_zoom[z] = coords;
+      var across = br.x - tl.x
+      var down = tl.y - br.y
+      if (across > tiles_across  || down > tiles_down || z === 13) {
+        return finalize({coords: coords_for_zoom[z-1], z:z-1, tiles_across, tiles_down})
+      }
     }
   }
 }

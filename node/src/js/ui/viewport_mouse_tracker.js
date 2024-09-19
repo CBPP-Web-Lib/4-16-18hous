@@ -163,7 +163,9 @@ function ViewportMouseTracker(map) {
     }
   });
   viewport.addEventListener("mouseleave", (e) => {
-    this.mouseUp(e.pageX, e.pageY)
+    if (mousedown) {
+      this.mouseUp(e.pageX, e.pageY)
+    }
   });
   /*if user touches somewhere outside viewport*/
 

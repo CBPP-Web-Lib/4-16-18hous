@@ -59,11 +59,12 @@ Promise.all([
     
     var offset = document.querySelector(".slide-deck").getBoundingClientRect();
     document.querySelectorAll(".slide-deck section").forEach((section) => {
-      if (!window.matchMedia("(min-width: 994px)").matches) {
-        section.style.left = "";
-      } else {
-        section.style.left = (0 - offset.left + 40) + "px";
-      }
+      
+     // if (!window.matchMedia("(min-width: 994px)").matches) {
+     //   section.style.left = "";
+     // } else {
+        section.style.left = (0 - offset.left + 20) + "px";
+     // }
     });
   }
 

@@ -42,7 +42,7 @@
     margin-left:350px;
   }
 
-  @media (max-width:994px) {
+  @media (max-width:768px) {
     body {
       margin-left:10px;
       margin:10px;
@@ -287,4 +287,9 @@
   }
   .tweet-it .icon-twitter, .tweet-it .field-name-field-twitter .field-item, .field-name-field-twitter .tweet-it .field-item {
     margin-left: 1em;
+  }
+
+  .demo-figure {
+    max-width:580px;
+    width:100%;
   }

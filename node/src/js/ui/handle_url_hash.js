@@ -6,7 +6,7 @@ function handleUrlHash(map) {
     var hash = window.location.hash.replace("#","")
     var parsed = new URLSearchParams(hash)
     var config = Object.fromEntries(parsed)
-    var {dots, shapes, coords, cbsa, mapConfigHash} = config;
+    var {dots, shapes, coords, cbsa, mapConfigHash, z} = config;
     if (!mapConfigHash) {
       return;
     }
@@ -15,15 +15,7 @@ function handleUrlHash(map) {
     bounds.forEach((n, i) => {
       bounds[i] = bounds[i]*1
     })
-
-    /*we need to zoom in slightly to avoid an outward rachet on reload*/
-    var bound_width = bounds[2] - bounds[0]
-    var bound_height = bounds[3] - bounds[1]
-    bounds[0] += bound_width/4
-    bounds[2] -= bound_width/4
-    bounds[1] += bound_height/4
-    bounds[3] -= bound_height/4
-    var tileCoords = map.coordTracker.getBoundingTilesForBbox(bounds)
+    var tileCoords = map.coordTracker.getBoundingTilesForBbox(bounds, [0, 0, map.getViewportHeight(), map.getViewportWidth()], z*1)
     openMap(map, cbsa, tileCoords).then(function() {
       var main_dot;
       var eth_dots = []
