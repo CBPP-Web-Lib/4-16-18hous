@@ -74,8 +74,14 @@ function build_script(theMgr) {
   item.position = 0;
   item.config.household_type = "pbra_total";
   item.config.layer = "none";
-  item.config.races = ["asian","nhpi"];
+  item.config.races = ["nhpi"];
   item.config.title = "Asian and Native Hawaiian and Pacific Islander Renters Most Likely to Be Assisted by PBRA in Los Angeles Metro Area"
+  script.push(item);
+
+  /*--show nhpi first, then asian*/
+  item = JSON.parse(JSON.stringify(item));
+  item.position = 700;
+  item.config.races = ["asian","nhpi"];
   script.push(item);
   
   /*--new slide--*/
