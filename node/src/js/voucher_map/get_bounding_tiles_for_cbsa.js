@@ -51,14 +51,12 @@ const getBoundingTilesForBbox = function(bbox, screenBox, forceZ) {
     br.y += tile_y_offset;
     return [tl, br];
   }
-  console.log(bbox);
   if (forceZ) {
     var coords = coordsForZ(forceZ);
     return finalize({coords: coords, z:forceZ, tiles_across, tiles_down})
   } else {
     for (var z = 1; z <= 13; z++) {
       var coords = coordsForZ(z);
-      console.log(coords)
       var tl = coords[0];
       var br = coords[1];
       coords_for_zoom[z] = coords;

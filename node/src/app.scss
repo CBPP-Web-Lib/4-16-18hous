@@ -240,6 +240,18 @@ body, html {
     border-radius: 2px;
     padding:2px;
   }
+  .map-notes {
+    position:relative;
+    width:100%;
+    background-color: #fff;
+    padding:10px;
+    font-size:10pt;
+    top:auto;
+    height:auto;
+    line-height:1.2;
+    z-index:20;
+    border-top:1px solid #aaa;
+  }
   .map-viewport-outer {
     position:absolute;
     width:100%;
@@ -248,6 +260,7 @@ body, html {
     left:0;
     user-select: none;
     //padding-bottom:56.25%;
+    
     & > div {
       //border:1px solid #aaa;
       overflow:hidden;
@@ -432,11 +445,16 @@ body, html {
     }
   }
 
-  .legend-container {
-    font-size:16pt;
+  .legend-and-notes {
     position:absolute;
+    bottom:0;
     left:0;
     right:0;
+  }
+
+  .legend-container {
+    font-size:16pt;
+    position:relative;
     text-align:center;
     .legend-position {
       text-align:left;
@@ -479,6 +497,7 @@ body, html {
     .legend-bins-inner {
       height:60px;
       width:600px;
+      max-width:100%;
       position:relative;
     }
     @media (max-width: 620px) {

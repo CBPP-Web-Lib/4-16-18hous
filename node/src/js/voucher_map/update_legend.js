@@ -78,11 +78,12 @@ const updateLegend = function(map) {
       .exit()
       .remove()
   }
+  var eth_dots = [];
   if (active_data_layer==="none") {
     legend_container.querySelector(".legend-bins-wrapper").style.display = "none";
     var eth_legend = document.createElement("div")
     eth_legend.classList.add("ethnicity-legend")
-    const eth_dots = Object.keys(dotConfig).filter((a)=>{
+    eth_dots = Object.keys(dotConfig).filter((a)=>{
       if (a.indexOf("tot_pop")!==-1 || a.indexOf("nonwhite")!==-1) return false
       if (active_dots_layer.indexOf(a)===-1) return false
       return a.indexOf("ethnicity_")!==-1
@@ -106,6 +107,42 @@ const updateLegend = function(map) {
     legend_container.querySelector(".legend-bins-wrapper").style.display = "block";
   }
   updateLegendDotRepresents.call(this, map)
+  const source_components = {
+    hud: "2020 HUD administrative data",
+    acs: "2017-2021 American Community Survey data",
+    dec: "2020 Decennial Census data"
+  }
+  var source_text = [];
+  if (active_hcv_dot_layer.split("_")[0] !== "none") {
+    source_text.push(source_components.hud);
+  }
+  if (active_data_layer !== "none") {
+    source_text.push(source_components.acs);
+  }
+  if (eth_dots.length > 0) {
+    source_text.push(source_components.dec);
+  }
+  var notes_container = document.querySelector("#" + map.getId() + " .legend-and-notes"); 
+  if (document.querySelectorAll(".cbpp-maps-story-mode").length > 0) {
+    if (source_text.length === 0) {
+      notes_container.querySelector(".source-line").style.display = "none";
+    } else {
+      notes_container.querySelector(".source-line").style.display = "inline";
+    }
+  } else {
+    source_text = [
+      source_components.hud,
+      source_components.acs,
+      source_components.dec
+    ]
+  }
+  if (source_text.length <= 2) {
+    source_text = source_text.join(" and " );
+  } else {
+    var final = source_text.pop()
+    source_text = source_text.join(", ") + " and " + final;
+  }
+  notes_container.querySelector(".notes-datasets").innerText = source_text;
 } 
 
 const svg_circle = (el, fill) => {
