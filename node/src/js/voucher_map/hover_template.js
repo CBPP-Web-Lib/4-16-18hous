@@ -6,7 +6,7 @@ const races = {
   "black":"Black",
   "hisp":"Latine",
   "multi":"Multiple races",
-  "nhpi":"Native Hawaiʻian/Pacific Islander",
+  "nhpi":"Native Hawaiian/Pacific Islander",
   "other":"Another race",
   "white":"White"
 }

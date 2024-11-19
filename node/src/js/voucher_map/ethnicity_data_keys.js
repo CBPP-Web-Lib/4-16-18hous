@@ -4,7 +4,7 @@ const data_keys = {
   "ethnicity_black": "Black",
   "ethnicity_hisp": "Latine",
   "ethnicity_multi": "Multiple Races",
-  "ethnicity_nhpi": "Native Hawaiʻian/Pacific Islander",
+  "ethnicity_nhpi": "Native Hawaiian/Pacific Islander",
   //"ethnicity_nonwhite": "Nonwhite",
   "ethnicity_other": "Another race",
   //"ethnicity_tot_pop": "Total",
