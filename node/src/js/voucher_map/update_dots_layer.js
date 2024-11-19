@@ -203,6 +203,7 @@ function updateDotsLayer(visible_features, extra_args) {
       return Promise.all(dot_tasks)
     }).then((d)=>{
       var draw_dot_layers = [];
+      var color_override = map.dataLayerManager.getColorOverride()
       var ctx;
       Object.keys(dot_data_layer).forEach((layer_id)=>{
         var dot_layer = dot_data_layer[layer_id]
@@ -258,6 +259,11 @@ function updateDotsLayer(visible_features, extra_args) {
         })
 
       }
+      Object.keys(configs).forEach((key) => {
+        if (color_override[key]) {
+          configs[key].fill = color_override[key]
+        }
+      })
       /*To speed up a few repetitive tasks in dot drawing*/
       var pi2 = 2*Math.PI;
       var ScaleFactorCalc = function() {

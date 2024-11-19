@@ -12,6 +12,7 @@ const updateLegend = function(map) {
   var active_dots_layer = dataLayerManager.getActiveDotsLayers()
   var active_data_layer = dataLayerManager.getActiveLayer()
   var active_hcv_dot_layer = dataLayerManager.getActiveVoucherDotLayer()
+  var color_override = dataLayerManager.getColorOverride()
   legend_container.innerHTML = legendTemplate
   if (active_hcv_dot_layer.split("_")[0]==="none") {
     legend_container.querySelector(".voucher-indicator").style.display = "none"
@@ -95,7 +96,11 @@ const updateLegend = function(map) {
         var eth_legend_item = document.createElement("div")
         eth_legend_item.classList.add("eth-legend-item")
         var name = data_keys[dot_name.replace("_dots","")]
-        svg_circle(eth_legend_item, dotConfig[dot_name].fill)
+        var fill = dotConfig[dot_name].fill;
+        if (color_override[dot_name]) {
+          fill = color_override[dot_name]
+        }
+        svg_circle(eth_legend_item, fill)
         var name_el = document.createElement("span")
         name_el.innerText = name
         eth_legend_item.appendChild(name_el)

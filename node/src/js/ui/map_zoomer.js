@@ -28,8 +28,8 @@ function MapZoomer(map) {
   el.addEventListener("wheel", (e)=> {
     if (map.isDragging()) {return;}
     e.preventDefault();
-    map.mouseTracker.mouseUp()
     var rect = el.getBoundingClientRect();
+    map.mouseTracker.mouseUp();
     acc_scroll += e.deltaY;
     if (acc_scroll < -20) {
       acc_scroll = 0
@@ -45,9 +45,7 @@ function MapZoomer(map) {
   var touchZoomInitialScale, touchZoomInitialCenter, touchZoomStartCoords, touchZoomDestCoords, touchZoomFrameCenter
   mouse_tracker.registerPinchStartCallback("pinchStart", (x1, y1, x2, y2) => {
     if (map.static) {return;}
-    console.log("pinchStart")
     if (touchZoomStartCoords) {
-      console.log("not done yet")
       return;
     }
     document.querySelectorAll("#" + map.getId() + " .pickers")[0].classList.add("hide-while-zoom")

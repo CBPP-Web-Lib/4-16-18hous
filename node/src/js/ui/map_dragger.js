@@ -45,6 +45,7 @@ function mapDragger() {
   mouse_tracker.registerEndCallback("mapDragEnd", (x, y)=>{
     is_dragging = false
     if (map.static) {return;}
+    if (isNaN(x) || isNaN(y)) {return;}
     if (start_coords) {
       if (map.coordTracker.getCoords().z !== start_coords.z) {
         start_coords = map.coordTracker.getCoords()

@@ -66,7 +66,6 @@ module.exports = function(data, cbsa) {
             l2++;
           }
         }
-        console.log(l1, l2);
         var binSplit = c.binSplit;
         for (n = 0; n<binSplit;n++) {
           

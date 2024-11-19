@@ -8,7 +8,6 @@ var SVG_Manager = function() {
     var fading_container = old_container
     old_container = null;
     fading_container.style.opacity = 0
-    console.log("delete", fading_container)
     setTimeout(function() {
       fading_container.parentElement.removeChild(fading_container)
     }, 300);

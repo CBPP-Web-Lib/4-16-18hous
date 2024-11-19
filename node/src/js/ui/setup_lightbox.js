@@ -12,7 +12,8 @@ const setupLightbox = function(dom) {
   const closeBox = document.createElement("div");
   closeBox.className= "map-close-lightbox"
   closeBox.innerHTML = "<span>&#10006;</span>"
-  closeBox.addEventListener("click", ()=>{
+  closeBox.addEventListener("click", (e)=>{
+    e.preventDefault()
     closeMap(this)
     document.querySelectorAll("body")[0].classList.remove("no-scroll")
     document.querySelectorAll("html")[0].classList.remove("no-scroll")

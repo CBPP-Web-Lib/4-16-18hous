@@ -12,8 +12,7 @@ var DotCanvasManager = function() {
       }, 200);
     }
     document.querySelectorAll("#" + map.getId() + " .old-canvas").forEach((old_canvas) => {
-      old_canvas.style.opacity = 0;
-      console.log("old_canvas", old_canvas)
+      old_canvas.style.opacity = 0
       setTimeout(function() {
         if (old_canvas.parentElement) {
           old_canvas.parentElement.removeChild(old_canvas)

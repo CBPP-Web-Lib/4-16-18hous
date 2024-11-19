@@ -66,6 +66,9 @@ function ViewportMouseTracker(map) {
 
   this.mouseUp = (_x, _y) => {
     mousedown = false
+    if (typeof(_x)==="undefined") {
+      return;
+    }
     dragX = _x - x_start
     dragY = _y - y_start
     x_start = null

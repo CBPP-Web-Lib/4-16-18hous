@@ -46,7 +46,6 @@ const mapResizer = function() {
             0, 0, map.getViewportWidth(), map.getViewportHeight()
           ].join(" "))
           if (map.isZooming()) {
-            console.log("is zooming")
             return false;
           }
           if (map.coordTracker.coordChangeInProgress()) {
@@ -55,9 +54,7 @@ const mapResizer = function() {
           }
           
           map.projectionManager.updateProjection().then(function() {
-            console.log("update ", map.getId())
             map.updateView().then(function() {
-              console.log("post update view");
               map.coordTracker.doHooks(map.coordTracker.postResizeHooks);
             })
           })

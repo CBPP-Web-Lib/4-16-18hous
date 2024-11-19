@@ -6,9 +6,17 @@ function handleUrlHash(map) {
     var hash = window.location.hash.replace("#","")
     var parsed = new URLSearchParams(hash)
     var config = Object.fromEntries(parsed)
-    var {dots, shapes, coords, cbsa, mapConfigHash, z} = config;
+    var {dots, shapes, coords, cbsa, mapConfigHash, z, color_override} = config
     if (!mapConfigHash) {
       return;
+    }
+    var color_override_config = {};
+    if (color_override) {
+      color_override = color_override.split(",");
+      color_override.forEach((rule) => {
+        rule = rule.split("=");
+        color_override_config[rule[0]] = rule[1];
+      })
     }
     var dots = dots.split(",");
     var bounds = coords.split(",");
@@ -42,7 +50,7 @@ function handleUrlHash(map) {
       }
       document.querySelector("#" + map.getId() + " select[name='tract-dataset']").value = shapes;
       map.dataLayerManager.setActiveDotsLayer(main_dot)
-      map.dataLayerManager.setAdditionalDotsLayers(eth_dots)
+      map.dataLayerManager.setAdditionalDotsLayers(eth_dots, color_override_config)
       map.dataLayerManager.setActiveLayer(shapes)
       
       // map.updateView()

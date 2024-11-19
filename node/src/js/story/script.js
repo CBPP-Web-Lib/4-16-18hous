@@ -63,6 +63,7 @@ function build_script(theMgr) {
       household_type: "none",
       layer: "none",
       races: ["asian","black","hisp","nhpi","white"],
+      color_override: {"ethnicity_nhpi_dots": "#f00ac6ff"},
       title: "Los Angeles Home to Largest Latine and Second Largest Asian Population of any U.S. Metro Area"
     }
   };
@@ -98,6 +99,7 @@ function build_script(theMgr) {
   item.position = -400;
   item.end_position = - 400;
   item.config.household_type = "pbra_disability";
+  item.config.color_override = {};
   item.config.layer = "poverty_pov_pct";
   item.config.races = [];
   item.config.title = "Project-Based Rental Assistance Helps House 6,500 Households Including a Person with a Disability in Los Angeles Metro Area"

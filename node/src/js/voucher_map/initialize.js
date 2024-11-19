@@ -19,9 +19,10 @@ import { v4 as uuidv4 } from 'uuid';
 const initialize = function(config, workerManager) {
   var id = config.id
   var url_base = config.url_base
+  var dom_html = dom.replace(/URL_BASE/g, url_base)
   this.switchId = function(_id) {
     id = _id
-    document.getElementById(id).innerHTML = dom
+    document.getElementById(id).innerHTML = dom_html
     this.remakeTransparencyElement()
   }
   this.getId = function() {
@@ -31,9 +32,9 @@ const initialize = function(config, workerManager) {
     return url_base
   }
   if (config.disable_lightbox !== true) {
-    setupLightbox.call(this, dom)
+    setupLightbox.call(this, dom_html)
   } else {
-    document.getElementById(id).innerHTML = dom
+    document.getElementById(id).innerHTML = dom_html
   }
   //svg_create.makeElement(this)
   var svg_create = new SVG_Manager();

@@ -6,7 +6,7 @@ var drawConfig = function(args) {
   var {id, worker_manager, url_base, script_item, scrollMgr} = args;
   return new Promise((resolve, reject) => {
     var config = script_item;
-    var {cbsa, bounds, layer, races, household_type, aff_units} = config;
+    var {cbsa, bounds, layer, races, household_type, aff_units, color_override} = config;
     var map = new VoucherMap()
     map.initialize({id, url_base, no_url_hash:true, no_lightbox: true, static: true}, worker_manager);
     map.cbsaManager.loadCBSA(cbsa).then(() => {
@@ -60,8 +60,7 @@ var drawConfig = function(args) {
           layer_names.push("ethnicity_" + race + "_dots")
         })
       }
-
-      map.dataLayerManager.setAdditionalDotsLayers(layer_names)
+      map.dataLayerManager.setAdditionalDotsLayers(layer_names, color_override)
       map.coordTracker.setCoords(tileCoords, {
         destroyOldCanvas: false
       }).then(function() {
