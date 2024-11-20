@@ -128,11 +128,15 @@ Promise.all([
           pos.progress = (scrollTop + 0.5*windowHeight - pos.top) / (pos.height)
           slide_pos[i] = pos
           var current_el = document.getElementById(item.id);
+          if (item.delay && current_el) {
+            current_el.style.transitionDelay = item.delay + "ms";
+          }
           var fadeIn = (pos.progress + transition_margin/pos.height)/(2*(transition_margin/pos.height))
           var fadeOut = (1 - pos.progress + transition_margin/pos.height)/(2*(transition_margin/pos.height))
           var opacity = Math.max(0, Math.min(1, fadeIn, fadeOut))
           if (current_el) {
             current_el.style.opacity = (opacity*100) + "%"
+            current_el.style.zIndex = i;
             var map_id = current_el.id;
             var map = maps[map_id];
             if (map) {

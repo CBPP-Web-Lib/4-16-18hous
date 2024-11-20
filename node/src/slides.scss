@@ -142,6 +142,8 @@
     }
     .map-slide-container {
       opacity:0;
+      transition:opacity;
+      transition-duration:200ms;
     }
     .map-inner-lightbox {
       top:0px;
