@@ -197,6 +197,10 @@ Promise.all([
     var script_item = item.config;
     var anchor = item.anchor;
     var slide = document.querySelector(".slide-deck .slide[name='" + anchor + "']");
+    if (!slide) {
+      cb();
+      return;
+    }
     var rect = slide.getBoundingClientRect();
     var container_id = id + "-map-wrap-" + item_index;
     if ((rect.top > 2000) || (rect.top + rect.height) < -2000) {

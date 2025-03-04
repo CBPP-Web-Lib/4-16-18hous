@@ -20,7 +20,8 @@ function build_script(theMgr) {
       household_type: "ph_total",
       layer: "none",
       races: ["black","white"],
-      title: "Entrenched Racial Segregation in D.C. Area Reflects Lasting Impact of Racist Housing Policies "
+      title: "Entrenched Racial Segregation in D.C. Area Reflects Lasting Impact of Racist Housing Policies",
+      figure: "Figure 4A"
     }
   };
   script.push(item);
@@ -64,7 +65,8 @@ function build_script(theMgr) {
       layer: "none",
       races: ["asian","black","hisp","nhpi","white"],
       color_override: {"ethnicity_nhpi_dots": "#f00ac6ff"},
-      title: "Los Angeles Home to Largest Latine and Second Largest Asian Population of any U.S. Metro Area"
+      title: "Los Angeles Home to Largest Latine and Second Largest Asian Population of any U.S. Metro Area",
+      figure: "Figure 7A"
     }
   };
   script.push(item);
@@ -78,6 +80,7 @@ function build_script(theMgr) {
   item.config.races = ["nhpi"];
  // item.override_height = 700;
   item.config.title = "Asian and Native Hawaiian and Pacific Islander Renters Most Likely to Be Assisted by PBRA in Los Angeles Metro Area"
+  item.config.figure = "Figure 7B";
   script.push(item);
 
   /*--show nhpi first, then asian*/
@@ -106,6 +109,7 @@ function build_script(theMgr) {
   item.config.color_override = {};
   item.config.layer = "poverty_pov_pct";
   item.config.races = [];
+  item.config.figure = "Figure 9";
   item.config.title = "Project-Based Rental Assistance Helps House 6,500 Households Including a Person with a Disability in Los Angeles Metro Area"
   script.push(item);
 
@@ -121,6 +125,7 @@ function build_script(theMgr) {
       household_type: "none",
       layer: "none",
       races: ["black","white","hisp"],
+      figure: "Figure 11A",
       title:"Stark Racial Segregation in Milwaukee Metro Area Shaped by History of Redlining and Restrictive Covenants"
     }
   };
@@ -136,6 +141,7 @@ function build_script(theMgr) {
   item.position = 0;
   item.override_height = 800
   item.config.title = "Over One-Third of Voucher-Affordable Units in Milwaukee Metro Area Are in Low-Poverty Neighborhoods"
+  item.config.figure = "Figure 11B";
   script.push(item);
 
   item = JSON.parse(JSON.stringify(item));
@@ -164,6 +170,7 @@ function build_script(theMgr) {
   item.config.aff_units = false;
   item.position = 0;
   item.config.title = "Nearly One-Third of Voucher-Assisted Households in Milwaukee Metro Area Live in High-Poverty Neighborhoods";
+  item.config.figure = "Figure 11C";
   script.push(item);
     
   /*--new slide--*/

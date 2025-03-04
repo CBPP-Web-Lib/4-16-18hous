@@ -45,6 +45,12 @@ var drawConfig = function(args) {
         var title_element = document.createElement("div");
         title_element.classList.add("map-title");
         title_element.innerHTML = "<h4>" + config.title + "</h4>";
+        if (config.figure) {
+          var figure_label = document.createElement("div");
+          figure_label.classList.add("figure-label");
+          figure_label.innerHTML = config.figure;
+          title_element.prepend(figure_label);
+        }
         document.getElementById(id).appendChild(title_element);
       }
 

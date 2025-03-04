@@ -607,8 +607,9 @@ gulp.task("merge_csv", function(cb) {
     var data = JSON.parse(fs.readFileSync("./tmp/" + layer + ".json", "utf-8"));
     var headers = data.shift();
     console.log(headers);
-    data.forEach((row)=>{
+    data.forEach((row, i)=>{
       var id = row[0];
+      console.log(i + "/" + data.length)
       var cbsa = row[1];
       r[id] = r[id] || {cbsa: cbsa, data:{}};
       headers.forEach((header, j)=>{

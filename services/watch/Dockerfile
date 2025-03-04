@@ -2,7 +2,9 @@ FROM node:20
 
 WORKDIR /opt/project
 
-RUN apt-get update 
+RUN apt-get update
+
+RUN npm config set strict-ssl false
 
 RUN npm config set cache /home/node/cache --global
 RUN npm install -g webpack@5
