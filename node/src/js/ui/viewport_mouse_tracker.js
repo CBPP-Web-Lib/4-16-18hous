@@ -224,6 +224,7 @@ function ViewportMouseTracker(map) {
   });
   
   viewport.addEventListener("touchmove", (e)=>{
+    e.preventDefault()
     if (e.touches.length===1) {
       this.mouseMove(e.touches[0].pageX, e.touches[0].pageY)
     }

@@ -1,10 +1,10 @@
 body, html {
-  overscroll-behavior-y: none !important;
-  overscroll-behavior-x: none !important;
+  //overscroll-behavior-y: none !important;
+  //overscroll-behavior-x: none !important;
   &.no-scroll {
     overflow:hidden;
   }
-  overscroll-behavior: none !important;
+  //overscroll-behavior: none !important;
 }
 
 #hous4-16-18 {
