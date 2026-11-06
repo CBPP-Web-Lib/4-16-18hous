@@ -1,0 +1,1 @@
+<?php $stamen_key = ""; ?>

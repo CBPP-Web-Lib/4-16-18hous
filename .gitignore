@@ -27,3 +27,7 @@ node/dev/*
 node/prod/*
 login_cookie.php
 password_hash.php
+# server-only Stadia key and tile cache for the old (4-16-18hous) deploy
+webroot/old/image_proxy/api_key.php
+webroot/old/image_proxy/cache/*
+!webroot/old/image_proxy/cache/.htaccess
